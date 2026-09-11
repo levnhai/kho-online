@@ -1,0 +1,6 @@
+
+# Commit environment templates only
+!.env.example
+!**/.env.example
+!.env.production.example
+!**/.env.production.example
