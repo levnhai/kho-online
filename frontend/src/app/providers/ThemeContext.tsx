@@ -16,13 +16,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       const saved = localStorage.getItem('kho_theme');
       if (saved === 'dark' || saved === 'light') return saved;
-      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        return 'dark';
-      }
     } catch {
       // ignore
     }
-    return 'light';
+    return 'dark'; // Mặc định là Dark Mode
   });
 
   useEffect(() => {
