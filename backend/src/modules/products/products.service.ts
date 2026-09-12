@@ -13,6 +13,7 @@ export class ProductsService {
     const {
       search,
       category,
+      subcategory,
       minPrice,
       maxPrice,
       sort = 'newest',
@@ -38,6 +39,10 @@ export class ProductsService {
 
     if (category) {
       filter.category = category;
+    }
+
+    if (subcategory) {
+      filter.subcategory = subcategory;
     }
 
     if (minPrice !== undefined || maxPrice !== undefined) {

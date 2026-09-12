@@ -22,7 +22,7 @@ let ProductsService = class ProductsService {
         this.productModel = productModel;
     }
     async findAll(query = {}) {
-        const { search, category, minPrice, maxPrice, sort = 'newest', status, page = 1, limit = 12, } = query;
+        const { search, category, subcategory, minPrice, maxPrice, sort = 'newest', status, page = 1, limit = 12, } = query;
         const filter = {};
         if (status) {
             filter.status = status;
@@ -38,6 +38,9 @@ let ProductsService = class ProductsService {
         }
         if (category) {
             filter.category = category;
+        }
+        if (subcategory) {
+            filter.subcategory = subcategory;
         }
         if (minPrice !== undefined || maxPrice !== undefined) {
             filter.price = {};

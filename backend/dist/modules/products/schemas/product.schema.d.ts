@@ -21,6 +21,7 @@ export declare class Product {
     name: string;
     code: string;
     category: Category;
+    subcategory?: string;
     price: number;
     salePrice: number;
     stock: number;

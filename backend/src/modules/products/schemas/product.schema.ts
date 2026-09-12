@@ -35,6 +35,9 @@ export class Product {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Category', required: true })
   category: Category;
 
+  @Prop({ default: '', trim: true })
+  subcategory?: string;
+
   @Prop({ required: true, min: 0 })
   price: number;
 

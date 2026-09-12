@@ -29,6 +29,7 @@ export const AdminProductsPage: React.FC = () => {
   // Filter & Search
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedSubcategory, setSelectedSubcategory] = useState("");
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -39,6 +40,7 @@ export const AdminProductsPage: React.FC = () => {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [subcategory, setSubcategory] = useState("");
   const [price, setPrice] = useState<number | "">("");
   const [salePrice, setSalePrice] = useState<number | "">("");
   const [stock, setStock] = useState<number | "">("");
@@ -65,6 +67,7 @@ export const AdminProductsPage: React.FC = () => {
         allStatus: true,
         search: search || undefined,
         category: selectedCategory || undefined,
+        subcategory: selectedSubcategory || undefined,
         limit: 50,
       });
       setProducts(res.items);
@@ -74,7 +77,7 @@ export const AdminProductsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [search, selectedCategory]);
+  }, [search, selectedCategory, selectedSubcategory]);
 
   useEffect(() => {
     categoryApi.getAll().then(setCategories).catch(console.error);
@@ -86,7 +89,9 @@ export const AdminProductsPage: React.FC = () => {
     setCurrentId(null);
     setName("");
     setCode(`SP${Math.floor(1000 + Math.random() * 9000)}`);
-    setCategoryId(categories[0]?._id || "");
+    const defaultCat = categories[0]?._id || "";
+    setCategoryId(defaultCat);
+    setSubcategory("");
     setPrice("");
     setSalePrice("");
     setStock(10);
@@ -109,6 +114,7 @@ export const AdminProductsPage: React.FC = () => {
     setName(p.name);
     setCode(p.code);
     setCategoryId(typeof p.category === "object" ? p.category._id : p.category);
+    setSubcategory(p.subcategory || "");
     setPrice(p.price);
     setSalePrice(p.salePrice || "");
     setStock(p.stock);
@@ -189,6 +195,7 @@ export const AdminProductsPage: React.FC = () => {
         name,
         code: code.toUpperCase(),
         category: categoryId,
+        subcategory: subcategory.trim() || undefined,
         price: Number(price),
         salePrice: salePrice !== "" ? Number(salePrice) : 0,
         stock: stock !== "" ? Number(stock) : 0,
@@ -235,6 +242,12 @@ export const AdminProductsPage: React.FC = () => {
     }
   };
 
+  const selectedCategoryObj = categories.find((c) => c._id === categoryId);
+  const modalSubcategories = selectedCategoryObj?.subcategories || [];
+
+  const filterCategoryObj = categories.find((c) => c._id === selectedCategory);
+  const filterSubcategories = filterCategoryObj?.subcategories || [];
+
   return (
     <div className="space-y-4 text-gray-900 dark:text-white">
       {/* Alert message */}
@@ -262,7 +275,10 @@ export const AdminProductsPage: React.FC = () => {
 
           <select
             value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
+            onChange={(e) => {
+              setSelectedCategory(e.target.value);
+              setSelectedSubcategory("");
+            }}
             className="py-1.5 px-2.5 text-xs border border-gray-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none shadow-2xs"
           >
             <option value="">Tất cả thể loại</option>
@@ -272,6 +288,21 @@ export const AdminProductsPage: React.FC = () => {
               </option>
             ))}
           </select>
+
+          {filterSubcategories.length > 0 && (
+            <select
+              value={selectedSubcategory}
+              onChange={(e) => setSelectedSubcategory(e.target.value)}
+              className="py-1.5 px-2.5 text-xs border border-gray-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none shadow-2xs"
+            >
+              <option value="">Tất cả nhóm con</option>
+              {filterSubcategories.map((sub, idx) => (
+                <option key={idx} value={sub}>
+                  {sub}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         {/* Add Product Button */}
@@ -361,7 +392,21 @@ export const AdminProductsPage: React.FC = () => {
                         {p.code}
                       </td>
                       <td className="py-2.5 px-3 text-gray-600 dark:text-slate-300 text-xs">
-                        {catName}
+                        <div>
+                          <span className="font-semibold text-gray-800 dark:text-slate-200 block">
+                            {catName}
+                          </span>
+                          {p.subcategory ? (
+                            <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded text-[10px] font-bold border border-blue-100 dark:border-blue-800/50">
+                              <span>↳</span>
+                              <span>{p.subcategory}</span>
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-gray-400 dark:text-slate-500 italic block">
+                              Chưa phân nhóm
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-2.5 px-3 font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap text-xs">
                         {formatCurrency(
@@ -457,15 +502,18 @@ export const AdminProductsPage: React.FC = () => {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Thể loại *
               </label>
               <select
                 value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white p-2 text-xs focus:outline-none"
+                onChange={(e) => {
+                  setCategoryId(e.target.value);
+                  setSubcategory("");
+                }}
+                className="w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white p-2 text-xs focus:outline-none focus:border-blue-500"
                 required
               >
                 {categories.map((cat) => (
@@ -478,12 +526,40 @@ export const AdminProductsPage: React.FC = () => {
 
             <div>
               <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Thể loại con / Nhóm
+              </label>
+              {modalSubcategories && modalSubcategories.length > 0 ? (
+                <select
+                  value={subcategory}
+                  onChange={(e) => setSubcategory(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white p-2 text-xs focus:outline-none focus:border-blue-500"
+                >
+                  <option value="">-- Chọn thể loại con --</option>
+                  {modalSubcategories.map((sub, idx) => (
+                    <option key={idx} value={sub}>
+                      {sub}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  value={subcategory}
+                  onChange={(e) => setSubcategory(e.target.value)}
+                  placeholder="VD: iPhone, ROG, Gaming..."
+                  className="w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white p-2 text-xs focus:outline-none focus:border-blue-500"
+                />
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Trạng thái
               </label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white p-2 text-xs focus:outline-none"
+                className="w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white p-2 text-xs focus:outline-none focus:border-blue-500"
               >
                 <option value="active">Đang bán (Active)</option>
                 <option value="inactive">Tạm ẩn (Inactive)</option>

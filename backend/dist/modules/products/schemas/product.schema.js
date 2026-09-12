@@ -56,6 +56,10 @@ __decorate([
     __metadata("design:type", category_schema_1.Category)
 ], Product.prototype, "category", void 0);
 __decorate([
+    (0, mongoose_1.Prop)({ default: '', trim: true }),
+    __metadata("design:type", String)
+], Product.prototype, "subcategory", void 0);
+__decorate([
     (0, mongoose_1.Prop)({ required: true, min: 0 }),
     __metadata("design:type", Number)
 ], Product.prototype, "price", void 0);
