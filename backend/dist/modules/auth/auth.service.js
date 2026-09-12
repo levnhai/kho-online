@@ -39,16 +39,17 @@ let AuthService = class AuthService {
         };
     }
     async login(loginDto) {
-        const user = await this.usersService.findByEmail(loginDto.email);
+        const identifier = (loginDto.email || loginDto.identifier || '').trim();
+        const user = await this.usersService.findByEmailOrPhone(identifier);
         if (!user) {
-            throw new common_1.UnauthorizedException('Email hoặc mật khẩu không chính xác');
+            throw new common_1.UnauthorizedException('Tài khoản hoặc mật khẩu không chính xác');
         }
         if (user.status === 'blocked') {
             throw new common_1.UnauthorizedException('Tài khoản của bạn đã bị khóa');
         }
         const isMatch = await bcrypt.compare(loginDto.password, user.password);
         if (!isMatch) {
-            throw new common_1.UnauthorizedException('Email hoặc mật khẩu không chính xác');
+            throw new common_1.UnauthorizedException('Tài khoản hoặc mật khẩu không chính xác');
         }
         const token = this.generateToken(user);
         return {

@@ -31,16 +31,17 @@ export class AuthService {
   }
 
   async login(loginDto: any) {
-    const user = await this.usersService.findByEmail(loginDto.email);
+    const identifier = (loginDto.email || loginDto.identifier || '').trim();
+    const user = await this.usersService.findByEmailOrPhone(identifier);
     if (!user) {
-      throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
+      throw new UnauthorizedException('Tài khoản hoặc mật khẩu không chính xác');
     }
     if (user.status === 'blocked') {
       throw new UnauthorizedException('Tài khoản của bạn đã bị khóa');
     }
     const isMatch = await bcrypt.compare(loginDto.password, user.password);
     if (!isMatch) {
-      throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
+      throw new UnauthorizedException('Tài khoản hoặc mật khẩu không chính xác');
     }
     const token = this.generateToken(user);
     return {

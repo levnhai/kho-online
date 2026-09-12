@@ -4,6 +4,26 @@ import { Category } from '../../categories/schemas/category.schema';
 
 export type ProductDocument = Product & Document;
 
+@Schema({ _id: false })
+export class ProductSize {
+  @Prop({ required: true, trim: true })
+  name: string;
+
+  @Prop({ required: true, min: 0 })
+  price: number;
+
+  @Prop({ default: 0, min: 0 })
+  salePrice: number;
+
+  @Prop({ default: 0, min: 0 })
+  stock: number;
+
+  @Prop({ default: '', trim: true })
+  sku: string;
+}
+
+export const ProductSizeSchema = SchemaFactory.createForClass(ProductSize);
+
 @Schema({ timestamps: true })
 export class Product {
   @Prop({ required: true, trim: true })
@@ -23,6 +43,9 @@ export class Product {
 
   @Prop({ required: true, default: 0, min: 0 })
   stock: number;
+
+  @Prop({ type: [ProductSizeSchema], default: [] })
+  sizes: ProductSize[];
 
   @Prop({ type: [String], default: [] })
   images: string[];

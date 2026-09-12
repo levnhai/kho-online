@@ -40,6 +40,10 @@ __decorate([
     __metadata("design:type", String)
 ], OrderItem.prototype, "name", void 0);
 __decorate([
+    (0, mongoose_1.Prop)({ default: '', trim: true }),
+    __metadata("design:type", String)
+], OrderItem.prototype, "size", void 0);
+__decorate([
     (0, mongoose_1.Prop)({ required: true }),
     __metadata("design:type", Number)
 ], OrderItem.prototype, "price", void 0);

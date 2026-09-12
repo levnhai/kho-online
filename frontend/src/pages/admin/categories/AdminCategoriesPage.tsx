@@ -1,11 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, FolderTree, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { categoryApi } from '@/entities/category/api/categoryApi';
-import { Category } from '@/shared/types';
-import { Button } from '@/shared/ui/Button';
-import { Input } from '@/shared/ui/Input';
-import { Modal } from '@/shared/ui/Modal';
-import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
+import React, { useState, useEffect } from "react";
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  FolderTree,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
+import { categoryApi } from "@/entities/category/api/categoryApi";
+import { Category } from "@/shared/types";
+import { Button } from "@/shared/ui/Button";
+import { Input } from "@/shared/ui/Input";
+import { Modal } from "@/shared/ui/Modal";
+import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
 
 export const AdminCategoriesPage: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -13,27 +20,27 @@ export const AdminCategoriesPage: React.FC = () => {
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [modalMode, setModalMode] = useState<"create" | "edit">("create");
   const [currentId, setCurrentId] = useState<string | null>(null);
 
   // Form
-  const [name, setName] = useState('');
-  const [slug, setSlug] = useState('');
-  const [description, setDescription] = useState('');
-  const [subcategoriesText, setSubcategoriesText] = useState('');
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+  const [description, setDescription] = useState("");
+  const [subcategoriesText, setSubcategoriesText] = useState("");
   const [formLoading, setFormLoading] = useState(false);
-  const [formError, setFormError] = useState('');
-  const [actionSuccess, setActionSuccess] = useState('');
+  const [formError, setFormError] = useState("");
+  const [actionSuccess, setActionSuccess] = useState("");
 
   // Hàm sinh slug chuẩn tiếng Việt không dấu
   const generateSlug = (text: string): string => {
     return text
       .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[đĐ]/g, 'd')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[đĐ]/g, "d")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
   };
 
   const handleNameChange = (val: string) => {
@@ -47,7 +54,7 @@ export const AdminCategoriesPage: React.FC = () => {
       const data = await categoryApi.getAll();
       setCategories(data);
     } catch (err) {
-      console.error('Fetch categories error:', err);
+      console.error("Fetch categories error:", err);
     } finally {
       setLoading(false);
     }
@@ -58,63 +65,63 @@ export const AdminCategoriesPage: React.FC = () => {
   }, []);
 
   const openCreateModal = () => {
-    setModalMode('create');
+    setModalMode("create");
     setCurrentId(null);
-    setName('');
-    setSlug('');
-    setDescription('');
-    setSubcategoriesText('');
-    setFormError('');
+    setName("");
+    setSlug("");
+    setDescription("");
+    setSubcategoriesText("");
+    setFormError("");
     setIsModalOpen(true);
   };
 
   const openEditModal = (cat: Category) => {
-    setModalMode('edit');
+    setModalMode("edit");
     setCurrentId(cat._id);
     setName(cat.name);
     setSlug(cat.slug || generateSlug(cat.name));
-    setDescription(cat.description || '');
-    setSubcategoriesText(cat.subcategories?.join(', ') || '');
-    setFormError('');
+    setDescription(cat.description || "");
+    setSubcategoriesText(cat.subcategories?.join(", ") || "");
+    setFormError("");
     setIsModalOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      setFormError('Vui lòng nhập tên thể loại');
+      setFormError("Vui lòng nhập tên thể loại");
       return;
     }
 
     setFormLoading(true);
-    setFormError('');
+    setFormError("");
 
     try {
       const subcategories = subcategoriesText
-        .split(',')
+        .split(",")
         .map((s) => s.trim())
         .filter((s) => s.length > 0);
 
       const payload = {
         name,
-        slug: slug.trim() || name.toLowerCase().replace(/\s+/g, '-'),
+        slug: slug.trim() || name.toLowerCase().replace(/\s+/g, "-"),
         description,
         subcategories,
       };
 
-      if (modalMode === 'create') {
+      if (modalMode === "create") {
         await categoryApi.create(payload);
-        setActionSuccess('Thêm thể loại thành công!');
+        setActionSuccess("Thêm thể loại thành công!");
       } else if (currentId) {
         await categoryApi.update(currentId, payload);
-        setActionSuccess('Cập nhật thể loại thành công!');
+        setActionSuccess("Cập nhật thể loại thành công!");
       }
 
       setIsModalOpen(false);
       fetchCategories();
-      setTimeout(() => setActionSuccess(''), 3000);
+      setTimeout(() => setActionSuccess(""), 3000);
     } catch (err: any) {
-      setFormError(err.message || 'Thao tác thất bại');
+      setFormError(err.message || "Thao tác thất bại");
     } finally {
       setFormLoading(false);
     }
@@ -126,11 +133,11 @@ export const AdminCategoriesPage: React.FC = () => {
     }
     try {
       await categoryApi.delete(cat._id);
-      setActionSuccess('Đã xóa thể loại!');
+      setActionSuccess("Đã xóa thể loại!");
       fetchCategories();
-      setTimeout(() => setActionSuccess(''), 3000);
+      setTimeout(() => setActionSuccess(""), 3000);
     } catch (err: any) {
-      alert(err.message || 'Không thể xóa thể loại này');
+      alert(err.message || "Không thể xóa thể loại này");
     }
   };
 
@@ -147,7 +154,9 @@ export const AdminCategoriesPage: React.FC = () => {
       {/* Header action */}
       <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm flex items-center justify-between gap-2 transition-colors">
         <div>
-          <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">DANH MỤC & THỂ LOẠI</h2>
+          <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
+            DANH MỤC & THỂ LOẠI
+          </h2>
           <p className="text-[11px] sm:text-xs text-gray-400 dark:text-slate-400">
             Quản lý các nhóm danh mục sản phẩm
           </p>
@@ -160,7 +169,7 @@ export const AdminCategoriesPage: React.FC = () => {
           onClick={openCreateModal}
           className="font-bold shadow-md shadow-blue-600/25 whitespace-nowrap text-xs py-2"
         >
-          + THÊM THỂ LOẠI
+          THÊM THỂ LOẠI
         </Button>
       </div>
 
@@ -183,10 +192,19 @@ export const AdminCategoriesPage: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                 {categories.map((cat, idx) => (
-                  <tr key={cat._id} className="hover:bg-gray-50/60 dark:hover:bg-slate-700/40 transition-colors">
-                    <td className="py-3.5 px-4 font-bold text-gray-400 dark:text-slate-500 w-12">{idx + 1}</td>
-                    <td className="py-3.5 px-4 font-bold text-gray-900 dark:text-white whitespace-nowrap">{cat.name}</td>
-                    <td className="py-3.5 px-4 font-mono text-gray-500 dark:text-slate-400">{cat.slug}</td>
+                  <tr
+                    key={cat._id}
+                    className="hover:bg-gray-50/60 dark:hover:bg-slate-700/40 transition-colors"
+                  >
+                    <td className="py-3.5 px-4 font-bold text-gray-400 dark:text-slate-500 w-12">
+                      {idx + 1}
+                    </td>
+                    <td className="py-3.5 px-4 font-bold text-gray-900 dark:text-white whitespace-nowrap">
+                      {cat.name}
+                    </td>
+                    <td className="py-3.5 px-4 font-mono text-gray-500 dark:text-slate-400">
+                      {cat.slug}
+                    </td>
                     <td className="py-3.5 px-4 max-w-xs">
                       {cat.subcategories && cat.subcategories.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
@@ -200,7 +218,9 @@ export const AdminCategoriesPage: React.FC = () => {
                           ))}
                         </div>
                       ) : (
-                        <span className="text-gray-400 dark:text-slate-500 italic text-[11px]">Chưa có</span>
+                        <span className="text-gray-400 dark:text-slate-500 italic text-[11px]">
+                          Chưa có
+                        </span>
                       )}
                     </td>
                     <td className="py-3.5 px-4 text-center">
@@ -215,7 +235,9 @@ export const AdminCategoriesPage: React.FC = () => {
                       >
                         Sửa
                       </button>
-                      <span className="text-gray-300 dark:text-slate-600">|</span>
+                      <span className="text-gray-300 dark:text-slate-600">
+                        |
+                      </span>
                       <button
                         onClick={() => handleDelete(cat)}
                         className="text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 font-semibold hover:underline"
@@ -235,7 +257,9 @@ export const AdminCategoriesPage: React.FC = () => {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={modalMode === 'create' ? 'Thêm Thể Loại Mới' : 'Cập Nhật Thể Loại'}
+        title={
+          modalMode === "create" ? "Thêm Thể Loại Mới" : "Cập Nhật Thể Loại"
+        }
         maxWidth="md"
       >
         <form onSubmit={handleSubmit} className="space-y-3 text-xs">
@@ -280,7 +304,8 @@ export const AdminCategoriesPage: React.FC = () => {
               className="w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white p-2 text-xs focus:outline-none focus:border-blue-500"
             />
             <p className="text-[10px] text-gray-400 dark:text-slate-400 mt-1">
-              Nhập các thể loại con phân tách bằng dấu phẩy (,). Hệ thống sẽ tự động cập nhật lên Menu Drawer & Bộ lọc.
+              Nhập các thể loại con phân tách bằng dấu phẩy (,). Hệ thống sẽ tự
+              động cập nhật lên Menu Drawer & Bộ lọc.
             </p>
           </div>
 
@@ -313,7 +338,7 @@ export const AdminCategoriesPage: React.FC = () => {
               loading={formLoading}
               className="font-bold shadow-md shadow-blue-600/25"
             >
-              {modalMode === 'create' ? 'THÊM THỂ LOẠI' : 'LƯU THAY ĐỔI'}
+              {modalMode === "create" ? "THÊM THỂ LOẠI" : "LƯU THAY ĐỔI"}
             </Button>
           </div>
         </form>

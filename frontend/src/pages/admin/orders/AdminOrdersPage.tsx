@@ -248,9 +248,16 @@ export const AdminOrdersPage: React.FC = () => {
                       />
                       <div>
                         <p className="font-bold text-gray-900 dark:text-white truncate max-w-[150px] sm:max-w-none">{item.name}</p>
-                        <p className="text-gray-400 dark:text-slate-400 text-[10px]">
-                          {formatCurrency(item.price)} x {item.quantity}
-                        </p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          {item.size && (
+                            <span className="px-1.5 py-0.2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[9px] font-bold rounded">
+                              Size: {item.size}
+                            </span>
+                          )}
+                          <p className="text-gray-400 dark:text-slate-400 text-[10px]">
+                            {formatCurrency(item.price)} x {item.quantity}
+                          </p>
+                        </div>
                       </div>
                     </div>
                     <span className="font-bold text-gray-900 dark:text-white">{formatCurrency(item.total)}</span>

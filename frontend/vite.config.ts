@@ -10,6 +10,7 @@ export default defineConfig({
     },
   },
   server: {
+    host: true, // Lắng nghe trên tất cả IP (0.0.0.0) để điện thoại kết nối cùng Wi-Fi có thể truy cập
     port: 3000,
     proxy: {
       '/api': {

@@ -90,6 +90,7 @@ export const ProductDetailPage: React.FC = () => {
   const { addToCart } = useCart();
 
   const [product, setProduct] = useState<Product | null>(null);
+  const [selectedSize, setSelectedSize] = useState<string>('');
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [addedMessage, setAddedMessage] = useState(false);
@@ -101,6 +102,11 @@ export const ProductDetailPage: React.FC = () => {
       .getById(id)
       .then((data) => {
         setProduct(data);
+        if (data?.sizes && data.sizes.length > 0) {
+          setSelectedSize(data.sizes[0].name);
+        } else {
+          setSelectedSize('');
+        }
       })
       .catch((err) => {
         console.error('Fetch product detail error:', err);
@@ -130,8 +136,14 @@ export const ProductDetailPage: React.FC = () => {
     );
   }
 
-  const hasDiscount = Boolean(product.salePrice && product.salePrice > 0 && product.salePrice < product.price);
-  const effectivePrice = hasDiscount ? product.salePrice! : product.price;
+  // Tính giá & tồn kho dựa trên Size đang chọn
+  const activeSizeObj = product.sizes?.find((s) => s.name === selectedSize);
+  const currentPrice = activeSizeObj ? activeSizeObj.price : product.price;
+  const currentSalePrice = activeSizeObj ? (activeSizeObj.salePrice || 0) : (product.salePrice || 0);
+  const currentStock = activeSizeObj && activeSizeObj.stock !== undefined && activeSizeObj.stock > 0 ? activeSizeObj.stock : product.stock;
+
+  const hasDiscount = Boolean(currentSalePrice && currentSalePrice > 0 && currentSalePrice < currentPrice);
+  const effectivePrice = hasDiscount ? currentSalePrice : currentPrice;
   const categoryName = typeof product.category === 'object' ? product.category?.name : 'Sản phẩm';
   const displayImages = enrichProductImages(product);
 
@@ -140,17 +152,17 @@ export const ProductDetailPage: React.FC = () => {
   };
 
   const handleIncrease = () => {
-    if (quantity < product.stock) setQuantity(quantity + 1);
+    if (quantity < currentStock) setQuantity(quantity + 1);
   };
 
   const handleAddToCart = () => {
-    addToCart(product, quantity);
+    addToCart(product, quantity, selectedSize || undefined);
     setAddedMessage(true);
     setTimeout(() => setAddedMessage(false), 3000);
   };
 
   const handleBuyNow = () => {
-    addToCart(product, quantity);
+    addToCart(product, quantity, selectedSize || undefined);
     navigate('/checkout');
   };
 
@@ -185,7 +197,7 @@ export const ProductDetailPage: React.FC = () => {
                 {categoryName}
               </span>
               <span className="text-[11px] sm:text-xs text-gray-400 dark:text-gray-500 font-mono">
-                Mã: <strong>{product.code}</strong>
+                Mã: <strong>{activeSizeObj?.sku || product.code}</strong>
               </span>
             </div>
 
@@ -206,8 +218,8 @@ export const ProductDetailPage: React.FC = () => {
               </span>
               <span className="text-gray-300 dark:text-gray-600">|</span>
               <span>
-                {product.stock > 0 ? (
-                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">Còn {product.stock} SP</span>
+                {currentStock > 0 ? (
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">Còn {currentStock} SP</span>
                 ) : (
                   <span className="text-rose-500 dark:text-rose-400 font-bold">Tạm hết hàng</span>
                 )}
@@ -215,14 +227,14 @@ export const ProductDetailPage: React.FC = () => {
             </div>
 
             {/* Price Box */}
-            <div className="p-3 sm:p-4 rounded-2xl bg-gray-50 dark:bg-slate-700/40 border border-gray-100 dark:border-slate-700 mb-5">
+            <div className="p-3 sm:p-4 rounded-2xl bg-gray-50 dark:bg-slate-700/40 border border-gray-100 dark:border-slate-700 mb-4">
               <div className="flex items-baseline gap-2 sm:gap-3">
                 <span className="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400">
                   {formatCurrency(effectivePrice)}
                 </span>
                 {hasDiscount && (
                   <span className="text-sm sm:text-lg text-gray-400 dark:text-gray-500 line-through">
-                    {formatCurrency(product.price)}
+                    {formatCurrency(currentPrice)}
                   </span>
                 )}
               </div>
@@ -230,6 +242,50 @@ export const ProductDetailPage: React.FC = () => {
                 Giá đã bao gồm VAT và gói bảo hành tiêu chuẩn chính hãng.
               </p>
             </div>
+
+            {/* SIZE / VARIANT SELECTOR */}
+            {product.sizes && product.sizes.length > 0 && (
+              <div className="mb-5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs sm:text-sm font-bold text-gray-800 dark:text-gray-200">
+                    Kích thước / Phiên bản:{' '}
+                    <span className="text-blue-600 dark:text-blue-400 font-extrabold">{selectedSize}</span>
+                  </span>
+                  <span className="text-[11px] text-gray-400 dark:text-gray-500">
+                    {product.sizes.length} tùy chọn
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {product.sizes.map((s) => {
+                    const isSelected = s.name === selectedSize;
+                    const sPrice = s.salePrice && s.salePrice > 0 ? s.salePrice : s.price;
+                    return (
+                      <button
+                        key={s.name}
+                        type="button"
+                        onClick={() => {
+                          setSelectedSize(s.name);
+                          setQuantity(1);
+                        }}
+                        className={`py-2 px-3 sm:px-4 rounded-xl text-xs font-bold border transition-all flex flex-col items-start gap-0.5 ${
+                          isSelected
+                            ? 'border-blue-600 bg-blue-50/80 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 ring-2 ring-blue-500/20 shadow-xs'
+                            : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span>{s.name}</span>
+                          {isSelected && <CheckCircle2 size={13} className="text-blue-600 dark:text-blue-400" />}
+                        </div>
+                        <span className="text-[10px] font-semibold text-rose-600 dark:text-rose-400">
+                          {formatCurrency(sPrice)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Quantity Selector */}
             <div className="flex items-center gap-3 sm:gap-4 mb-6">
@@ -247,7 +303,7 @@ export const ProductDetailPage: React.FC = () => {
                 </span>
                 <button
                   onClick={handleIncrease}
-                  disabled={quantity >= product.stock}
+                  disabled={quantity >= currentStock}
                   className="p-2 sm:p-2.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-600 disabled:opacity-30 transition-colors"
                 >
                   <Plus size={15} />

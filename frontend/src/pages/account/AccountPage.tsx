@@ -111,7 +111,7 @@ export const AccountPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-6 sm:py-10 transition-colors">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        <h1 className="text-xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight mb-4 sm:mb-8">
+        <h1 className="hidden sm:block text-xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight mb-4 sm:mb-8">
           TÀI KHOẢN CỦA TÔI
         </h1>
 
@@ -119,7 +119,7 @@ export const AccountPage: React.FC = () => {
         <div className="lg:hidden flex gap-2 overflow-x-auto pb-3 mb-4 no-scrollbar">
           <button
             onClick={() => handleTabChange('profile')}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
               currentTab === 'profile'
                 ? 'bg-blue-600 text-white shadow-sm'
                 : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-slate-700'
@@ -130,7 +130,7 @@ export const AccountPage: React.FC = () => {
           </button>
           <button
             onClick={() => handleTabChange('orders')}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
               currentTab === 'orders'
                 ? 'bg-blue-600 text-white shadow-sm'
                 : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-slate-700'
@@ -138,16 +138,6 @@ export const AccountPage: React.FC = () => {
           >
             <Package size={14} />
             <span>Đơn hàng của tôi</span>
-          </button>
-          <button
-            onClick={() => {
-              logout();
-              navigate('/');
-            }}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50 ml-auto"
-          >
-            <LogOut size={14} />
-            <span>Đăng xuất</span>
           </button>
         </div>
 
@@ -364,12 +354,7 @@ export const AccountPage: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* 2. Stepper Timeline Tiến trình giao hàng */}
-                          <div className="py-1">
-                            <OrderStatusTimeline status={ord.status} />
-                          </div>
-
-                          {/* 3. DANH SÁCH SẢN PHẨM TRỰC TIẾP TRONG ĐƠN HÀNG */}
+                          {/* DANH SÁCH SẢN PHẨM TRỰC TIẾP TRONG ĐƠN HÀNG */}
                           <div className="bg-gray-50/80 dark:bg-slate-900/60 rounded-2xl p-3 sm:p-4 border border-gray-100 dark:border-slate-700 divide-y divide-gray-100 dark:divide-slate-700/70 space-y-2.5">
                             {ord.items.map((item, idx) => {
                               const productId = typeof item.product === 'object' ? (item.product as any)?._id : item.product;
@@ -400,6 +385,11 @@ export const AccountPage: React.FC = () => {
                                     )}
 
                                     <div className="flex items-center gap-2 mt-1 text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
+                                      {item.size && (
+                                        <span className="px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded font-medium">
+                                          Size: {item.size}
+                                        </span>
+                                      )}
                                       <span className="px-1.5 py-0.5 bg-gray-200/70 dark:bg-slate-800 border border-transparent dark:border-slate-700 rounded text-gray-700 dark:text-gray-300 font-semibold">
                                         x{item.quantity}
                                       </span>
@@ -511,8 +501,13 @@ export const AccountPage: React.FC = () => {
                         />
                         <div className="min-w-0">
                           <p className="font-bold text-gray-900 dark:text-white truncate">{item.name}</p>
-                          <p className="text-gray-400 dark:text-gray-500 text-[11px]">
-                            {formatCurrency(item.price)} x {item.quantity}
+                          <p className="text-gray-400 dark:text-gray-500 text-[11px] flex items-center gap-1.5 mt-0.5">
+                            {item.size && (
+                              <span className="px-1 py-0.2 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded font-medium text-[10px]">
+                                Size: {item.size}
+                              </span>
+                            )}
+                            <span>{formatCurrency(item.price)} x {item.quantity}</span>
                           </p>
                         </div>
                       </div>

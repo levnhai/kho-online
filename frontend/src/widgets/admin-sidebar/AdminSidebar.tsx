@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Package,
+  Truck,
   FolderTree,
   ShoppingBag,
   Users,
@@ -25,6 +26,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
   const navItems = [
     { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
     { to: '/admin/products', label: 'Sản phẩm', icon: Package },
+    { to: '/admin/imports', label: 'Nhập hàng', icon: Truck },
     { to: '/admin/categories', label: 'Thể loại', icon: FolderTree },
     { to: '/admin/orders', label: 'Đơn hàng', icon: ShoppingBag },
     { to: '/admin/customers', label: 'Khách hàng', icon: Users },

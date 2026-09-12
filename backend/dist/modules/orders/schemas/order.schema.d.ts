@@ -17,6 +17,7 @@ export declare enum PaymentMethod {
 export declare class OrderItem {
     product: string;
     name: string;
+    size: string;
     price: number;
     quantity: number;
     image: string;

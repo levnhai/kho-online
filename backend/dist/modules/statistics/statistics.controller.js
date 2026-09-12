@@ -23,8 +23,8 @@ let StatisticsController = class StatisticsController {
     constructor(statisticsService) {
         this.statisticsService = statisticsService;
     }
-    async getDashboard() {
-        return this.statisticsService.getDashboard();
+    async getDashboard(range) {
+        return this.statisticsService.getDashboard(range || '7days');
     }
     async getSalesReport(range) {
         return this.statisticsService.getSalesReport(range || 'month');
@@ -33,8 +33,9 @@ let StatisticsController = class StatisticsController {
 exports.StatisticsController = StatisticsController;
 __decorate([
     (0, common_1.Get)('dashboard'),
+    __param(0, (0, common_1.Query)('range')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], StatisticsController.prototype, "getDashboard", null);
 __decorate([

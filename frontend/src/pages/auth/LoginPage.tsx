@@ -14,8 +14,9 @@ export const LoginPage: React.FC = () => {
   const location = useLocation();
 
   // Redirect target after login (e.g. /checkout)
-  const from = (location.state as any)?.from?.pathname || '/';
-  const notice = (location.state as any)?.notice || '';
+  const from = (location.state as any)?.from?.pathname || '/admin';
+  const queryNotice = new URLSearchParams(location.search).get('notice');
+  const notice = (location.state as any)?.notice || queryNotice || '';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -32,18 +33,17 @@ export const LoginPage: React.FC = () => {
     setLoading(true);
     setError('');
     try {
-      await login({ email, password });
-      navigate(from, { replace: true });
+      const res = await login({ email, password });
+      if (res?.user?.role === 'admin') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate(from === '/admin' ? '/' : from, { replace: true });
+      }
     } catch (err: any) {
       setError(err.message || 'Đăng nhập không thành công');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleQuickLogin = (emailVal: string, passVal: string) => {
-    setEmail(emailVal);
-    setPassword(passVal);
   };
 
   return (
@@ -134,32 +134,11 @@ export const LoginPage: React.FC = () => {
             size="lg"
             loading={loading}
             icon={<LogIn size={18} />}
-            className="w-full font-bold shadow-md shadow-blue-600/25"
+            className="w-full font-bold shadow-md shadow-blue-600/25 cursor-pointer"
           >
             Đăng nhập
           </Button>
         </form>
-
-        {/* Quick test credentials */}
-        <div className="p-3 bg-gray-50 dark:bg-slate-900/60 rounded-xl border border-gray-200/60 dark:border-slate-700 text-xs text-gray-600 dark:text-gray-300 space-y-1.5">
-          <p className="font-bold text-gray-800 dark:text-gray-200">Tài khoản thử nghiệm có sẵn:</p>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => handleQuickLogin('khachhang@gmail.com', '123456')}
-              className="px-2.5 py-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg hover:border-blue-500 font-medium text-blue-600 dark:text-blue-400 shadow-2xs transition-colors"
-            >
-              Khách hàng
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickLogin('admin@kho.vn', 'Admin@123456')}
-              className="px-2.5 py-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg hover:border-blue-500 font-medium text-indigo-600 dark:text-indigo-400 shadow-2xs transition-colors"
-            >
-              Quản trị Admin
-            </button>
-          </div>
-        </div>
 
         {/* Switch to Register */}
         <div className="text-center text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-100 dark:border-slate-700">

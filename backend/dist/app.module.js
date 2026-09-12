@@ -16,6 +16,7 @@ const categories_module_1 = require("./modules/categories/categories.module");
 const products_module_1 = require("./modules/products/products.module");
 const orders_module_1 = require("./modules/orders/orders.module");
 const statistics_module_1 = require("./modules/statistics/statistics.module");
+const imports_module_1 = require("./modules/imports/imports.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -23,13 +24,20 @@ exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
             config_1.ConfigModule.forRoot({ isGlobal: true }),
-            mongoose_1.MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://localhost:27017/kho_online'),
+            mongoose_1.MongooseModule.forRootAsync({
+                imports: [config_1.ConfigModule],
+                useFactory: async (configService) => ({
+                    uri: configService.get('MONGODB_URI') || 'mongodb://localhost:27017/kho_online',
+                }),
+                inject: [config_1.ConfigService],
+            }),
             auth_module_1.AuthModule,
             users_module_1.UsersModule,
             categories_module_1.CategoriesModule,
             products_module_1.ProductsModule,
             orders_module_1.OrdersModule,
             statistics_module_1.StatisticsModule,
+            imports_module_1.ImportsModule,
         ],
     })
 ], AppModule);

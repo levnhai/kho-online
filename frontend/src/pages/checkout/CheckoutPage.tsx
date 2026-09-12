@@ -11,7 +11,7 @@ import {
   ShoppingBag,
 } from 'lucide-react';
 import { useAuth } from '@/app/providers/AuthContext';
-import { useCart } from '@/entities/cart/CartContext';
+import { useCart, getCartItemPrice } from '@/entities/cart/CartContext';
 import { orderApi } from '@/entities/order/api/orderApi';
 import { formatCurrency } from '@/shared/lib/formatters';
 import { Button } from '@/shared/ui/Button';
@@ -165,9 +165,11 @@ export const CheckoutPage: React.FC = () => {
         },
         items: items.map((item) => ({
           product: item.product._id,
-          name: item.product.name,
+          name: item.selectedSize ? `${item.product.name} (${item.selectedSize})` : item.product.name,
+          size: item.selectedSize || '',
           quantity: item.quantity,
-          price: item.product.salePrice && item.product.salePrice > 0 ? item.product.salePrice : item.product.price,
+          price: getCartItemPrice(item),
+          image: item.product.images?.[0] || '',
         })),
         paymentMethod,
       };
@@ -343,11 +345,10 @@ export const CheckoutPage: React.FC = () => {
             {/* Items list */}
             <div className="divide-y divide-gray-100 dark:divide-slate-700 max-h-80 overflow-y-auto pr-2 space-y-2">
               {items.map((item) => {
-                const price = item.product.salePrice && item.product.salePrice > 0
-                  ? item.product.salePrice
-                  : item.product.price;
+                const price = getCartItemPrice(item);
+                const itemKey = `${item.product._id}-${item.selectedSize || 'default'}`;
                 return (
-                  <div key={item.product._id} className="pt-2 flex items-center gap-3">
+                  <div key={itemKey} className="pt-2 flex items-center gap-3">
                     <img
                       src={item.product.images?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200&q=80'}
                       alt={item.product.name}
@@ -357,7 +358,12 @@ export const CheckoutPage: React.FC = () => {
                       <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
                         {item.product.name}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {item.selectedSize && (
+                        <span className="inline-block px-1.5 py-0.2 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold">
+                          Size: {item.selectedSize}
+                        </span>
+                      )}
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                         x{item.quantity} · {formatCurrency(price)}
                       </p>
                     </div>

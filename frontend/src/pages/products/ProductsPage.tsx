@@ -30,6 +30,18 @@ export const ProductsPage: React.FC = () => {
     categoryApi.getAll().then(setCategories).catch(console.error);
   }, []);
 
+  // Khóa cuộn trang khi mở drawer bộ lọc trên mobile
+  useEffect(() => {
+    if (mobileFilterOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileFilterOpen]);
+
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
@@ -106,12 +118,12 @@ export const ProductsPage: React.FC = () => {
           {/* Mobile Filter Button */}
           <button
             onClick={() => setMobileFilterOpen(true)}
-            className="lg:hidden inline-flex items-center gap-1.5 px-3.5 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-bold text-gray-800 dark:text-gray-200 shadow-xs hover:border-blue-500 active:scale-95 transition-all"
+            className="lg:hidden inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200/80 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-bold text-gray-800 dark:text-gray-200 shadow-xs hover:border-blue-500 active:scale-95 transition-all cursor-pointer"
           >
-            <Filter size={15} className="text-blue-600 dark:text-blue-400" />
-            <span>Bộ lọc</span>
-            {(selectedCategory || priceRange || sortOption !== 'newest') && (
-              <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400" />
+            <Filter size={16} className="text-blue-600 dark:text-blue-400" />
+            <span>Bộ lọc tìm kiếm</span>
+            {(selectedCategory || priceRange || sortOption !== 'newest' || searchKeyword) && (
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-600 dark:bg-blue-400 ring-2 ring-white dark:ring-slate-800 animate-pulse" />
             )}
           </button>
         </div>
@@ -151,7 +163,7 @@ export const ProductsPage: React.FC = () => {
                 </p>
                 <button
                   onClick={handleResetFilters}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all cursor-pointer"
                 >
                   Xóa tất cả bộ lọc
                 </button>
@@ -175,26 +187,26 @@ export const ProductsPage: React.FC = () => {
           <div className="fixed inset-0 z-50 lg:hidden flex">
             {/* Backdrop */}
             <div
-              className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
               onClick={() => setMobileFilterOpen(false)}
             />
 
             {/* Sliding Drawer */}
-            <div className="relative ml-auto w-4/5 max-w-xs bg-white dark:bg-slate-800 h-full shadow-2xl flex flex-col z-10 animate-fade-in transition-colors">
-              <div className="p-4 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
-                <div className="flex items-center gap-2 font-bold text-gray-900 dark:text-white text-sm">
-                  <Filter size={16} className="text-blue-600 dark:text-blue-400" />
+            <div className="relative ml-auto w-[88vw] max-w-sm sm:max-w-md bg-white dark:bg-slate-800 h-full shadow-2xl flex flex-col z-10 animate-fade-in transition-colors">
+              <div className="p-4 sm:p-5 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
+                <div className="flex items-center gap-2 font-black text-gray-900 dark:text-white text-base">
+                  <Filter size={18} className="text-blue-600 dark:text-blue-400" />
                   <span>BỘ LỌC TÌM KIẾM</span>
                 </div>
                 <button
                   onClick={() => setMobileFilterOpen(false)}
-                  className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg"
+                  className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl cursor-pointer transition-colors"
                 >
-                  <X size={18} />
+                  <X size={20} />
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4">
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4">
                 <FilterSidebar
                   categories={categories}
                   selectedCategory={selectedCategory}
@@ -217,12 +229,20 @@ export const ProductsPage: React.FC = () => {
                 />
               </div>
 
-              <div className="p-4 border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50">
+              <div className="p-4 border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/60 flex items-center gap-2">
                 <button
-                  onClick={() => setMobileFilterOpen(false)}
-                  className="w-full py-2.5 bg-blue-600 text-white font-bold text-xs rounded-xl shadow-sm"
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="px-3.5 py-3 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 font-bold text-xs sm:text-sm rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-all"
                 >
-                  Xem kết quả ({total} sản phẩm)
+                  Đặt lại
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMobileFilterOpen(false)}
+                  className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs sm:text-sm rounded-xl shadow-md shadow-blue-600/25 cursor-pointer active:scale-98 transition-all"
+                >
+                  Xem kết quả ({total} SP)
                 </button>
               </div>
             </div>

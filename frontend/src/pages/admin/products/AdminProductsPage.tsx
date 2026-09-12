@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Plus,
   Search,
@@ -9,15 +9,16 @@ import {
   AlertCircle,
   CheckCircle2,
   Image as ImageIcon,
-} from 'lucide-react';
-import { productApi } from '@/entities/product/api/productApi';
-import { categoryApi } from '@/entities/category/api/categoryApi';
-import { Product, Category } from '@/shared/types';
-import { formatCurrency } from '@/shared/lib/formatters';
-import { Button } from '@/shared/ui/Button';
-import { Input } from '@/shared/ui/Input';
-import { Modal } from '@/shared/ui/Modal';
-import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
+  Layers,
+} from "lucide-react";
+import { productApi } from "@/entities/product/api/productApi";
+import { categoryApi } from "@/entities/category/api/categoryApi";
+import { Product, Category, ProductSize } from "@/shared/types";
+import { formatCurrency } from "@/shared/lib/formatters";
+import { Button } from "@/shared/ui/Button";
+import { Input } from "@/shared/ui/Input";
+import { Modal } from "@/shared/ui/Modal";
+import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
 
 export const AdminProductsPage: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -26,29 +27,36 @@ export const AdminProductsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   // Filter & Search
-  const [search, setSearch] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [search, setSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [modalMode, setModalMode] = useState<"create" | "edit">("create");
   const [currentId, setCurrentId] = useState<string | null>(null);
 
   // Form Fields
-  const [name, setName] = useState('');
-  const [code, setCode] = useState('');
-  const [categoryId, setCategoryId] = useState('');
-  const [price, setPrice] = useState<number | ''>('');
-  const [salePrice, setSalePrice] = useState<number | ''>('');
-  const [stock, setStock] = useState<number | ''>('');
+  const [name, setName] = useState("");
+  const [code, setCode] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [price, setPrice] = useState<number | "">("");
+  const [salePrice, setSalePrice] = useState<number | "">("");
+  const [stock, setStock] = useState<number | "">("");
   const [imagesList, setImagesList] = useState<string[]>([]);
-  const [newImageUrl, setNewImageUrl] = useState('');
-  const [description, setDescription] = useState('');
-  const [status, setStatus] = useState('active');
+  const [newImageUrl, setNewImageUrl] = useState("");
+  const [description, setDescription] = useState("");
+  const [status, setStatus] = useState("active");
+
+  // Form Sizes / Variants
+  const [sizesList, setSizesList] = useState<ProductSize[]>([]);
+  const [newSizeName, setNewSizeName] = useState("");
+  const [newSizePrice, setNewSizePrice] = useState<number | "">("");
+  const [newSizeSalePrice, setNewSizeSalePrice] = useState<number | "">("");
+  const [newSizeStock, setNewSizeStock] = useState<number | "">("");
 
   const [formLoading, setFormLoading] = useState(false);
-  const [formError, setFormError] = useState('');
-  const [actionSuccess, setActionSuccess] = useState('');
+  const [formError, setFormError] = useState("");
+  const [actionSuccess, setActionSuccess] = useState("");
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -62,7 +70,7 @@ export const AdminProductsPage: React.FC = () => {
       setProducts(res.items);
       setTotal(res.total);
     } catch (err) {
-      console.error('Fetch admin products error:', err);
+      console.error("Fetch admin products error:", err);
     } finally {
       setLoading(false);
     }
@@ -74,36 +82,46 @@ export const AdminProductsPage: React.FC = () => {
   }, [fetchProducts]);
 
   const openCreateModal = () => {
-    setModalMode('create');
+    setModalMode("create");
     setCurrentId(null);
-    setName('');
+    setName("");
     setCode(`SP${Math.floor(1000 + Math.random() * 9000)}`);
-    setCategoryId(categories[0]?._id || '');
-    setPrice('');
-    setSalePrice('');
+    setCategoryId(categories[0]?._id || "");
+    setPrice("");
+    setSalePrice("");
     setStock(10);
+    setSizesList([]);
+    setNewSizeName("");
+    setNewSizePrice("");
+    setNewSizeSalePrice("");
+    setNewSizeStock("");
     setImagesList([]);
-    setNewImageUrl('');
-    setDescription('');
-    setStatus('active');
-    setFormError('');
+    setNewImageUrl("");
+    setDescription("");
+    setStatus("active");
+    setFormError("");
     setIsModalOpen(true);
   };
 
   const openEditModal = (p: Product) => {
-    setModalMode('edit');
+    setModalMode("edit");
     setCurrentId(p._id);
     setName(p.name);
     setCode(p.code);
-    setCategoryId(typeof p.category === 'object' ? p.category._id : p.category);
+    setCategoryId(typeof p.category === "object" ? p.category._id : p.category);
     setPrice(p.price);
-    setSalePrice(p.salePrice || '');
+    setSalePrice(p.salePrice || "");
     setStock(p.stock);
+    setSizesList(Array.isArray(p.sizes) ? p.sizes : []);
+    setNewSizeName("");
+    setNewSizePrice("");
+    setNewSizeSalePrice("");
+    setNewSizeStock("");
     setImagesList(Array.isArray(p.images) ? p.images.filter(Boolean) : []);
-    setNewImageUrl('');
-    setDescription(p.description || '');
-    setStatus(p.status || 'active');
-    setFormError('');
+    setNewImageUrl("");
+    setDescription(p.description || "");
+    setStatus(p.status || "active");
+    setFormError("");
     setIsModalOpen(true);
   };
 
@@ -113,7 +131,7 @@ export const AdminProductsPage: React.FC = () => {
     if (!imagesList.includes(trimmed)) {
       setImagesList([...imagesList, trimmed]);
     }
-    setNewImageUrl('');
+    setNewImageUrl("");
   };
 
   const handleRemoveImage = (indexToRemove: number) => {
@@ -126,15 +144,39 @@ export const AdminProductsPage: React.FC = () => {
     setImagesList(updated);
   };
 
+  const handleAddSize = () => {
+    if (!newSizeName.trim() || newSizePrice === "") {
+      alert("Vui lòng nhập ít nhất Tên size và Giá gốc cho size");
+      return;
+    }
+    const newSize: ProductSize = {
+      name: newSizeName.trim(),
+      price: Number(newSizePrice),
+      salePrice: newSizeSalePrice !== "" ? Number(newSizeSalePrice) : 0,
+      stock: newSizeStock !== "" ? Number(newSizeStock) : 0,
+    };
+    setSizesList([...sizesList, newSize]);
+    setNewSizeName("");
+    setNewSizePrice("");
+    setNewSizeSalePrice("");
+    setNewSizeStock("");
+  };
+
+  const handleRemoveSize = (indexToRemove: number) => {
+    setSizesList(sizesList.filter((_, idx) => idx !== indexToRemove));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !code.trim() || !categoryId || price === '') {
-      setFormError('Vui lòng nhập đầy đủ các trường bắt buộc (Tên, Mã, Thể loại, Giá)');
+    if (!name.trim() || !code.trim() || !categoryId || price === "") {
+      setFormError(
+        "Vui lòng nhập đầy đủ các trường bắt buộc (Tên, Mã, Thể loại, Giá)",
+      );
       return;
     }
 
     setFormLoading(true);
-    setFormError('');
+    setFormError("");
 
     try {
       // Gom tất cả ảnh hợp lệ
@@ -148,26 +190,32 @@ export const AdminProductsPage: React.FC = () => {
         code: code.toUpperCase(),
         category: categoryId,
         price: Number(price),
-        salePrice: salePrice !== '' ? Number(salePrice) : 0,
-        stock: stock !== '' ? Number(stock) : 0,
-        images: finalImages.length > 0 ? finalImages : ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&q=80'],
+        salePrice: salePrice !== "" ? Number(salePrice) : 0,
+        stock: stock !== "" ? Number(stock) : 0,
+        sizes: sizesList,
+        images:
+          finalImages.length > 0
+            ? finalImages
+            : [
+                "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&q=80",
+              ],
         description,
         status,
       };
 
-      if (modalMode === 'create') {
+      if (modalMode === "create") {
         await productApi.create(payload);
-        setActionSuccess('Thêm sản phẩm mới thành công!');
+        setActionSuccess("Thêm sản phẩm mới thành công!");
       } else if (currentId) {
         await productApi.update(currentId, payload);
-        setActionSuccess('Cập nhật sản phẩm thành công!');
+        setActionSuccess("Cập nhật sản phẩm thành công!");
       }
 
       setIsModalOpen(false);
       fetchProducts();
-      setTimeout(() => setActionSuccess(''), 3000);
+      setTimeout(() => setActionSuccess(""), 3000);
     } catch (err: any) {
-      setFormError(err.message || 'Thao tác thất bại');
+      setFormError(err.message || "Thao tác thất bại");
     } finally {
       setFormLoading(false);
     }
@@ -179,43 +227,43 @@ export const AdminProductsPage: React.FC = () => {
     }
     try {
       await productApi.delete(p._id);
-      setActionSuccess('Đã xóa sản phẩm!');
+      setActionSuccess("Đã xóa sản phẩm!");
       fetchProducts();
-      setTimeout(() => setActionSuccess(''), 3000);
+      setTimeout(() => setActionSuccess(""), 3000);
     } catch (err: any) {
-      alert(err.message || 'Xóa sản phẩm thất bại');
+      alert(err.message || "Xóa sản phẩm thất bại");
     }
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 text-gray-900 dark:text-white">
+    <div className="space-y-4 text-gray-900 dark:text-white">
       {/* Alert message */}
       {actionSuccess && (
-        <div className="p-3 sm:p-4 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 rounded-2xl border border-emerald-200 dark:border-emerald-800 text-xs font-semibold flex items-center gap-2 animate-fade-in">
-          <CheckCircle2 size={16} />
+        <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 rounded-xl border border-emerald-200 dark:border-emerald-800 text-xs font-semibold flex items-center gap-2 animate-fade-in">
+          <CheckCircle2 size={15} />
           <span>{actionSuccess}</span>
         </div>
       )}
 
       {/* Action Header & Search Controls */}
-      <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 transition-colors">
+      <div className="bg-white dark:bg-slate-800 p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-gray-100 dark:border-slate-700 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 transition-colors">
         {/* Search & Category Filter */}
-        <div className="flex flex-col sm:flex-row flex-1 items-stretch sm:items-center gap-2 sm:gap-3">
+        <div className="flex flex-col sm:flex-row flex-1 items-stretch sm:items-center gap-2 sm:gap-2.5">
           <div className="relative flex-1">
             <input
               type="text"
               placeholder="Tìm theo tên hoặc mã SP..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-8 pr-3 py-2 text-xs border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white rounded-xl focus:border-blue-500 focus:outline-none placeholder-gray-400 dark:placeholder-slate-400 shadow-2xs"
+              className="w-full pl-7 pr-3 py-1.5 text-xs border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white rounded-lg focus:border-blue-500 focus:outline-none placeholder-gray-400 dark:placeholder-slate-400 shadow-2xs"
             />
-            <Search size={14} className="absolute left-2.5 top-2.5 text-gray-400" />
+            <Search size={13} className="absolute left-2 top-2 text-gray-400" />
           </div>
 
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="py-2 px-3 text-xs border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none shadow-2xs"
+            className="py-1.5 px-2.5 text-xs border border-gray-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none shadow-2xs"
           >
             <option value="">Tất cả thể loại</option>
             {categories.map((cat) => (
@@ -229,106 +277,138 @@ export const AdminProductsPage: React.FC = () => {
         {/* Add Product Button */}
         <Button
           variant="primary"
-          size="md"
-          icon={<Plus size={15} />}
+          size="sm"
+          icon={<Plus size={13} />}
           onClick={openCreateModal}
-          className="font-bold shadow-md shadow-blue-600/25 whitespace-nowrap text-xs py-2"
+          className="font-bold shadow-xs whitespace-nowrap text-xs py-1.5 px-3"
         >
-          + THÊM SẢN PHẨM
+          THÊM SẢN PHẨM
         </Button>
       </div>
 
       {/* Table Container */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden transition-colors">
+      <div className="bg-white dark:bg-slate-800 rounded-xl sm:rounded-2xl border border-gray-100 dark:border-slate-700 shadow-xs overflow-hidden transition-colors">
         {loading ? (
           <LoadingSpinner text="Đang tải danh sách sản phẩm..." />
         ) : products.length === 0 ? (
-          <div className="p-8 text-center text-gray-400 dark:text-slate-400 text-xs sm:text-sm">
+          <div className="p-8 text-center text-gray-400 dark:text-slate-400 text-xs">
             Không tìm thấy sản phẩm nào.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs min-w-[650px]">
               <thead>
-                <tr className="bg-slate-100/80 dark:bg-slate-900/90 text-gray-600 dark:text-slate-300 border-b border-gray-200 dark:border-slate-700/80 font-bold uppercase tracking-wider">
-                  <th className="py-3 px-4">Sản phẩm</th>
-                  <th className="py-3 px-3">Mã SP</th>
-                  <th className="py-3 px-3">Thể loại</th>
-                  <th className="py-3 px-3">Giá bán</th>
-                  <th className="py-3 px-3 text-center">Tồn kho</th>
-                  <th className="py-3 px-3 text-center">Đã bán</th>
-                  <th className="py-3 px-3 text-center">Trạng thái</th>
-                  <th className="py-3 px-4 text-right">Thao tác</th>
+                <tr className="bg-slate-100/70 dark:bg-slate-900/80 text-gray-600 dark:text-slate-300 border-b border-gray-200 dark:border-slate-700 font-bold uppercase tracking-wider text-[10px]">
+                  <th className="py-2.5 px-3">Sản phẩm</th>
+                  <th className="py-2.5 px-3">Mã SP</th>
+                  <th className="py-2.5 px-3">Thể loại</th>
+                  <th className="py-2.5 px-3">Giá bán</th>
+                  <th className="py-2.5 px-3 text-center">Tồn kho</th>
+                  <th className="py-2.5 px-3 text-center">Đã bán</th>
+                  <th className="py-2.5 px-3 text-center">Trạng thái</th>
+                  <th className="py-2.5 px-3 text-right">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                 {products.map((p) => {
-                  const catName = typeof p.category === 'object' ? p.category?.name : 'Chưa phân loại';
+                  const catName =
+                    typeof p.category === "object"
+                      ? p.category?.name
+                      : "Chưa phân loại";
+                  const hasSizes = Array.isArray(p.sizes) && p.sizes.length > 0;
+
                   return (
-                    <tr key={p._id} className="hover:bg-gray-50/60 dark:hover:bg-slate-700/40 transition-colors">
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2.5">
+                    <tr
+                      key={p._id}
+                      className="hover:bg-gray-50/50 dark:hover:bg-slate-700/30 transition-colors"
+                    >
+                      <td className="py-2.5 px-3">
+                        <div className="flex items-center gap-2">
                           <div className="relative flex-shrink-0">
                             <img
-                              src={p.images?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100&q=80'}
+                              src={
+                                p.images?.[0] ||
+                                "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100&q=80"
+                              }
                               alt={p.name}
-                              className="w-9 h-9 rounded-lg object-cover border border-gray-100 dark:border-slate-700"
+                              className="w-8 h-8 rounded-lg object-cover border border-gray-100 dark:border-slate-700"
                             />
-                            {p.images && p.images.length > 1 && (
-                              <span className="absolute -bottom-1 -right-1 bg-blue-600 text-white text-[9px] font-bold px-1 rounded-full shadow-xs" title={`${p.images.length} hình ảnh`}>
-                                {p.images.length}
+                            {hasSizes && (
+                              <span
+                                className="absolute -top-1 -right-1 bg-indigo-600 text-white text-[8px] font-bold px-1 rounded-full shadow-2xs"
+                                title={`${p.sizes?.length} Size`}
+                              >
+                                {p.sizes?.length}S
                               </span>
                             )}
                           </div>
-                          <span className="font-bold text-gray-900 dark:text-white max-w-[150px] sm:max-w-xs truncate" title={p.name}>
-                            {p.name}
-                          </span>
+                          <div className="min-w-0">
+                            <span
+                              className="font-bold text-gray-900 dark:text-white max-w-[150px] sm:max-w-xs truncate block text-xs"
+                              title={p.name}
+                            >
+                              {p.name}
+                            </span>
+                            {hasSizes && (
+                              <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold">
+                                {p.sizes?.map((s) => s.name).join(", ")}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </td>
-                      <td className="py-3 px-3 font-mono font-bold text-gray-700 dark:text-gray-300">{p.code}</td>
-                      <td className="py-3 px-3 text-gray-600 dark:text-slate-300">{catName}</td>
-                      <td className="py-3 px-3 font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap">
-                        {formatCurrency(p.salePrice && p.salePrice > 0 ? p.salePrice : p.price)}
+                      <td className="py-2.5 px-3 font-mono font-bold text-gray-700 dark:text-gray-300 text-xs">
+                        {p.code}
                       </td>
-                      <td className="py-3 px-3 text-center">
+                      <td className="py-2.5 px-3 text-gray-600 dark:text-slate-300 text-xs">
+                        {catName}
+                      </td>
+                      <td className="py-2.5 px-3 font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap text-xs">
+                        {formatCurrency(
+                          p.salePrice && p.salePrice > 0
+                            ? p.salePrice
+                            : p.price,
+                        )}
+                      </td>
+                      <td className="py-2.5 px-3 text-center">
                         <span
-                          className={`font-bold px-2 py-0.5 rounded text-[11px] ${
+                          className={`font-bold px-1.5 py-0.5 rounded text-[10px] ${
                             p.stock <= 5
-                              ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300'
-                              : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300'
+                              ? "bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300"
+                              : "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300"
                           }`}
                         >
                           {p.stock}
                         </span>
                       </td>
-                      <td className="py-3 px-3 text-center font-bold text-gray-700 dark:text-gray-300">
+                      <td className="py-2.5 px-3 text-center font-bold text-gray-700 dark:text-gray-300 text-xs">
                         {p.soldCount || 0}
                       </td>
-                      <td className="py-3 px-3 text-center whitespace-nowrap">
+                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
                         <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                            p.status === 'active'
-                              ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                              : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 border border-gray-200 dark:border-slate-600'
+                          className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                            p.status === "active"
+                              ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                              : "bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 border border-gray-200 dark:border-slate-600"
                           }`}
                         >
-                          {p.status === 'active' ? 'Đang bán' : 'Ẩn'}
+                          {p.status === "active" ? "Đang bán" : "Ẩn"}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-right space-x-1 whitespace-nowrap">
+                      <td className="py-2.5 px-3 text-right space-x-1 whitespace-nowrap">
                         <button
                           onClick={() => openEditModal(p)}
                           className="p-1 text-gray-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 rounded"
                           title="Sửa"
                         >
-                          <Edit2 size={15} />
+                          <Edit2 size={13} />
                         </button>
                         <button
                           onClick={() => handleDelete(p)}
                           className="p-1 text-gray-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 rounded"
                           title="Xóa"
                         >
-                          <Trash2 size={15} />
+                          <Trash2 size={13} />
                         </button>
                       </td>
                     </tr>
@@ -344,10 +424,15 @@ export const AdminProductsPage: React.FC = () => {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={modalMode === 'create' ? 'Thêm Sản Phẩm Mới' : 'Cập Nhật Sản Phẩm'}
+        title={
+          modalMode === "create" ? "Thêm Sản Phẩm Mới" : "Cập Nhật Sản Phẩm"
+        }
         maxWidth="xl"
       >
-        <form onSubmit={handleSubmit} className="space-y-3 text-xs max-h-[75vh] overflow-y-auto pr-1">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-3 text-xs max-h-[75vh] overflow-y-auto pr-1"
+        >
           {formError && (
             <div className="p-2.5 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-700 dark:text-rose-300 text-[11px] font-semibold flex items-center gap-1.5">
               <AlertCircle size={14} />
@@ -408,28 +493,155 @@ export const AdminProductsPage: React.FC = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Input
-              label="Giá gốc (VNĐ) *"
+              label="Giá mặc định (VNĐ) *"
               type="number"
               value={price}
-              onChange={(e) => setPrice(e.target.value === '' ? '' : Number(e.target.value))}
+              onChange={(e) =>
+                setPrice(e.target.value === "" ? "" : Number(e.target.value))
+              }
               placeholder="34990000"
               required
             />
             <Input
-              label="Giá khuyến mãi (VNĐ)"
+              label="Giá KM mặc định (VNĐ)"
               type="number"
               value={salePrice}
-              onChange={(e) => setSalePrice(e.target.value === '' ? '' : Number(e.target.value))}
+              onChange={(e) =>
+                setSalePrice(
+                  e.target.value === "" ? "" : Number(e.target.value),
+                )
+              }
               placeholder="32490000"
             />
             <Input
-              label="Số lượng tồn kho *"
+              label="Tổng tồn kho *"
               type="number"
               value={stock}
-              onChange={(e) => setStock(e.target.value === '' ? '' : Number(e.target.value))}
+              onChange={(e) =>
+                setStock(e.target.value === "" ? "" : Number(e.target.value))
+              }
               placeholder="50"
               required
             />
+          </div>
+
+          {/* QUẢN LÝ DANH SÁCH SIZE / PHIÊN BẢN (SIZES / VARIANTS) */}
+          <div className="p-3 bg-indigo-50/50 dark:bg-indigo-950/20 rounded-xl border border-indigo-100 dark:border-indigo-900/40 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5">
+                <Layers
+                  size={14}
+                  className="text-indigo-600 dark:text-indigo-400"
+                />
+                <span>
+                  Các kích thước / Phiên bản & Mức giá riêng ({sizesList.length}{" "}
+                  size)
+                </span>
+              </label>
+              <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                (Ví dụ: 128GB, 256GB, 512GB hoặc Size S, M, L)
+              </span>
+            </div>
+
+            {/* Danh sách các size đã thêm */}
+            {sizesList.length > 0 && (
+              <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                {sizesList.map((s, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between gap-2 p-2 bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 text-xs"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-extrabold text-blue-600 dark:text-blue-400">
+                        {s.name}
+                      </span>
+                      <span className="text-gray-300 dark:text-slate-600">
+                        |
+                      </span>
+                      <span className="font-bold text-rose-600 dark:text-rose-400">
+                        {formatCurrency(
+                          s.salePrice && s.salePrice > 0
+                            ? s.salePrice
+                            : s.price,
+                        )}
+                      </span>
+                      {s.salePrice && s.salePrice > 0 && (
+                        <span className="text-[10px] text-gray-400 line-through">
+                          {formatCurrency(s.price)}
+                        </span>
+                      )}
+                      {s.stock !== undefined && (
+                        <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                          (Kho: {s.stock})
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSize(idx)}
+                      className="p-1 text-gray-400 hover:text-rose-500 transition-colors"
+                      title="Xóa size này"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Thêm size mới */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 pt-1">
+              <input
+                type="text"
+                value={newSizeName}
+                onChange={(e) => setNewSizeName(e.target.value)}
+                placeholder="Tên size (VD: 256GB, M)"
+                className="text-xs px-2 py-1.5 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+              />
+              <input
+                type="number"
+                value={newSizePrice}
+                onChange={(e) =>
+                  setNewSizePrice(
+                    e.target.value === "" ? "" : Number(e.target.value),
+                  )
+                }
+                placeholder="Giá gốc"
+                className="text-xs px-2 py-1.5 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+              />
+              <input
+                type="number"
+                value={newSizeSalePrice}
+                onChange={(e) =>
+                  setNewSizeSalePrice(
+                    e.target.value === "" ? "" : Number(e.target.value),
+                  )
+                }
+                placeholder="Giá KM"
+                className="text-xs px-2 py-1.5 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+              />
+              <input
+                type="number"
+                value={newSizeStock}
+                onChange={(e) =>
+                  setNewSizeStock(
+                    e.target.value === "" ? "" : Number(e.target.value),
+                  )
+                }
+                placeholder="Tồn kho"
+                className="text-xs px-2 py-1.5 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                icon={<Plus size={13} />}
+                onClick={handleAddSize}
+                className="text-xs col-span-2 sm:col-span-1 py-1.5"
+              >
+                + Thêm
+              </Button>
+            </div>
           </div>
 
           {/* Quản lý danh sách hình ảnh (Nhiều hình ảnh) */}
@@ -437,7 +649,9 @@ export const AdminProductsPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
                 <ImageIcon size={14} className="text-blue-500" />
-                <span>Danh sách hình ảnh sản phẩm ({imagesList.length} ảnh)</span>
+                <span>
+                  Danh sách hình ảnh sản phẩm ({imagesList.length} ảnh)
+                </span>
               </label>
               <span className="text-[10px] text-gray-500 dark:text-gray-400">
                 Hỗ trợ xem nhiều góc chụp & phóng to
@@ -446,7 +660,7 @@ export const AdminProductsPage: React.FC = () => {
 
             {/* Danh sách các ảnh đã thêm */}
             {imagesList.length > 0 && (
-              <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+              <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
                 {imagesList.map((url, idx) => (
                   <div
                     key={idx}
@@ -455,9 +669,9 @@ export const AdminProductsPage: React.FC = () => {
                     <img
                       src={url}
                       alt={`preview-${idx}`}
-                      className="w-9 h-9 rounded object-cover flex-shrink-0 bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-700"
+                      className="w-8 h-8 rounded object-cover flex-shrink-0 bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-700"
                       onError={(e) => {
-                        (e.target as HTMLElement).style.display = 'none';
+                        (e.target as HTMLElement).style.display = "none";
                       }}
                     />
                     <input
@@ -492,7 +706,7 @@ export const AdminProductsPage: React.FC = () => {
                 value={newImageUrl}
                 onChange={(e) => setNewImageUrl(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+                  if (e.key === "Enter") {
                     e.preventDefault();
                     handleAddImage();
                   }
@@ -518,7 +732,7 @@ export const AdminProductsPage: React.FC = () => {
               Mô tả sản phẩm
             </label>
             <textarea
-              rows={3}
+              rows={2}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Nhập thông tin chi tiết về sản phẩm..."
@@ -526,7 +740,7 @@ export const AdminProductsPage: React.FC = () => {
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-slate-700">
+          <div className="flex justify-end gap-2 pt-2.5 border-t border-gray-100 dark:border-slate-700">
             <Button
               type="button"
               variant="secondary"
@@ -540,9 +754,9 @@ export const AdminProductsPage: React.FC = () => {
               variant="primary"
               size="sm"
               loading={formLoading}
-              className="font-bold shadow-md shadow-blue-600/25"
+              className="font-bold shadow-xs"
             >
-              {modalMode === 'create' ? 'THÊM SẢN PHẨM' : 'LƯU THAY ĐỔI'}
+              {modalMode === "create" ? "THÊM SẢN PHẨM" : "LƯU THAY ĐỔI"}
             </Button>
           </div>
         </form>

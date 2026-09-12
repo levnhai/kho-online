@@ -40,6 +40,9 @@ export const AdminLayout: React.FC = () => {
   if (location.pathname.includes('/admin/products')) {
     title = 'Quản Lý Sản Phẩm';
     subtitle = 'Danh sách, cập nhật thông tin và điều chỉnh tồn kho sản phẩm';
+  } else if (location.pathname.includes('/admin/imports')) {
+    title = 'Quản Lý Nhập Hàng';
+    subtitle = 'Quản lý phiếu nhập kho, theo dõi nguồn hàng và cập nhật tiến trình';
   } else if (location.pathname.includes('/admin/categories')) {
     title = 'Quản Lý Thể Loại';
     subtitle = 'Cấu hình và phân nhóm danh mục hàng hoá';
@@ -66,7 +69,7 @@ export const AdminLayout: React.FC = () => {
           subtitle={subtitle}
           onToggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)}
         />
-        <main className="flex-1 p-3 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-3 sm:p-5 lg:p-6 w-full">
           <Outlet />
         </main>
       </div>

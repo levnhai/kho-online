@@ -27,6 +27,9 @@ export class OrderItem {
   @Prop({ required: true })
   name: string;
 
+  @Prop({ default: '', trim: true })
+  size: string;
+
   @Prop({ required: true })
   price: number;
 

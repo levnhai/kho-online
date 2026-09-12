@@ -31,7 +31,16 @@ let UsersService = class UsersService {
         return user.save();
     }
     async findByEmail(email) {
-        return this.userModel.findOne({ email: email.toLowerCase() }).exec();
+        return this.userModel.findOne({ email: email.trim().toLowerCase() }).exec();
+    }
+    async findByEmailOrPhone(identifier) {
+        const clean = identifier.trim();
+        return this.userModel.findOne({
+            $or: [
+                { email: clean.toLowerCase() },
+                { phone: clean },
+            ],
+        }).exec();
     }
     async findById(id) {
         return this.userModel.findById(id).select('-password').exec();

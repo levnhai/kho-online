@@ -9,10 +9,37 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ProductSchema = exports.Product = void 0;
+exports.ProductSchema = exports.Product = exports.ProductSizeSchema = exports.ProductSize = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const category_schema_1 = require("../../categories/schemas/category.schema");
+let ProductSize = class ProductSize {
+};
+exports.ProductSize = ProductSize;
+__decorate([
+    (0, mongoose_1.Prop)({ required: true, trim: true }),
+    __metadata("design:type", String)
+], ProductSize.prototype, "name", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: true, min: 0 }),
+    __metadata("design:type", Number)
+], ProductSize.prototype, "price", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ default: 0, min: 0 }),
+    __metadata("design:type", Number)
+], ProductSize.prototype, "salePrice", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ default: 0, min: 0 }),
+    __metadata("design:type", Number)
+], ProductSize.prototype, "stock", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ default: '', trim: true }),
+    __metadata("design:type", String)
+], ProductSize.prototype, "sku", void 0);
+exports.ProductSize = ProductSize = __decorate([
+    (0, mongoose_1.Schema)({ _id: false })
+], ProductSize);
+exports.ProductSizeSchema = mongoose_1.SchemaFactory.createForClass(ProductSize);
 let Product = class Product {
 };
 exports.Product = Product;
@@ -40,6 +67,10 @@ __decorate([
     (0, mongoose_1.Prop)({ required: true, default: 0, min: 0 }),
     __metadata("design:type", Number)
 ], Product.prototype, "stock", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: [exports.ProductSizeSchema], default: [] }),
+    __metadata("design:type", Array)
+], Product.prototype, "sizes", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ type: [String], default: [] }),
     __metadata("design:type", Array)

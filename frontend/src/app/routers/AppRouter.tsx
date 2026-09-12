@@ -16,6 +16,7 @@ import { RegisterPage } from '@/pages/auth/RegisterPage';
 // Admin Pages
 import { AdminDashboardPage } from '@/pages/admin/dashboard/AdminDashboardPage';
 import { AdminProductsPage } from '@/pages/admin/products/AdminProductsPage';
+import { AdminImportsPage } from '@/pages/admin/imports/AdminImportsPage';
 import { AdminCategoriesPage } from '@/pages/admin/categories/AdminCategoriesPage';
 import { AdminOrdersPage } from '@/pages/admin/orders/AdminOrdersPage';
 import { AdminCustomersPage } from '@/pages/admin/customers/AdminCustomersPage';
@@ -42,6 +43,7 @@ export const AppRouter: React.FC = () => {
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminDashboardPage />} />
         <Route path="products" element={<AdminProductsPage />} />
+        <Route path="imports" element={<AdminImportsPage />} />
         <Route path="categories" element={<AdminCategoriesPage />} />
         <Route path="orders" element={<AdminOrdersPage />} />
         <Route path="customers" element={<AdminCustomersPage />} />

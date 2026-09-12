@@ -12,8 +12,8 @@ export class StatisticsController {
   constructor(private readonly statisticsService: StatisticsService) {}
 
   @Get('dashboard')
-  async getDashboard() {
-    return this.statisticsService.getDashboard();
+  async getDashboard(@Query('range') range?: 'today' | '7days' | 'month' | 'year') {
+    return this.statisticsService.getDashboard(range || '7days');
   }
 
   @Get('sales-report')

@@ -98,23 +98,23 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
             <Button
               variant="secondary"
               size="sm"
-              className="w-full text-[11px] sm:text-xs font-semibold py-1.5 px-1 sm:px-2 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-650"
+              className="w-full text-[11px] sm:text-xs font-semibold py-1.5 px-1 sm:px-2 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-650 whitespace-nowrap"
               icon={<Eye size={13} />}
             >
-              <span className="hidden xs:inline">Chi tiết</span>
-              <span className="xs:hidden">Xem</span>
+              <span className="hidden sm:inline">Chi tiết</span>
+              <span className="sm:hidden">Xem</span>
             </Button>
           </Link>
           <Button
             variant="primary"
             size="sm"
-            className="w-full text-[11px] sm:text-xs font-semibold py-1.5 px-1 sm:px-2"
+            className="w-full text-[11px] sm:text-xs font-semibold py-1.5 px-1 sm:px-2 whitespace-nowrap"
             disabled={product.stock <= 0}
             onClick={() => onAddToCart && onAddToCart(product)}
             icon={<ShoppingCart size={13} />}
           >
-            <span className="hidden xs:inline">Thêm giỏ</span>
-            <span className="xs:hidden">+ Giỏ</span>
+            <span className="hidden sm:inline">Thêm giỏ</span>
+            <span className="sm:hidden">Giỏ</span>
           </Button>
         </div>
       </div>

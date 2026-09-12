@@ -1,11 +1,41 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { CartItem, Product } from '@/shared/types';
 
+export const getCartItemPrice = (item: CartItem): number => {
+  if (item.selectedSize && item.product.sizes && item.product.sizes.length > 0) {
+    const sizeObj = item.product.sizes.find((s) => s.name === item.selectedSize);
+    if (sizeObj) {
+      return sizeObj.salePrice && sizeObj.salePrice > 0 ? sizeObj.salePrice : sizeObj.price;
+    }
+  }
+  return item.product.salePrice && item.product.salePrice > 0 ? item.product.salePrice : item.product.price;
+};
+
+export const getCartItemOriginalPrice = (item: CartItem): number => {
+  if (item.selectedSize && item.product.sizes && item.product.sizes.length > 0) {
+    const sizeObj = item.product.sizes.find((s) => s.name === item.selectedSize);
+    if (sizeObj) {
+      return sizeObj.price;
+    }
+  }
+  return item.product.price;
+};
+
+export const getCartItemMaxStock = (item: CartItem): number => {
+  if (item.selectedSize && item.product.sizes && item.product.sizes.length > 0) {
+    const sizeObj = item.product.sizes.find((s) => s.name === item.selectedSize);
+    if (sizeObj && sizeObj.stock !== undefined && sizeObj.stock > 0) {
+      return sizeObj.stock;
+    }
+  }
+  return item.product.stock;
+};
+
 interface CartContextType {
   items: CartItem[];
-  addToCart: (product: Product, quantity?: number) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
-  removeFromCart: (productId: string) => void;
+  addToCart: (product: Product, quantity?: number, selectedSize?: string) => void;
+  updateQuantity: (productId: string, quantity: number, selectedSize?: string) => void;
+  removeFromCart: (productId: string, selectedSize?: string) => void;
   clearCart: () => void;
   totalCount: number;
   totalAmount: number;
@@ -27,28 +57,38 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('kho_cart', JSON.stringify(items));
   }, [items]);
 
-  const addToCart = (product: Product, quantity = 1) => {
+  const addToCart = (product: Product, quantity = 1, selectedSize?: string) => {
+    // Nếu sản phẩm có sizes mà chưa truyền selectedSize, tự động lấy size đầu tiên
+    const activeSize = selectedSize || (product.sizes && product.sizes.length > 0 ? product.sizes[0].name : undefined);
+
     setItems((prev) => {
-      const existing = prev.find((item) => item.product._id === product._id);
-      if (existing) {
-        const newQty = Math.min(existing.quantity + quantity, product.stock);
-        return prev.map((item) =>
-          item.product._id === product._id ? { ...item, quantity: newQty } : item
-        );
+      const existingIndex = prev.findIndex(
+        (item) => item.product._id === product._id && (item.selectedSize || '') === (activeSize || '')
+      );
+
+      if (existingIndex > -1) {
+        const existing = prev[existingIndex];
+        const maxStock = getCartItemMaxStock(existing);
+        const newQty = Math.min(existing.quantity + quantity, maxStock || 99);
+        return prev.map((item, idx) => (idx === existingIndex ? { ...item, quantity: newQty } : item));
       }
-      return [...prev, { product, quantity: Math.min(quantity, product.stock) }];
+
+      const tempItem: CartItem = { product, quantity, selectedSize: activeSize };
+      const maxStock = getCartItemMaxStock(tempItem);
+      return [...prev, { product, quantity: Math.min(quantity, maxStock || 99), selectedSize: activeSize }];
     });
   };
 
-  const updateQuantity = (productId: string, quantity: number) => {
+  const updateQuantity = (productId: string, quantity: number, selectedSize?: string) => {
     if (quantity <= 0) {
-      removeFromCart(productId);
+      removeFromCart(productId, selectedSize);
       return;
     }
     setItems((prev) =>
       prev.map((item) => {
-        if (item.product._id === productId) {
-          const validQty = Math.min(quantity, item.product.stock);
+        if (item.product._id === productId && (item.selectedSize || '') === (selectedSize || '')) {
+          const maxStock = getCartItemMaxStock(item);
+          const validQty = Math.min(quantity, maxStock || 99);
           return { ...item, quantity: validQty };
         }
         return item;
@@ -56,8 +96,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
-  const removeFromCart = (productId: string) => {
-    setItems((prev) => prev.filter((item) => item.product._id !== productId));
+  const removeFromCart = (productId: string, selectedSize?: string) => {
+    setItems((prev) =>
+      prev.filter(
+        (item) => !(item.product._id === productId && (item.selectedSize || '') === (selectedSize || ''))
+      )
+    );
   };
 
   const clearCart = () => {
@@ -65,10 +109,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const totalCount = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalAmount = items.reduce((sum, item) => {
-    const price = item.product.salePrice && item.product.salePrice > 0 ? item.product.salePrice : item.product.price;
-    return sum + price * item.quantity;
-  }, 0);
+  const totalAmount = items.reduce((sum, item) => sum + getCartItemPrice(item) * item.quantity, 0);
 
   return (
     <CartContext.Provider

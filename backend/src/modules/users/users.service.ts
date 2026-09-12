@@ -18,7 +18,17 @@ export class UsersService {
   }
 
   async findByEmail(email: string): Promise<UserDocument | null> {
-    return this.userModel.findOne({ email: email.toLowerCase() }).exec();
+    return this.userModel.findOne({ email: email.trim().toLowerCase() }).exec();
+  }
+
+  async findByEmailOrPhone(identifier: string): Promise<UserDocument | null> {
+    const clean = identifier.trim();
+    return this.userModel.findOne({
+      $or: [
+        { email: clean.toLowerCase() },
+        { phone: clean },
+      ],
+    }).exec();
   }
 
   async findById(id: string): Promise<UserDocument | null> {
