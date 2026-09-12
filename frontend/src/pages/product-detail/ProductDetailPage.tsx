@@ -16,13 +16,16 @@ import { productApi } from '@/entities/product/api/productApi';
 import { useCart } from '@/entities/cart/CartContext';
 import { Product } from '@/shared/types';
 import { formatCurrency } from '@/shared/lib/formatters';
+import { getImageUrl } from '@/shared/lib/imageHelper';
 import { Button } from '@/shared/ui/Button';
 import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
 import { ProductImageGallery } from '@/features/product-gallery';
 
 // Helper tạo danh sách ảnh góc nhìn bổ sung chất lượng cao khi sản phẩm có ít ảnh
 const enrichProductImages = (product: Product): string[] => {
-  const baseImages = Array.isArray(product.images) ? product.images.filter(Boolean) : [];
+  const baseImages = Array.isArray(product.images)
+    ? product.images.filter(Boolean).map((img) => getImageUrl(img))
+    : [];
   if (baseImages.length >= 2) {
     return baseImages;
   }

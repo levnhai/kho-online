@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ShoppingCart, Eye, Star } from 'lucide-react';
 import { Product } from '@/shared/types';
 import { formatCurrency } from '@/shared/lib/formatters';
+import { getImageUrl } from '@/shared/lib/imageHelper';
 import { Button } from '@/shared/ui/Button';
 
 interface ProductCardProps {
@@ -40,7 +41,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
         className="block relative aspect-square bg-gray-50 dark:bg-slate-800 overflow-hidden"
       >
         <img
-          src={product.images?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80'}
+          src={getImageUrl(product.images?.[0])}
           alt={product.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           loading="lazy"

@@ -1,7 +1,7 @@
-import axios, { AxiosAdapter, InternalAxiosRequestConfig } from 'axios';
-import { apiCache } from '@/shared/lib/apiCache';
+import axios, { AxiosAdapter, InternalAxiosRequestConfig } from "axios";
+import { apiCache } from "@/shared/lib/apiCache";
 
-declare module 'axios' {
+declare module "axios" {
   export interface AxiosRequestConfig {
     skipCache?: boolean;
     cacheTtl?: number;
@@ -9,47 +9,50 @@ declare module 'axios' {
 }
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
-  headers: {
-    'Content-Type': 'application/json',
+  baseURL: import.meta.env.VITE_API_URL || "/api",
+  headers: {  
+    "Content-Type": "application/json",
   },
 });
 
-// Hàm tự động xóa cache khi có thao tác thêm/sửa/xóa
-const invalidateRelatedCache = (url: string = '') => {
-  if (url.includes('/products')) {
-    apiCache.invalidate('/products');
-    apiCache.invalidate('/statistics');
+const invalidateRelatedCache = (url: string = "") => {
+  if (url.includes("/products")) {
+    apiCache.invalidate("/products");
+    apiCache.invalidate("/statistics");
   }
-  if (url.includes('/categories')) {
-    apiCache.invalidate('/categories');
-    apiCache.invalidate('/products');
+  if (url.includes("/categories")) {
+    apiCache.invalidate("/categories");
+    apiCache.invalidate("/products");
   }
-  if (url.includes('/orders')) {
-    apiCache.invalidate('/orders');
-    apiCache.invalidate('/statistics');
+  if (url.includes("/orders")) {
+    apiCache.invalidate("/orders");
+    apiCache.invalidate("/statistics");
   }
-  if (url.includes('/imports')) {
-    apiCache.invalidate('/imports');
-    apiCache.invalidate('/statistics');
+  if (url.includes("/imports")) {
+    apiCache.invalidate("/imports");
+    apiCache.invalidate("/statistics");
   }
-  if (url.includes('/users') || url.includes('/auth')) {
-    apiCache.invalidate('/users');
-    apiCache.invalidate('/auth');
+  if (url.includes("/users") || url.includes("/auth")) {
+    apiCache.invalidate("/users");
+    apiCache.invalidate("/auth");
   }
-  if (url.includes('/statistics')) {
-    apiCache.invalidate('/statistics');
+  if (url.includes("/statistics")) {
+    apiCache.invalidate("/statistics");
   }
 };
 
 // Caching Adapter cho Axios
-const defaultAdapter = axios.getAdapter(api.defaults.adapter || ['xhr', 'http']);
+const defaultAdapter = axios.getAdapter(
+  api.defaults.adapter || ["xhr", "http"],
+);
 
-const cachingAdapter: AxiosAdapter = async (config: InternalAxiosRequestConfig) => {
-  const method = (config.method || 'get').toLowerCase();
-  const isGet = method === 'get';
+const cachingAdapter: AxiosAdapter = async (
+  config: InternalAxiosRequestConfig,
+) => {
+  const method = (config.method || "get").toLowerCase();
+  const isGet = method === "get";
   const skipCache = config.skipCache === true;
-  const cacheKey = apiCache.generateKey(config.url || '', config.params);
+  const cacheKey = apiCache.generateKey(config.url || "", config.params);
 
   // 1. Nếu là GET và không skipCache -> kiểm tra Cache
   if (isGet && !skipCache) {
@@ -58,7 +61,7 @@ const cachingAdapter: AxiosAdapter = async (config: InternalAxiosRequestConfig) 
       return {
         data: cachedData,
         status: 200,
-        statusText: 'OK (From Cache)',
+        statusText: "OK (From Cache)",
         headers: {},
         config,
         request: {},
@@ -75,7 +78,11 @@ const cachingAdapter: AxiosAdapter = async (config: InternalAxiosRequestConfig) 
   }
 
   // 4. Nếu là POST, PUT, PATCH, DELETE -> tự động dọn dẹp cache liên quan
-  if (['post', 'put', 'patch', 'delete'].includes(method) && response.status >= 200 && response.status < 300) {
+  if (
+    ["post", "put", "patch", "delete"].includes(method) &&
+    response.status >= 200 &&
+    response.status < 300
+  ) {
     invalidateRelatedCache(config.url);
   }
 
@@ -86,35 +93,40 @@ api.defaults.adapter = cachingAdapter;
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('kho_token');
+    const token = localStorage.getItem("kho_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('kho_token');
+      localStorage.removeItem("kho_token");
       apiCache.clear();
       const pathname = window.location.pathname;
-      const isProtectedPage = pathname.startsWith('/admin') || pathname.startsWith('/account') || pathname.startsWith('/checkout');
+      const isProtectedPage =
+        pathname.startsWith("/admin") ||
+        pathname.startsWith("/account") ||
+        pathname.startsWith("/checkout");
       if (
         isProtectedPage &&
-        !pathname.startsWith('/login') &&
-        !pathname.startsWith('/register')
+        !pathname.startsWith("/login") &&
+        !pathname.startsWith("/register")
       ) {
-        window.location.href = `/login?notice=${encodeURIComponent('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.')}`;
+        window.location.href = `/login?notice=${encodeURIComponent("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.")}`;
       }
     }
-    const message = error.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại';
-    return Promise.reject(new Error(Array.isArray(message) ? message.join(', ') : message));
-  }
+    const message =
+      error.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại";
+    return Promise.reject(
+      new Error(Array.isArray(message) ? message.join(", ") : message),
+    );
+  },
 );
 
 export default api;
-
