@@ -192,7 +192,7 @@ export const ProductsPage: React.FC = () => {
             />
 
             {/* Sliding Drawer */}
-            <div className="relative ml-auto w-[88vw] max-w-sm sm:max-w-md bg-white dark:bg-slate-800 h-full shadow-2xl flex flex-col z-10 animate-fade-in transition-colors">
+            <div className="relative ml-auto w-[88vw] max-w-sm sm:max-w-md bg-white dark:bg-slate-800 h-full max-h-[100dvh] shadow-2xl flex flex-col z-10 animate-fade-in transition-colors pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]">
               <div className="p-4 sm:p-5 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
                 <div className="flex items-center gap-2 font-black text-gray-900 dark:text-white text-base">
                   <Filter size={18} className="text-blue-600 dark:text-blue-400" />

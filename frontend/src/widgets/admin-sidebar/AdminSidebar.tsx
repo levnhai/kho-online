@@ -49,19 +49,19 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
 
       {/* Sidebar Drawer */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 w-64 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 min-h-screen border-r border-slate-800 transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed top-0 bottom-0 left-0 z-50 w-72 sm:w-64 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 h-[100dvh] max-h-[100dvh] border-r border-slate-800 transition-transform duration-300 ease-in-out lg:static lg:h-auto lg:min-h-screen lg:max-h-none lg:translate-x-0 ${
+          isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
         }`}
       >
         {/* Brand & Mobile Close Button */}
-        <div className="h-16 px-6 flex items-center justify-between border-b border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-blue-500/25 ring-2 ring-white/10">
+        <div className="pt-[env(safe-area-inset-top,0px)] px-5 sm:px-6 flex items-center justify-between border-b border-slate-800 flex-shrink-0 min-h-[4rem] box-content">
+          <div className="flex items-center gap-3 py-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-blue-500/25 ring-2 ring-white/10 flex-shrink-0">
               <ShoppingBag size={20} />
             </div>
             <div className="flex flex-col">
-              <span className="text-lg font-black tracking-wider bg-gradient-to-r from-white via-slate-100 to-blue-200 bg-clip-text text-transparent">
-                CHANG ADMIN
+              <span className="text-xl font-black tracking-wider bg-gradient-to-r from-white via-slate-100 to-blue-200 bg-clip-text text-transparent">
+                CHANG
               </span>
               <span className="text-[10px] text-blue-400 font-bold tracking-widest uppercase">
                 Hệ thống quản trị
@@ -72,9 +72,10 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
           {/* Close button on mobile */}
           <button
             onClick={onClose}
-            className="lg:hidden p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+            className="lg:hidden p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"
+            aria-label="Đóng menu"
           >
-            <X size={20} />
+            <X size={22} />
           </button>
         </div>
 
@@ -121,7 +122,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
         </nav>
 
         {/* User Info & Logout */}
-        <div className="p-4 border-t border-slate-800">
+        <div className="p-4 border-t border-slate-800 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] flex-shrink-0">
           <button
             onClick={() => {
               logout();
