@@ -47,7 +47,7 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className={`min-h-screen bg-gray-50 dark:bg-slate-900 flex flex-col justify-center py-8 px-4 sm:px-6 lg:px-8 transition-colors ${isDark ? 'dark' : ''}`}>
+    <div className={`min-h-screen bg-gray-50 dark:bg-slate-900 flex flex-col justify-center py-8 px-4 sm:px-6 lg:px-8 transition-colors pt-[calc(env(safe-area-inset-top,0px)+1.5rem)] pb-[calc(env(safe-area-inset-bottom,0px)+1.5rem)] ${isDark ? 'dark' : ''}`}>
       {/* Top action bar: Quay lại trang chủ & Nút đổi giao diện */}
       <div className="max-w-md w-full mx-auto flex items-center justify-between mb-4">
         <Link

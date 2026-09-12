@@ -19,7 +19,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
   const { user } = useAuth();
 
   return (
-    <header className="h-14 bg-white dark:bg-slate-900 border-b border-gray-200/80 dark:border-slate-800 px-3 sm:px-5 flex items-center justify-between sticky top-0 z-30 transition-colors">
+    <header className="h-14 pt-[env(safe-area-inset-top,0px)] box-content bg-white dark:bg-slate-900 border-b border-gray-200/80 dark:border-slate-800 px-3 sm:px-5 flex items-center justify-between sticky top-0 z-30 transition-colors">
       <div className="flex items-center gap-2.5">
         {/* Mobile Hamburger Button */}
         {onToggleSidebar && (

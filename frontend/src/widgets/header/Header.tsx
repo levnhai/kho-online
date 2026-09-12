@@ -86,7 +86,7 @@ export const Header: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-gray-200/80 dark:border-slate-800 shadow-xs transition-colors">
+    <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-gray-200/80 dark:border-slate-800 shadow-xs transition-colors pt-[env(safe-area-inset-top,0px)]">
       {/* Main Top Header */}
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-2 sm:gap-6">
@@ -373,7 +373,7 @@ export const Header: React.FC = () => {
             />
 
             {/* Drawer Content - Cố định 100% height, ẩn thanh scroll */}
-            <div className="relative w-4/5 max-w-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-white h-[100dvh] max-h-[100dvh] shadow-[0_0_50px_rgba(0,0,0,0.5)] dark:shadow-[0_0_60px_rgba(0,0,0,0.9)] flex flex-col z-10 overflow-hidden animate-slide-left border-l border-gray-200 dark:border-slate-800">
+            <div className="relative w-4/5 max-w-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-white h-[100dvh] max-h-[100dvh] shadow-[0_0_50px_rgba(0,0,0,0.5)] dark:shadow-[0_0_60px_rgba(0,0,0,0.9)] flex flex-col z-10 overflow-hidden animate-slide-left border-l border-gray-200 dark:border-slate-800 pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]">
               {/* Drawer Header */}
               <div className="p-4 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
                 <div className="flex items-center gap-2.5">
