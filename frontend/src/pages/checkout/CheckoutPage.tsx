@@ -52,7 +52,7 @@ export const CheckoutPage: React.FC = () => {
             Bạn cần đăng nhập để tiếp tục đặt hàng.
           </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            Vui lòng đăng nhập vào tài khoản của bạn hoặc đăng ký tài khoản mới để KHO phục vụ bạn tốt nhất.
+            Vui lòng đăng nhập vào tài khoản của bạn hoặc đăng ký tài khoản mới để CHANG phục vụ bạn tốt nhất.
           </p>
 
           <div className="flex flex-col gap-3">
@@ -114,7 +114,7 @@ export const CheckoutPage: React.FC = () => {
               🎉 Đặt hàng thành công!
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-              Cảm ơn bạn đã mua hàng tại hệ thống KHO. Đơn hàng của bạn đã được ghi nhận và đang chờ xác nhận.
+              Cảm ơn bạn đã mua hàng tại hệ thống CHANG. Đơn hàng của bạn đã được ghi nhận và đang chờ xác nhận.
             </p>
           </div>
 
@@ -302,7 +302,7 @@ export const CheckoutPage: React.FC = () => {
                       <span>Chuyển khoản ngân hàng (QR Code 24/7)</span>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                      Chuyển tiền nhanh qua mã VietQR hoặc số tài khoản ngân hàng chính thức của KHO.
+                      Chuyển tiền nhanh qua mã VietQR hoặc số tài khoản ngân hàng chính thức của CHANG.
                     </p>
                   </div>
                 </label>

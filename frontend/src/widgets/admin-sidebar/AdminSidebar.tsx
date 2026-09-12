@@ -56,12 +56,14 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
         {/* Brand & Mobile Close Button */}
         <div className="h-16 px-6 flex items-center justify-between border-b border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-xl shadow-md">
-              <Store size={20} />
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-blue-500/25 ring-2 ring-white/10">
+              <ShoppingBag size={20} />
             </div>
             <div className="flex flex-col">
-              <span className="text-lg font-black tracking-wider text-white">KHO ADMIN</span>
-              <span className="text-[10px] text-blue-400 font-semibold tracking-widest uppercase">
+              <span className="text-lg font-black tracking-wider bg-gradient-to-r from-white via-slate-100 to-blue-200 bg-clip-text text-transparent">
+                CHANG ADMIN
+              </span>
+              <span className="text-[10px] text-blue-400 font-bold tracking-widest uppercase">
                 Hệ thống quản trị
               </span>
             </div>

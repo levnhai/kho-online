@@ -19,7 +19,7 @@ export const CartPage: React.FC = () => {
             </div>
             <h2 className="text-xl font-black text-gray-900 dark:text-white mb-1">Giỏ hàng của bạn đang trống</h2>
             <p className="text-gray-500 dark:text-slate-400 mb-6 text-xs">
-              Bạn chưa thêm sản phẩm nào vào giỏ hàng. Hãy khám phá ngay hàng ngàn sản phẩm công nghệ tuyệt vời tại KHO!
+              Bạn chưa thêm sản phẩm nào vào giỏ hàng. Hãy khám phá ngay hàng ngàn sản phẩm tuyệt vời tại CHANG!
             </p>
             <Link to="/products">
               <Button variant="primary" size="md" icon={<ArrowRight size={16} />}>

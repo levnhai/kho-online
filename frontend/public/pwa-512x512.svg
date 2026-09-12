@@ -14,6 +14,6 @@
   <g filter="url(#pwaShadow512)" transform="translate(106, 96)">
     <path d="M40 90 L260 90 L280 270 C280 286 266 300 250 300 L50 300 C34 300 20 286 20 270 Z" fill="#FFFFFF"/>
     <path d="M100 90 L100 60 C100 32 122 10 150 10 C178 10 200 32 200 60 L200 90" fill="none" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round"/>
-    <text x="150" y="225" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="76" fill="#2563EB" text-anchor="middle" letter-spacing="4">KHO</text>
+    <text x="150" y="222" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="50" fill="#2563EB" text-anchor="middle" letter-spacing="2">CHANG</text>
   </g>
 </svg>

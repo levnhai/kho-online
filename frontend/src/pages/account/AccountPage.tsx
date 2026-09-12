@@ -456,7 +456,7 @@ export const AccountPage: React.FC = () => {
                 ) : orders.length === 0 ? (
                   <div className="text-center py-8">
                     <Package size={40} className="text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-                    <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">Bạn chưa có đơn hàng nào tại KHO.</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">Bạn chưa có đơn hàng nào tại CHANG.</p>
                   </div>
                 ) : filteredOrders.length === 0 ? (
                   <div className="text-center py-10 bg-gray-50/50 dark:bg-slate-900/40 rounded-3xl border border-dashed border-gray-200 dark:border-slate-700">

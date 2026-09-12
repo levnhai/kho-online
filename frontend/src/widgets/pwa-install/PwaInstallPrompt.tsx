@@ -94,7 +94,7 @@ export const PwaInstallPrompt: React.FC = () => {
           <div className="flex-1 min-w-0 pr-6">
             <div className="flex items-center gap-1.5">
               <h4 className="font-extrabold text-xs sm:text-sm text-gray-900 dark:text-white tracking-tight">
-                Cài đặt ứng dụng KHO
+                Cài đặt ứng dụng CHANG
               </h4>
               <span className="px-1.5 py-0.2 bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-bold text-[9px] rounded-full flex items-center gap-0.5">
                 <Sparkles size={8} /> App
@@ -146,7 +146,7 @@ export const PwaInstallPrompt: React.FC = () => {
 
             <div>
               <h3 className="text-base font-extrabold text-gray-900 dark:text-white">
-                Cài đặt KHO Online trên iPhone / iPad
+                Cài đặt CHANG Online trên iPhone / iPad
               </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Thực hiện 2 bước đơn giản để thêm ứng dụng vào màn hình chính:

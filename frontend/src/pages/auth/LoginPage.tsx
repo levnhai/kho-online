@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Mail, Lock, LogIn, AlertCircle, Store, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, LogIn, AlertCircle, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/app/providers/AuthContext';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
@@ -63,15 +63,26 @@ export const LoginPage: React.FC = () => {
       <div className="max-w-md w-full mx-auto bg-white dark:bg-slate-800 rounded-3xl p-8 sm:p-10 border border-gray-100 dark:border-slate-700 shadow-xl space-y-6 transition-colors">
         {/* Brand Logo */}
         <div className="text-center">
-          <Link to="/" className="inline-flex items-center gap-2 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-xl shadow-md">
-              <Store size={22} />
+          <Link to="/" className="inline-flex flex-col items-center group mb-2">
+            <div className="relative mb-2">
+              {/* Subtle ambient glow behind logo */}
+              <div className="absolute -inset-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-400 rounded-3xl blur-md opacity-75 group-hover:opacity-100 group-hover:blur-lg transition-all duration-300" />
+              <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center text-white shadow-xl ring-2 ring-white/30 dark:ring-white/15 group-hover:scale-105 transition-all duration-300">
+                <ShoppingBag size={28} className="drop-shadow-sm group-hover:rotate-6 transition-transform duration-300" />
+              </div>
             </div>
-            <span className="text-2xl font-black tracking-wider text-gray-900 dark:text-white">KHO</span>
+            <div className="flex items-center gap-2">
+              <span className="text-3xl font-black tracking-widest bg-gradient-to-r from-blue-600 via-indigo-500 to-cyan-500 dark:from-blue-400 dark:via-indigo-300 dark:to-cyan-300 bg-clip-text text-transparent">
+                CHANG
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700/50 shadow-xs">
+                STORE
+              </span>
+            </div>
           </Link>
-          <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white">Đăng nhập tài khoản</h2>
+          <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white mt-2">Đăng nhập tài khoản</h2>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Chào mừng bạn quay trở lại với hệ thống bán hàng KHO
+            Chào mừng bạn quay trở lại với hệ thống bán hàng CHANG
           </p>
         </div>
 

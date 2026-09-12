@@ -9,7 +9,7 @@ import {
   LayoutDashboard,
   Package,
   ChevronDown,
-  Store,
+  ShoppingBag,
   Menu,
   X,
   Layers,
@@ -90,16 +90,25 @@ export const Header: React.FC = () => {
       {/* Main Top Header */}
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-2 sm:gap-6">
-          {/* Logo KHO */}
-          <Link to="/" className="flex items-center gap-2 group flex-shrink-0">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-extrabold text-lg sm:text-xl shadow-md group-hover:shadow-blue-500/25 transition-all">
-              <Store size={20} />
+          {/* Logo CHANG */}
+          <Link to="/" className="flex items-center gap-2.5 group flex-shrink-0">
+            <div className="relative">
+              {/* Subtle ambient glow on hover */}
+              <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-400 rounded-2xl blur-xs opacity-40 group-hover:opacity-100 group-hover:blur-sm transition-all duration-300" />
+              <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center text-white font-extrabold shadow-md shadow-blue-500/30 ring-2 ring-white/20 dark:ring-white/10 group-hover:scale-105 transition-all duration-300">
+                <ShoppingBag size={22} className="drop-shadow-sm group-hover:rotate-6 transition-transform duration-300" />
+              </div>
             </div>
             <div className="flex flex-col">
-              <span className="text-xl sm:text-2xl font-black tracking-wider bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                KHO
-              </span>
-              <span className="hidden sm:inline text-[10px] font-semibold text-gray-400 dark:text-slate-400 -mt-1 tracking-widest uppercase">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xl sm:text-2xl font-black tracking-wider bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 dark:from-blue-400 dark:via-indigo-300 dark:to-cyan-300 bg-clip-text text-transparent">
+                  CHANG
+                </span>
+                <span className="hidden sm:inline-block px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase tracking-wider bg-blue-100 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+                  STORE
+                </span>
+              </div>
+              <span className="hidden sm:inline text-[10px] font-bold text-gray-400 dark:text-slate-400 -mt-0.5 tracking-widest uppercase">
                 Online Store
               </span>
             </div>
@@ -367,11 +376,15 @@ export const Header: React.FC = () => {
             <div className="relative w-4/5 max-w-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-white h-[100dvh] max-h-[100dvh] shadow-[0_0_50px_rgba(0,0,0,0.5)] dark:shadow-[0_0_60px_rgba(0,0,0,0.9)] flex flex-col z-10 overflow-hidden animate-slide-left border-l border-gray-200 dark:border-slate-800">
               {/* Drawer Header */}
               <div className="p-4 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold">
-                    <Store size={18} />
+                <div className="flex items-center gap-2.5">
+                  <div className="relative w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center text-white font-bold shadow-md shadow-blue-500/30 ring-2 ring-white/20">
+                    <ShoppingBag size={18} />
                   </div>
-                  <span className="font-extrabold text-lg">KHO ONLINE</span>
+                  <div className="flex flex-col">
+                    <span className="font-black text-lg bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 dark:from-blue-400 dark:via-indigo-300 dark:to-cyan-300 bg-clip-text text-transparent">
+                      CHANG ONLINE
+                    </span>
+                  </div>
                 </div>
                 <button
                   onClick={() => setMobileMenuOpen(false)}

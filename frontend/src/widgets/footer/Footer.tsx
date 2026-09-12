@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
-  Store,
+  ShoppingBag,
   Phone,
   Mail,
   MapPin,
@@ -85,21 +85,26 @@ export const Footer: React.FC = () => {
       {/* Main Footer Info */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 grid grid-cols-1 md:grid-cols-4 gap-8">
         <div>
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-black text-lg">
-              <Store size={18} />
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center text-white font-black shadow-lg shadow-blue-500/25 ring-2 ring-white/10">
+              <ShoppingBag size={20} />
             </div>
-            <span className="text-2xl font-black tracking-wider text-white">
-              KHO
-            </span>
+            <div className="flex flex-col">
+              <span className="text-2xl font-black tracking-wider bg-gradient-to-r from-white via-slate-100 to-blue-300 bg-clip-text text-transparent">
+                CHANG
+              </span>
+              <span className="text-[10px] font-bold text-blue-400 tracking-widest uppercase -mt-1">
+                Online Store
+              </span>
+            </div>
           </div>
           <p className="text-sm text-slate-400 leading-relaxed mb-4">
-            KHO Online – Hệ thống phân phối thiết bị công nghệ, điện thoại, máy
+            CHANG Online – Hệ thống phân phối thiết bị công nghệ, điện thoại, máy
             tính và đồ gia dụng thông minh chính hãng hàng đầu Việt Nam.
           </p>
           <div className="space-y-2 text-xs text-slate-400">
             <p className="flex items-center gap-2">
-              <MapPin size={14} className="text-blue-400" /> Tòa nhà KHO, 123
+              <MapPin size={14} className="text-blue-400" /> Tòa nhà CHANG, 123
               Đường Công Nghệ, Hà Nội
             </p>
             <p className="flex items-center gap-2">
@@ -107,7 +112,7 @@ export const Footer: React.FC = () => {
               (8:00 - 21:30)
             </p>
             <p className="flex items-center gap-2">
-              <Mail size={14} className="text-blue-400" /> Email: support@kho.vn
+              <Mail size={14} className="text-blue-400" /> Email: support@chang.vn
             </p>
           </div>
         </div>
@@ -205,7 +210,7 @@ export const Footer: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 border-t border-slate-800 text-center text-xs text-slate-500">
-        © 2026 KHO ONLINE
+        © 2026 CHANG ONLINE
       </div>
     </footer>
   );

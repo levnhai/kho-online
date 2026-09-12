@@ -34,7 +34,7 @@ export const AdminLayout: React.FC = () => {
 
   // Determine Title based on pathname
   let title = 'Dashboard Tổng Quan';
-  let subtitle = 'Theo dõi các chỉ số kinh doanh và hoạt động của KHO Online';
+  let subtitle = 'Theo dõi các chỉ số kinh doanh và hoạt động của CHANG Online';
 
   if (location.pathname.includes('/admin/products')) {
     title = 'Quản Lý Sản Phẩm';
