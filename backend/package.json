@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "description": "Backend API cho KHO Online sử dụng NestJS và MongoDB",
   "scripts": {
-    "build": "npx @nestjs/cli build",
-    "start": "nest start",
-    "start:dev": "nest start --watch",
+    "build": "node node_modules/@nestjs/cli/bin/nest.js build",
+    "start": "node node_modules/@nestjs/cli/bin/nest.js start",
+    "start:dev": "node node_modules/@nestjs/cli/bin/nest.js start --watch",
     "start:prod": "node dist/main.js",
     "seed": "ts-node src/database/seeds/seed.ts"
   },
