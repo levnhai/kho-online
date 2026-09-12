@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="pwaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="50%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <filter id="pwaShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#1E40AF" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  <!-- Background Rounded App Icon -->
+  <rect width="512" height="512" rx="128" fill="url(#pwaGrad)"/>
+  
+  <!-- Subtle Glow Effect -->
+  <circle cx="256" cy="120" r="160" fill="#60A5FA" opacity="0.25"/>
+
+  <!-- Shopping Bag / Modern Warehouse Icon -->
+  <g filter="url(#pwaShadow)" transform="translate(106, 96)">
+    <!-- Bag Body -->
+    <path d="M40 90 L260 90 L280 270 C280 286 266 300 250 300 L50 300 C34 300 20 286 20 270 Z" fill="#FFFFFF"/>
+    
+    <!-- Bag Handle -->
+    <path d="M100 90 L100 60 C100 32 122 10 150 10 C178 10 200 32 200 60 L200 90" fill="none" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round"/>
+    
+    <!-- Modern KHO Text / Monogram Inside Bag -->
+    <text x="150" y="225" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="76" fill="#2563EB" text-anchor="middle" letter-spacing="4">KHO</text>
+  </g>
+</svg>

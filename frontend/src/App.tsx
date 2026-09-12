@@ -6,6 +6,7 @@ import { SocketProvider } from '@/app/providers/SocketContext';
 import { CartProvider } from '@/entities/cart/CartContext';
 import { AppRouter } from '@/app/routers/AppRouter';
 import { ScrollToTop } from '@/app/routers/ScrollToTop';
+import { PwaInstallPrompt } from '@/widgets/pwa-install';
 import '@/app/styles/index.css';
 
 export const App: React.FC = () => {
@@ -17,6 +18,7 @@ export const App: React.FC = () => {
           <SocketProvider>
             <CartProvider>
               <AppRouter />
+              <PwaInstallPrompt />
             </CartProvider>
           </SocketProvider>
         </AuthProvider>

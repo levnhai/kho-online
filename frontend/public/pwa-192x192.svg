@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <defs>
+    <linearGradient id="pwaGrad192" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="50%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="48" fill="url(#pwaGrad192)"/>
+  <circle cx="96" cy="45" r="60" fill="#60A5FA" opacity="0.25"/>
+  <g transform="translate(39.75, 36)">
+    <path d="M15 33.75 L97.5 33.75 L105 101.25 C105 107.25 99.75 112.5 93.75 112.5 L18.75 112.5 C12.75 112.5 7.5 107.25 7.5 101.25 Z" fill="#FFFFFF"/>
+    <path d="M37.5 33.75 L37.5 22.5 C37.5 12 45.75 3.75 56.25 3.75 C66.75 3.75 75 12 75 22.5 L75 33.75" fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round"/>
+    <text x="56.25" y="84" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="28" fill="#2563EB" text-anchor="middle" letter-spacing="1.5">KHO</text>
+  </g>
+</svg>

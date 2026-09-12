@@ -3,8 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>KHO - Hệ Thống Bán Hàng Online Uy Tín Hàng Đầu</title>
+    
+    <!-- PWA Primary Meta Tags -->
+    <meta name="theme-color" content="#2563EB" />
+    <meta name="application-name" content="KHO Online" />
+    <meta name="description" content="Hệ thống mua sắm thiết bị công nghệ chính hãng và quản lý kho trực tuyến hàng đầu." />
+    
+    <!-- PWA Web App Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- iOS Safari PWA Support -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="KHO Online" />
+    <link rel="apple-touch-icon" href="/pwa-192x192.svg" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -28,9 +43,26 @@
     </script>
   </head>
   <body
-    class="bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-gray-100 font-sans antialiased min-h-screen transition-colors duration-200"
+    class="bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-gray-100 font-sans antialiased min-h-screen transition-colors duration-200 selection:bg-blue-500 selection:text-white"
   >
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+
+    <!-- Register PWA Service Worker -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker
+            .register('/sw.js')
+            .then(function (registration) {
+              console.log('🚀 [PWA] Service Worker registered successfully with scope:', registration.scope);
+            })
+            .catch(function (error) {
+              console.error('❌ [PWA] Service Worker registration failed:', error);
+            });
+        });
+      }
+    </script>
   </body>
 </html>
+
