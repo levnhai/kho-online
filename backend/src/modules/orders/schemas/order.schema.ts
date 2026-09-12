@@ -5,12 +5,15 @@ import { User } from '../../users/schemas/user.schema';
 export type OrderDocument = Order & Document;
 
 export enum OrderStatus {
-  PENDING = 'PENDING',       // Chờ xác nhận
-  CONFIRMED = 'CONFIRMED',   // Đã xác nhận
-  SHIPPING = 'SHIPPING',     // Đang giao
-  DELIVERED = 'DELIVERED',   // Đã giao
-  CANCELLED = 'CANCELLED',   // Đã hủy
-  FAILED = 'FAILED',         // Giao hàng thất bại
+  PENDING = 'PENDING',                     // Chờ xử lý
+  SHIPPING_TO_VN = 'SHIPPING_TO_VN',       // Hàng đang về Việt Nam
+  IN_VN_WAREHOUSE = 'IN_VN_WAREHOUSE',     // Đã về kho Việt Nam
+  SHIPPING = 'SHIPPING',                   // Vận chuyển
+  COMPLETED = 'COMPLETED',                 // Hoàn thành
+  CANCELLED = 'CANCELLED',                 // Đã huỷ
+  CONFIRMED = 'CONFIRMED',
+  DELIVERED = 'DELIVERED',
+  FAILED = 'FAILED',
 }
 
 export enum PaymentMethod {
@@ -29,6 +32,9 @@ export class OrderItem {
 
   @Prop({ default: '', trim: true })
   size: string;
+
+  @Prop({ default: '', trim: true })
+  color: string;
 
   @Prop({ required: true })
   price: number;

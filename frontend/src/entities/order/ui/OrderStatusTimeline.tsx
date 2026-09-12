@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, CheckCircle2, Truck, PackageCheck, XCircle } from 'lucide-react';
+import { Clock, Plane, Building2, Truck, CheckCircle2, XCircle } from 'lucide-react';
 import { OrderStatus } from '@/shared/types';
 
 interface OrderStatusTimelineProps {
@@ -11,7 +11,7 @@ export const OrderStatusTimeline: React.FC<OrderStatusTimelineProps> = ({ status
     return (
       <div className="flex items-center gap-2 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700">
         <XCircle size={20} className="text-rose-500" />
-        <span className="font-semibold text-sm">Đơn hàng này đã bị hủy</span>
+        <span className="font-semibold text-sm">Đơn hàng này đã bị huỷ</span>
       </div>
     );
   }
@@ -26,14 +26,20 @@ export const OrderStatusTimeline: React.FC<OrderStatusTimelineProps> = ({ status
   }
 
   const steps = [
-    { key: 'PENDING', label: 'Chờ xác nhận', icon: Clock },
-    { key: 'CONFIRMED', label: 'Đã xác nhận', icon: CheckCircle2 },
-    { key: 'SHIPPING', label: 'Đang giao', icon: Truck },
-    { key: 'DELIVERED', label: 'Đã giao', icon: PackageCheck },
+    { key: 'PENDING', label: 'Chờ xử lý', icon: Clock },
+    { key: 'SHIPPING_TO_VN', label: 'Hàng về VN', icon: Plane },
+    { key: 'IN_VN_WAREHOUSE', label: 'Về kho VN', icon: Building2 },
+    { key: 'SHIPPING', label: 'Vận chuyển', icon: Truck },
+    { key: 'COMPLETED', label: 'Hoàn thành', icon: CheckCircle2 },
   ];
 
-  const statusOrder = ['PENDING', 'CONFIRMED', 'SHIPPING', 'DELIVERED'];
-  const currentIndex = statusOrder.indexOf(status);
+  const statusOrder = ['PENDING', 'SHIPPING_TO_VN', 'IN_VN_WAREHOUSE', 'SHIPPING', 'COMPLETED'];
+  let currentIndex = statusOrder.indexOf(status);
+  if (currentIndex === -1) {
+    if (status === 'CONFIRMED') currentIndex = 1;
+    else if (status === 'DELIVERED') currentIndex = 4;
+    else currentIndex = 0;
+  }
 
   return (
     <div className="w-full py-4">

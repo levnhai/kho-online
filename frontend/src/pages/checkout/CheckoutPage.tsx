@@ -163,14 +163,22 @@ export const CheckoutPage: React.FC = () => {
           address,
           note,
         },
-        items: items.map((item) => ({
-          product: item.product._id,
-          name: item.selectedSize ? `${item.product.name} (${item.selectedSize})` : item.product.name,
-          size: item.selectedSize || '',
-          quantity: item.quantity,
-          price: getCartItemPrice(item),
-          image: item.product.images?.[0] || '',
-        })),
+        items: items.map((item) => {
+          const variantParts: string[] = [];
+          if (item.selectedSize) variantParts.push(item.selectedSize);
+          if (item.selectedColor) variantParts.push(item.selectedColor);
+          const variantSuffix = variantParts.length > 0 ? ` (${variantParts.join(' - ')})` : '';
+
+          return {
+            product: item.product._id,
+            name: `${item.product.name}${variantSuffix}`,
+            size: item.selectedSize || '',
+            color: item.selectedColor || '',
+            quantity: item.quantity,
+            price: getCartItemPrice(item),
+            image: item.product.images?.[0] || '',
+          };
+        }),
         paymentMethod,
       };
 
@@ -346,7 +354,7 @@ export const CheckoutPage: React.FC = () => {
             <div className="divide-y divide-gray-100 dark:divide-slate-700 max-h-80 overflow-y-auto pr-2 space-y-2">
               {items.map((item) => {
                 const price = getCartItemPrice(item);
-                const itemKey = `${item.product._id}-${item.selectedSize || 'default'}`;
+                const itemKey = `${item.product._id}-${item.selectedSize || 'default'}-${item.selectedColor || 'default'}`;
                 return (
                   <div key={itemKey} className="pt-2 flex items-center gap-3">
                     <img
@@ -358,11 +366,18 @@ export const CheckoutPage: React.FC = () => {
                       <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
                         {item.product.name}
                       </p>
-                      {item.selectedSize && (
-                        <span className="inline-block px-1.5 py-0.2 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold">
-                          Size: {item.selectedSize}
-                        </span>
-                      )}
+                      <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                        {item.selectedSize && (
+                          <span className="inline-block px-1.5 py-0.2 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold">
+                            Size: {item.selectedSize}
+                          </span>
+                        )}
+                        {item.selectedColor && (
+                          <span className="inline-block px-1.5 py-0.2 rounded bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-[10px] font-bold">
+                            Màu: {item.selectedColor}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                         x{item.quantity} · {formatCurrency(price)}
                       </p>

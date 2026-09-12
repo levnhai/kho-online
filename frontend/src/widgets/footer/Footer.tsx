@@ -75,7 +75,7 @@ export const Footer: React.FC = () => {
             <div>
               <h4 className="font-bold text-white text-sm">Hỗ trợ 24/7</h4>
               <p className="text-xs text-slate-400">
-                Hotline tư vấn: 1900 6868
+                Hotline tư vấn: 0865854741
               </p>
             </div>
           </div>
@@ -103,7 +103,7 @@ export const Footer: React.FC = () => {
               Đường Công Nghệ, Hà Nội
             </p>
             <p className="flex items-center gap-2">
-              <Phone size={14} className="text-blue-400" /> Hotline: 1900 6868
+              <Phone size={14} className="text-blue-400" /> Hotline: 0865854741
               (8:00 - 21:30)
             </p>
             <p className="flex items-center gap-2">

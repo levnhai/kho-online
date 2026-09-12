@@ -1,14 +1,16 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { Order, OrderDocument, OrderStatus } from './schemas/order.schema';
 import { Product, ProductDocument } from '../products/schemas/product.schema';
+import { EventsGateway } from '../events/events.gateway';
 
 @Injectable()
 export class OrdersService {
   constructor(
     @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
+    private readonly eventsGateway: EventsGateway,
   ) {}
 
   private generateOrderCode(): string {
@@ -35,16 +37,18 @@ export class OrdersService {
         throw new BadRequestException(`Sản phẩm ${product.name} chỉ còn lại ${product.stock} chiếc`);
       }
 
-      const effectivePrice = product.salePrice && product.salePrice > 0 ? product.salePrice : product.price;
-      const total = effectivePrice * item.quantity;
+      const itemPrice = item.price && item.price > 0 ? item.price : (product.salePrice && product.salePrice > 0 ? product.salePrice : product.price);
+      const total = itemPrice * item.quantity;
       subtotal += total;
 
       orderItems.push({
         product: product._id,
-        name: product.name,
-        price: effectivePrice,
+        name: item.name || product.name,
+        size: item.size || '',
+        color: item.color || '',
+        price: itemPrice,
         quantity: item.quantity,
-        image: product.images?.[0] || '',
+        image: item.image || product.images?.[0] || '',
         total,
       });
 
@@ -66,7 +70,7 @@ export class OrdersService {
 
     const order = new this.orderModel({
       orderCode,
-      customer: userId,
+      customer: new mongoose.Types.ObjectId(userId),
       customerInfo,
       items: orderItems,
       subtotal,
@@ -77,14 +81,45 @@ export class OrdersService {
       orderDate: new Date(),
     });
 
-    return order.save();
+    const savedOrder = await order.save();
+    this.eventsGateway.notifyOrderCreated(savedOrder);
+    return savedOrder;
   }
 
   async findMyOrders(userId: string): Promise<OrderDocument[]> {
+    const userObjectId = mongoose.isValidObjectId(userId) ? new mongoose.Types.ObjectId(userId) : null;
     return this.orderModel
-      .find({ customer: userId })
+      .find({
+        $or: [
+          ...(userObjectId ? [{ customer: userObjectId }] : []),
+          { customer: userId as any },
+        ],
+      })
       .sort({ createdAt: -1 })
       .exec();
+  }
+
+  async cancelMyOrder(userId: string, orderId: string): Promise<OrderDocument> {
+    const userObjectId = mongoose.isValidObjectId(userId) ? new mongoose.Types.ObjectId(userId) : null;
+    const orderObjectId = mongoose.isValidObjectId(orderId) ? new mongoose.Types.ObjectId(orderId) : null;
+
+    const order = await this.orderModel.findOne({
+      ...(orderObjectId ? { _id: orderObjectId } : { _id: orderId }),
+      $or: [
+        ...(userObjectId ? [{ customer: userObjectId }] : []),
+        { customer: userId as any },
+      ],
+    });
+    if (!order) {
+      throw new NotFoundException('Không tìm thấy đơn hàng');
+    }
+    if (order.status !== OrderStatus.PENDING) {
+      throw new BadRequestException('Chỉ có thể huỷ đơn hàng khi đang ở trạng thái Chờ xử lý');
+    }
+    order.status = OrderStatus.CANCELLED;
+    const savedOrder = await order.save();
+    this.eventsGateway.notifyOrderCancelled(savedOrder);
+    return savedOrder;
   }
 
   async findById(id: string): Promise<OrderDocument> {
@@ -149,7 +184,9 @@ export class OrdersService {
     }
 
     order.status = status;
-    return order.save();
+    const savedOrder = await order.save();
+    this.eventsGateway.notifyOrderStatusUpdated(savedOrder);
+    return savedOrder;
   }
 
   async countOrders(): Promise<number> {

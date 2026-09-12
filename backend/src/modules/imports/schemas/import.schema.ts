@@ -19,6 +19,9 @@ export class ImportItem {
   @Prop({ default: '' })
   size?: string;
 
+  @Prop({ default: '' })
+  color?: string;
+
   @Prop({ required: true, min: 1 })
   quantity: number;
 

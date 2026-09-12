@@ -26,7 +26,6 @@ export const AdminLayout: React.FC = () => {
         to="/login"
         state={{
           from: location,
-          notice: 'Vui lòng đăng nhập với tài khoản Quản trị viên (admin@kho.vn) để truy cập.',
         }}
         replace
       />

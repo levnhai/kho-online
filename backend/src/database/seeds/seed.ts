@@ -14,35 +14,50 @@ async function seed() {
 
   const db = mongoose.connection.db;
 
-  // Clear existing data
-  await db.collection('users').deleteMany({});
+  // Clear collections: chỉ refresh danh mục, sản phẩm và đơn nhập mẫu, KHÔNG xoá orders và users thực tế của người dùng
   await db.collection('categories').deleteMany({});
   await db.collection('products').deleteMany({});
-  await db.collection('orders').deleteMany({});
   await db.collection('imports').deleteMany({});
 
-  console.log('Cleared all existing collections (users, categories, products, orders, imports).');
+  console.log('Refreshed categories, products and imports. User accounts and real orders are preserved.');
 
-  // 1. Seed Users (Chỉ tạo tài khoản Quản trị Admin)
-  const adminPasswordHash = await bcrypt.hash('Admin@123456', 10);
+  // 1. Seed Users: Chỉ giữ tài khoản Quản trị Admin, xoá các tài khoản demo mẫu (Nguyễn Văn A, Trần Thị Mai)
+  const passwordHash = await bcrypt.hash('Admin@123456', 10);
 
-  const users = await db.collection('users').insertMany([
-    {
-      name: 'Quản Trị Viên KHO',
-      email: 'admin@kho.vn',
-      phone: '0901234567',
-      password: adminPasswordHash,
-      role: 'admin',
-      address: 'Tòa nhà KHO, 123 Đường Công Nghệ, Hà Nội',
-      status: 'active',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-  ]);
+  // Xoá các user demo mẫu khỏi CSDL nếu còn tồn tại
+  await db.collection('users').deleteMany({
+    email: { $in: ['nguyenvana@gmail.com', 'tranthimai@gmail.com'] },
+  });
 
-  const adminId = users.insertedIds[0];
+  const getOrCreateUser = async (userData: any) => {
+    let existing = await db.collection('users').findOne({ email: userData.email });
+    if (existing) {
+      await db.collection('users').updateOne(
+        { _id: existing._id },
+        { $set: { ...userData, updatedAt: new Date() } }
+      );
+      return existing._id;
+    } else {
+      const res = await db.collection('users').insertOne({
+        ...userData,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      return res.insertedId;
+    }
+  };
 
-  console.log('Seeded 1 admin user (admin@kho.vn).');
+  const adminId = await getOrCreateUser({
+    name: 'Quản Trị Viên KHO',
+    email: 'admin@kho.vn',
+    phone: '0901234567',
+    password: passwordHash,
+    role: 'admin',
+    address: 'Tòa nhà KHO, 123 Đường Công Nghệ, Hà Nội',
+    status: 'active',
+  });
+
+  console.log('Ensured admin user (admin@kho.vn) and removed all hardcoded demo customers.');
 
   // 2. Seed Categories
   const categories = await db.collection('categories').insertMany([
@@ -119,6 +134,7 @@ async function seed() {
         { name: '512GB', price: 40990000, salePrice: 37990000, stock: 12, sku: 'IP16PM-512' },
         { name: '1TB', price: 46990000, salePrice: 43490000, stock: 8, sku: 'IP16PM-1TB' },
       ],
+      colors: ['Titan Tự Nhiên', 'Titan Sa Mạc', 'Titan Trắng', 'Titan Đen'],
       images: [
         'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=800&q=80',
         'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=800&q=80',
@@ -144,6 +160,7 @@ async function seed() {
         { name: '256GB', price: 25990000, salePrice: 24490000, stock: 15, sku: 'IP16-256' },
         { name: '512GB', price: 31990000, salePrice: 29990000, stock: 10, sku: 'IP16-512' },
       ],
+      colors: ['Xanh Lưu Ly', 'Xanh Mòng Két', 'Hồng Pastel', 'Trắng', 'Đen'],
       images: [
         'https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?w=800&q=80',
       ],
@@ -168,6 +185,7 @@ async function seed() {
         { name: '512GB', price: 37490000, salePrice: 32990000, stock: 10, sku: 'SS-S24U-512' },
         { name: '1TB', price: 44490000, salePrice: 39990000, stock: 6, sku: 'SS-S24U-1TB' },
       ],
+      colors: ['Xám Titan', 'Đen Titan', 'Tím Titan', 'Vàng Titan'],
       images: [
         'https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=800&q=80',
       ],
@@ -191,6 +209,7 @@ async function seed() {
         { name: '18GB / 512GB SSD', price: 49990000, salePrice: 46990000, stock: 10, sku: 'MBP-14-512' },
         { name: '18GB / 1TB SSD', price: 55990000, salePrice: 52490000, stock: 5, sku: 'MBP-14-1TB' },
       ],
+      colors: ['Space Black (Đen Không Gian)', 'Silver (Bạc)'],
       images: [
         'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&q=80',
       ],
@@ -214,6 +233,7 @@ async function seed() {
         { name: '32GB RAM / 1TB SSD', price: 52990000, salePrice: 48990000, stock: 8, sku: 'ROG-G16-1TB' },
         { name: '32GB RAM / 2TB SSD', price: 58990000, salePrice: 54990000, stock: 4, sku: 'ROG-G16-2TB' },
       ],
+      colors: ['Eclipse Gray (Xám Nhật Thực)', 'Platinum White (Trắng Bạch Kim)'],
       images: [
         'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=800&q=80',
       ],
@@ -237,6 +257,7 @@ async function seed() {
         { name: 'Bản Tiêu Chuẩn', price: 6190000, salePrice: 5390000, stock: 40, sku: 'APP2-STD' },
         { name: 'Kèm Dây Đeo & Bao Da', price: 6590000, salePrice: 5790000, stock: 20, sku: 'APP2-COMBO' },
       ],
+      colors: ['Trắng Apple'],
       images: [
         'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=800&q=80',
       ],
@@ -260,6 +281,7 @@ async function seed() {
         { name: 'Màu Đen Graphite', price: 2490000, salePrice: 2090000, stock: 25, sku: 'MX3S-GR' },
         { name: 'Màu Trắng Pale Grey', price: 2490000, salePrice: 2090000, stock: 20, sku: 'MX3S-PG' },
       ],
+      colors: ['Graphite (Đen)', 'Pale Grey (Trắng Xám)'],
       images: [
         'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=800&q=80',
       ],
@@ -283,6 +305,7 @@ async function seed() {
         { name: 'Switch CS Wine Red', price: 1890000, salePrice: 1590000, stock: 15, sku: 'AKKO-RED' },
         { name: 'Switch CS Wine White', price: 1890000, salePrice: 1590000, stock: 15, sku: 'AKKO-WHITE' },
       ],
+      colors: ['Tím - Trắng Dracula', 'Xanh Cyan - Trắng', 'Đen Midnight'],
       images: [
         'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=800&q=80',
       ],
@@ -307,6 +330,7 @@ async function seed() {
         { name: '512GB', price: 34990000, salePrice: 32490000, stock: 6, sku: 'IPAD-M4-512' },
         { name: '1TB (Kính Nano)', price: 46990000, salePrice: 43990000, stock: 4, sku: 'IPAD-M4-1TB' },
       ],
+      colors: ['Silver (Bạc)', 'Space Black (Đen Không Gian)'],
       images: [
         'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=1000&q=80',
         'https://images.unsplash.com/photo-1561154464-82e9adf32764?w=1000&q=80',
@@ -332,6 +356,7 @@ async function seed() {
         { name: 'Bản Tiêu Chuẩn', price: 21990000, salePrice: 18490000, stock: 12, sku: 'DREAME-L20-STD' },
         { name: 'Kèm Bộ Bơm Xả Nước Tự Động', price: 24990000, salePrice: 20990000, stock: 6, sku: 'DREAME-L20-AUTO' },
       ],
+      colors: ['Trắng Tuyết', 'Đen Nhám'],
       images: [
         'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80',
       ],
@@ -355,6 +380,7 @@ async function seed() {
         { name: 'Size 41mm', price: 10490000, salePrice: 9290000, stock: 12, sku: 'AW-S9-41' },
         { name: 'Size 45mm', price: 11290000, salePrice: 9890000, stock: 13, sku: 'AW-S9-45' },
       ],
+      colors: ['Midnight (Đen Đêm)', 'Starlight (Ánh Sao)', 'Silver (Bạc)', 'Pink (Hồng)'],
       images: [
         'https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=800&q=80',
       ],
@@ -374,6 +400,7 @@ async function seed() {
       price: 8490000,
       salePrice: 6990000,
       stock: 22,
+      colors: ['Đen Viền Vàng Đồng'],
       images: [
         'https://images.unsplash.com/photo-1584992236310-6edddc08acff?w=800&q=80',
       ],
@@ -397,190 +424,7 @@ async function seed() {
 
   console.log('Seeded 12 products.');
 
-  // 4. Seed Orders (Phân bổ theo hôm nay, 1 ngày trước, 2 ngày trước, 3 ngày trước, 4 ngày trước)
-  const now = new Date();
-  await db.collection('orders').insertMany([
-    {
-      orderCode: '#DH00125',
-      customer: adminId,
-      customerInfo: {
-        name: 'Nguyễn Văn A',
-        phone: '0987654321',
-        address: 'Số 45 Lê Lợi, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh',
-        note: 'Giao giờ hành chính giúp em',
-      },
-      items: [
-        {
-          product: p1,
-          name: 'iPhone 16 Pro Max 256GB Titan Tự Nhiên',
-          price: 32490000,
-          quantity: 1,
-          image: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=800&q=80',
-          total: 32490000,
-        },
-        {
-          product: p6,
-          name: 'Tai nghe Apple AirPods Pro Gen 2 Type-C',
-          price: 5390000,
-          quantity: 1,
-          image: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=800&q=80',
-          total: 5390000,
-        },
-      ],
-      subtotal: 37880000,
-      shippingFee: 0,
-      totalAmount: 37880000,
-      paymentMethod: 'COD',
-      status: 'PENDING',
-      orderDate: new Date(now.getTime() - 2 * 3600 * 1000),
-      createdAt: new Date(now.getTime() - 2 * 3600 * 1000),
-      updatedAt: new Date(now.getTime() - 2 * 3600 * 1000),
-    },
-    {
-      orderCode: '#DH00126',
-      customer: adminId,
-      customerInfo: {
-        name: 'Lê Hoàng Nam',
-        phone: '0933445566',
-        address: 'Số 88 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh',
-        note: 'Giao gấp buổi chiều',
-      },
-      items: [
-        {
-          product: p2,
-          name: 'iPhone 16 Xanh Lưu Ly 128GB',
-          price: 21490000,
-          quantity: 1,
-          image: 'https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?w=800&q=80',
-          total: 21490000,
-        },
-      ],
-      subtotal: 21490000,
-      shippingFee: 0,
-      totalAmount: 21490000,
-      paymentMethod: 'ONLINE',
-      status: 'CONFIRMED',
-      orderDate: new Date(now.getTime() - 5 * 3600 * 1000),
-      createdAt: new Date(now.getTime() - 5 * 3600 * 1000),
-      updatedAt: new Date(now.getTime() - 5 * 3600 * 1000),
-    },
-    {
-      orderCode: '#DH00124',
-      customer: adminId,
-      customerInfo: {
-        name: 'Nguyễn Văn A',
-        phone: '0987654321',
-        address: 'Số 45 Lê Lợi, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh',
-        note: '',
-      },
-      items: [
-        {
-          product: p7,
-          name: 'Chuột không dây Logitech MX Master 3S',
-          price: 2090000,
-          quantity: 2,
-          image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=800&q=80',
-          total: 4180000,
-        },
-      ],
-      subtotal: 4180000,
-      shippingFee: 30000,
-      totalAmount: 4210000,
-      paymentMethod: 'BANK_TRANSFER',
-      status: 'CONFIRMED',
-      orderDate: new Date(Date.now() - 86400000),
-      createdAt: new Date(Date.now() - 86400000),
-      updatedAt: new Date(Date.now() - 86400000),
-    },
-    {
-      orderCode: '#DH00123',
-      customer: adminId,
-      customerInfo: {
-        name: 'Trần Thị Mai',
-        phone: '0912345678',
-        address: 'Số 12 Cầu Giấy, Hà Nội',
-        note: 'Gọi trước khi giao',
-      },
-      items: [
-        {
-          product: p6,
-          name: 'Tai nghe Apple AirPods Pro Gen 2 Type-C',
-          price: 5390000,
-          quantity: 1,
-          image: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=800&q=80',
-          total: 5390000,
-        },
-      ],
-      subtotal: 5390000,
-      shippingFee: 0,
-      totalAmount: 5390000,
-      paymentMethod: 'ONLINE',
-      status: 'SHIPPING',
-      orderDate: new Date(Date.now() - 2 * 86400000),
-      createdAt: new Date(Date.now() - 2 * 86400000),
-      updatedAt: new Date(Date.now() - 2 * 86400000),
-    },
-    {
-      orderCode: '#DH00122',
-      customer: adminId,
-      customerInfo: {
-        name: 'Trần Thị Mai',
-        phone: '0912345678',
-        address: 'Số 12 Cầu Giấy, Hà Nội',
-        note: '',
-      },
-      items: [
-        {
-          product: p1,
-          name: 'iPhone 16 Pro Max 256GB Titan Tự Nhiên',
-          price: 32490000,
-          quantity: 1,
-          image: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=800&q=80',
-          total: 32490000,
-        },
-      ],
-      subtotal: 32490000,
-      shippingFee: 0,
-      totalAmount: 32490000,
-      paymentMethod: 'COD',
-      status: 'DELIVERED',
-      orderDate: new Date(Date.now() - 4 * 86400000),
-      createdAt: new Date(Date.now() - 4 * 86400000),
-      updatedAt: new Date(Date.now() - 4 * 86400000),
-    },
-    {
-      orderCode: '#DH00121',
-      customer: adminId,
-      customerInfo: {
-        name: 'Lê Hoàng Nam',
-        phone: '0933445566',
-        address: 'Số 88 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh',
-        note: '',
-      },
-      items: [
-        {
-          product: p3,
-          name: 'Samsung Galaxy S24 Ultra 5G 256GB',
-          price: 27990000,
-          quantity: 1,
-          image: 'https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=800&q=80',
-          total: 27990000,
-        },
-      ],
-      subtotal: 27990000,
-      shippingFee: 0,
-      totalAmount: 27990000,
-      paymentMethod: 'BANK_TRANSFER',
-      status: 'DELIVERED',
-      orderDate: new Date(Date.now() - 6 * 86400000),
-      createdAt: new Date(Date.now() - 6 * 86400000),
-      updatedAt: new Date(Date.now() - 6 * 86400000),
-    },
-  ]);
-
-  console.log('Seeded 6 sample orders.');
-
-  // 5. Seed Imports (Đơn nhập hàng)
+  // 4. Seed Imports (Đơn nhập hàng)
   await db.collection('imports').insertMany([
     {
       importCode: 'NH2609001',

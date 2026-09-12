@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Search,
   ShoppingCart,
@@ -16,14 +16,14 @@ import {
   Palette,
   Sun,
   Moon,
-} from 'lucide-react';
-import { useAuth } from '@/app/providers/AuthContext';
-import { useCart } from '@/entities/cart/CartContext';
-import { useTheme } from '@/app/providers/ThemeContext';
-import { categoryApi } from '@/entities/category/api/categoryApi';
-import { Category } from '@/shared/types';
-import { ThemeToggle } from '@/shared/ui/ThemeToggle';
-import { getSubcategories } from '@/entities/category/lib/subcategories';
+} from "lucide-react";
+import { useAuth } from "@/app/providers/AuthContext";
+import { useCart } from "@/entities/cart/CartContext";
+import { useTheme } from "@/app/providers/ThemeContext";
+import { categoryApi } from "@/entities/category/api/categoryApi";
+import { Category } from "@/shared/types";
+import { ThemeToggle } from "@/shared/ui/ThemeToggle";
+import { getSubcategories } from "@/entities/category/lib/subcategories";
 
 export const Header: React.FC = () => {
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
@@ -33,13 +33,15 @@ export const Header: React.FC = () => {
   const location = useLocation();
 
   const [categories, setCategories] = useState<Category[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [categoriesOpen, setCategoriesOpen] = useState(true);
   const [themeMenuOpen, setThemeMenuOpen] = useState(true);
-  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+  const [expandedCategories, setExpandedCategories] = useState<
+    Record<string, boolean>
+  >({});
 
   const toggleCategoryExpand = (catId: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -51,18 +53,21 @@ export const Header: React.FC = () => {
   };
 
   useEffect(() => {
-    categoryApi.getAll().then((data) => setCategories(data)).catch(() => {});
+    categoryApi
+      .getAll()
+      .then((data) => setCategories(data))
+      .catch(() => {});
   }, []);
 
   // Khóa scroll khi mở Mobile Drawer
   useEffect(() => {
     if (mobileMenuOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     }
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     };
   }, [mobileMenuOpen]);
 
@@ -101,7 +106,10 @@ export const Header: React.FC = () => {
           </Link>
 
           {/* Search Box - Desktop */}
-          <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-xl lg:max-w-2xl relative">
+          <form
+            onSubmit={handleSearch}
+            className="hidden md:flex flex-1 max-w-xl lg:max-w-2xl relative"
+          >
             <div className="relative flex items-center w-full">
               <input
                 type="text"
@@ -146,14 +154,19 @@ export const Header: React.FC = () => {
               title="Giỏ hàng"
             >
               <div className="relative">
-                <ShoppingCart size={22} className="group-hover:scale-110 transition-transform" />
+                <ShoppingCart
+                  size={22}
+                  className="group-hover:scale-110 transition-transform"
+                />
                 {totalCount > 0 && (
                   <span className="absolute -top-2 -right-2.5 bg-rose-500 text-white text-[10px] font-bold h-4.5 w-4.5 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-sm animate-pulse">
-                    {totalCount > 99 ? '99+' : totalCount}
+                    {totalCount > 99 ? "99+" : totalCount}
                   </span>
                 )}
               </div>
-              <span className="hidden sm:inline text-xs font-semibold text-gray-700 dark:text-gray-300">Giỏ hàng</span>
+              <span className="hidden sm:inline text-xs font-semibold text-gray-700 dark:text-gray-300">
+                Giỏ hàng
+              </span>
             </Link>
 
             {/* Auth Dropdown (Desktop only) */}
@@ -165,7 +178,7 @@ export const Header: React.FC = () => {
                     className="flex items-center gap-1.5 py-1 px-2 sm:px-2.5 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-slate-600 hover:bg-blue-50/50 dark:hover:bg-slate-800 transition-all"
                   >
                     <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 flex items-center justify-center font-bold text-xs sm:text-sm">
-                      {user?.name ? user.name[0].toUpperCase() : 'U'}
+                      {user?.name ? user.name[0].toUpperCase() : "U"}
                     </div>
                     <div className="hidden lg:flex flex-col text-left">
                       <span className="text-xs font-bold text-gray-900 dark:text-gray-100 line-clamp-1 max-w-[90px]">
@@ -182,8 +195,12 @@ export const Header: React.FC = () => {
                       onMouseLeave={() => setShowUserMenu(false)}
                     >
                       <div className="px-4 py-2 border-b border-gray-100 dark:border-slate-700">
-                        <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{user?.name}</p>
-                        <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{user?.email}</p>
+                        <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
+                          {user?.name}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-slate-400 truncate">
+                          {user?.email}
+                        </p>
                       </div>
 
                       {isAdmin && (
@@ -221,7 +238,7 @@ export const Header: React.FC = () => {
                         onClick={() => {
                           logout();
                           setShowUserMenu(false);
-                          navigate('/');
+                          navigate("/");
                         }}
                         className="w-full flex items-center gap-2.5 px-4 py-2 text-xs sm:text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors text-left"
                       >
@@ -263,7 +280,10 @@ export const Header: React.FC = () => {
 
         {/* Mobile Search Bar Dropdown */}
         {mobileSearchOpen && (
-          <form onSubmit={handleSearch} className="md:hidden pb-3 pt-1 animate-fade-in">
+          <form
+            onSubmit={handleSearch}
+            className="md:hidden pb-3 pt-1 animate-fade-in"
+          >
             <div className="relative flex items-center">
               <input
                 type="text"
@@ -294,13 +314,13 @@ export const Header: React.FC = () => {
               <Link
                 to="/"
                 className={`py-3 transition-colors relative ${
-                  location.pathname === '/'
-                    ? 'text-blue-600 dark:text-blue-400 font-bold'
-                    : 'text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium'
+                  location.pathname === "/"
+                    ? "text-blue-600 dark:text-blue-400 font-bold"
+                    : "text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium"
                 }`}
               >
                 <span>Trang chủ</span>
-                {location.pathname === '/' && (
+                {location.pathname === "/" && (
                   <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400 rounded-full" />
                 )}
               </Link>
@@ -308,13 +328,13 @@ export const Header: React.FC = () => {
               <Link
                 to="/products"
                 className={`py-3 transition-colors relative ${
-                  location.pathname === '/products'
-                    ? 'text-blue-600 dark:text-blue-400 font-bold'
-                    : 'text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium'
+                  location.pathname === "/products"
+                    ? "text-blue-600 dark:text-blue-400 font-bold"
+                    : "text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium"
                 }`}
               >
                 <span>Sản phẩm</span>
-                {location.pathname === '/products' && (
+                {location.pathname === "/products" && (
                   <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400 rounded-full" />
                 )}
               </Link>
@@ -322,7 +342,12 @@ export const Header: React.FC = () => {
 
             {/* Right Tagline Hotline (nằm góc phải, không ảnh hưởng căn giữa) */}
             <div className="hidden lg:flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 absolute right-4 sm:right-6 lg:right-8">
-              <span>Hotline: <strong className="text-blue-600 dark:text-blue-400">1900 6868</strong></span>
+              <span>
+                Hotline:{" "}
+                <strong className="text-blue-600 dark:text-blue-400">
+                  0865854741
+                </strong>
+              </span>
             </div>
           </div>
         </div>
@@ -366,7 +391,7 @@ export const Header: React.FC = () => {
                         {/* User Header */}
                         <div className="p-3.5 flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-sm flex-shrink-0">
-                            {user?.name ? user.name[0].toUpperCase() : 'U'}
+                            {user?.name ? user.name[0].toUpperCase() : "U"}
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
@@ -411,7 +436,10 @@ export const Header: React.FC = () => {
                     ) : (
                       <div className="p-3.5">
                         <div className="flex items-center gap-2 mb-2.5 px-1 text-xs font-bold text-gray-700 dark:text-slate-200 uppercase tracking-wider">
-                          <UserIcon size={16} className="text-blue-600 dark:text-blue-400" />
+                          <UserIcon
+                            size={16}
+                            className="text-blue-600 dark:text-blue-400"
+                          />
                           <span>TÀI KHOẢN</span>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
@@ -442,15 +470,20 @@ export const Header: React.FC = () => {
                       className="w-full flex items-center justify-between p-3 text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                     >
                       <div className="flex items-center gap-2">
-                        <Layers size={16} className="text-blue-600 dark:text-blue-400" />
+                        <Layers
+                          size={16}
+                          className="text-blue-600 dark:text-blue-400"
+                        />
                         <span>Danh mục sản phẩm</span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] font-normal text-gray-400">({categories.length})</span>
+                        <span className="text-[11px] font-normal text-gray-400">
+                          ({categories.length})
+                        </span>
                         <ChevronDown
                           size={16}
                           className={`text-gray-400 transition-transform duration-200 ${
-                            categoriesOpen ? 'rotate-180' : ''
+                            categoriesOpen ? "rotate-180" : ""
                           }`}
                         />
                       </div>
@@ -464,7 +497,10 @@ export const Header: React.FC = () => {
                           const hasSubs = subs && subs.length > 0;
 
                           return (
-                            <div key={cat._id} className="rounded-xl overflow-hidden">
+                            <div
+                              key={cat._id}
+                              className="rounded-xl overflow-hidden"
+                            >
                               {/* Dòng thể loại cha */}
                               <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-slate-800 transition-colors group">
                                 <Link
@@ -484,14 +520,22 @@ export const Header: React.FC = () => {
                                 {hasSubs && (
                                   <button
                                     type="button"
-                                    onClick={(e) => toggleCategoryExpand(cat._id, e)}
+                                    onClick={(e) =>
+                                      toggleCategoryExpand(cat._id, e)
+                                    }
                                     className="p-1 rounded-lg text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700/60 transition-all ml-1"
-                                    title={isExpanded ? 'Thu gọn' : 'Xem thể loại con'}
+                                    title={
+                                      isExpanded
+                                        ? "Thu gọn"
+                                        : "Xem thể loại con"
+                                    }
                                   >
                                     <ChevronDown
                                       size={14}
                                       className={`transition-transform duration-200 ${
-                                        isExpanded ? 'rotate-180 text-blue-600 dark:text-blue-400' : ''
+                                        isExpanded
+                                          ? "rotate-180 text-blue-600 dark:text-blue-400"
+                                          : ""
                                       }`}
                                     />
                                   </button>
@@ -509,7 +553,9 @@ export const Header: React.FC = () => {
                                       className="flex items-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-medium text-gray-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white/80 dark:hover:bg-slate-800/80 transition-colors"
                                     >
                                       <span className="w-1 h-1 rounded-full bg-blue-500/70" />
-                                      <span className="truncate">{sub.name}</span>
+                                      <span className="truncate">
+                                        {sub.name}
+                                      </span>
                                     </Link>
                                   ))}
                                 </div>
@@ -529,17 +575,20 @@ export const Header: React.FC = () => {
                       className="w-full flex items-center justify-between p-3 text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                     >
                       <div className="flex items-center gap-2">
-                        <Palette size={16} className="text-blue-600 dark:text-blue-400" />
+                        <Palette
+                          size={16}
+                          className="text-blue-600 dark:text-blue-400"
+                        />
                         <span>Giao diện</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className="text-[11px] font-medium text-gray-500 dark:text-slate-400">
-                          {theme === 'dark' ? 'Tối' : 'Sáng'}
+                          {theme === "dark" ? "Tối" : "Sáng"}
                         </span>
                         <ChevronDown
                           size={16}
                           className={`text-gray-400 transition-transform duration-200 ${
-                            themeMenuOpen ? 'rotate-180' : ''
+                            themeMenuOpen ? "rotate-180" : ""
                           }`}
                         />
                       </div>
@@ -549,11 +598,11 @@ export const Header: React.FC = () => {
                       <div className="border-t border-gray-100 dark:border-slate-800/80 p-2 grid grid-cols-2 gap-2 animate-fade-in">
                         <button
                           type="button"
-                          onClick={() => setTheme('light')}
+                          onClick={() => setTheme("light")}
                           className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all ${
-                            theme === 'light'
-                              ? 'bg-amber-500 text-white shadow-sm ring-2 ring-amber-400/40'
-                              : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700'
+                            theme === "light"
+                              ? "bg-amber-500 text-white shadow-sm ring-2 ring-amber-400/40"
+                              : "bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700"
                           }`}
                         >
                           <Sun size={15} />
@@ -561,11 +610,11 @@ export const Header: React.FC = () => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => setTheme('dark')}
+                          onClick={() => setTheme("dark")}
                           className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all ${
-                            theme === 'dark'
-                              ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-500/40'
-                              : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700'
+                            theme === "dark"
+                              ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-500/40"
+                              : "bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700"
                           }`}
                         >
                           <Moon size={15} />
@@ -584,7 +633,7 @@ export const Header: React.FC = () => {
                     onClick={() => {
                       logout();
                       setMobileMenuOpen(false);
-                      navigate('/');
+                      navigate("/");
                     }}
                     className="w-full flex items-center justify-center gap-2 py-2.5 px-4 text-xs font-bold text-white bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 active:from-rose-800 active:to-red-800 rounded-xl transition-all shadow-md shadow-rose-600/20 active:scale-[0.98]"
                   >
@@ -595,7 +644,7 @@ export const Header: React.FC = () => {
               )}
             </div>
           </div>,
-          document.body
+          document.body,
         )}
     </header>
   );

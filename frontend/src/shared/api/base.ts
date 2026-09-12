@@ -23,9 +23,12 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('kho_token');
+      const pathname = window.location.pathname;
+      const isProtectedPage = pathname.startsWith('/admin') || pathname.startsWith('/account') || pathname.startsWith('/checkout');
       if (
-        !window.location.pathname.startsWith('/login') &&
-        !window.location.pathname.startsWith('/register')
+        isProtectedPage &&
+        !pathname.startsWith('/login') &&
+        !pathname.startsWith('/register')
       ) {
         window.location.href = `/login?notice=${encodeURIComponent('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.')}`;
       }

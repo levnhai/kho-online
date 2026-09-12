@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Header } from '@/widgets/header/Header';
 import { Footer } from '@/widgets/footer/Footer';
+import { ZaloButton } from '@/widgets/zalo-button';
 import { useTheme } from '@/app/providers/ThemeContext';
 
 export const StoreLayout: React.FC = () => {
@@ -13,6 +14,7 @@ export const StoreLayout: React.FC = () => {
         <Outlet />
       </main>
       <Footer />
+      <ZaloButton />
     </div>
   );
 };

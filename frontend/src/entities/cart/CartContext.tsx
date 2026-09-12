@@ -33,9 +33,9 @@ export const getCartItemMaxStock = (item: CartItem): number => {
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (product: Product, quantity?: number, selectedSize?: string) => void;
-  updateQuantity: (productId: string, quantity: number, selectedSize?: string) => void;
-  removeFromCart: (productId: string, selectedSize?: string) => void;
+  addToCart: (product: Product, quantity?: number, selectedSize?: string, selectedColor?: string) => void;
+  updateQuantity: (productId: string, quantity: number, selectedSize?: string, selectedColor?: string) => void;
+  removeFromCart: (productId: string, selectedSize?: string, selectedColor?: string) => void;
   clearCart: () => void;
   totalCount: number;
   totalAmount: number;
@@ -57,13 +57,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('kho_cart', JSON.stringify(items));
   }, [items]);
 
-  const addToCart = (product: Product, quantity = 1, selectedSize?: string) => {
+  const addToCart = (product: Product, quantity = 1, selectedSize?: string, selectedColor?: string) => {
     // Nếu sản phẩm có sizes mà chưa truyền selectedSize, tự động lấy size đầu tiên
     const activeSize = selectedSize || (product.sizes && product.sizes.length > 0 ? product.sizes[0].name : undefined);
+    // Nếu sản phẩm có colors mà chưa truyền selectedColor, tự động lấy color đầu tiên
+    const activeColor = selectedColor || (product.colors && product.colors.length > 0 ? product.colors[0] : undefined);
 
     setItems((prev) => {
       const existingIndex = prev.findIndex(
-        (item) => item.product._id === product._id && (item.selectedSize || '') === (activeSize || '')
+        (item) =>
+          item.product._id === product._id &&
+          (item.selectedSize || '') === (activeSize || '') &&
+          (item.selectedColor || '') === (activeColor || '')
       );
 
       if (existingIndex > -1) {
@@ -73,20 +78,27 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return prev.map((item, idx) => (idx === existingIndex ? { ...item, quantity: newQty } : item));
       }
 
-      const tempItem: CartItem = { product, quantity, selectedSize: activeSize };
+      const tempItem: CartItem = { product, quantity, selectedSize: activeSize, selectedColor: activeColor };
       const maxStock = getCartItemMaxStock(tempItem);
-      return [...prev, { product, quantity: Math.min(quantity, maxStock || 99), selectedSize: activeSize }];
+      return [
+        ...prev,
+        { product, quantity: Math.min(quantity, maxStock || 99), selectedSize: activeSize, selectedColor: activeColor },
+      ];
     });
   };
 
-  const updateQuantity = (productId: string, quantity: number, selectedSize?: string) => {
+  const updateQuantity = (productId: string, quantity: number, selectedSize?: string, selectedColor?: string) => {
     if (quantity <= 0) {
-      removeFromCart(productId, selectedSize);
+      removeFromCart(productId, selectedSize, selectedColor);
       return;
     }
     setItems((prev) =>
       prev.map((item) => {
-        if (item.product._id === productId && (item.selectedSize || '') === (selectedSize || '')) {
+        if (
+          item.product._id === productId &&
+          (item.selectedSize || '') === (selectedSize || '') &&
+          (item.selectedColor || '') === (selectedColor || '')
+        ) {
           const maxStock = getCartItemMaxStock(item);
           const validQty = Math.min(quantity, maxStock || 99);
           return { ...item, quantity: validQty };
@@ -96,10 +108,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
-  const removeFromCart = (productId: string, selectedSize?: string) => {
+  const removeFromCart = (productId: string, selectedSize?: string, selectedColor?: string) => {
     setItems((prev) =>
       prev.filter(
-        (item) => !(item.product._id === productId && (item.selectedSize || '') === (selectedSize || ''))
+        (item) =>
+          !(
+            item.product._id === productId &&
+            (item.selectedSize || '') === (selectedSize || '') &&
+            (item.selectedColor || '') === (selectedColor || '')
+          )
       )
     );
   };

@@ -22,6 +22,12 @@ export class OrdersController {
     return this.ordersService.findMyOrders(req.user._id);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/cancel')
+  async cancelMyOrder(@Request() req: any, @Param('id') id: string) {
+    return this.ordersService.cancelMyOrder(req.user._id, id);
+  }
+
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Get()

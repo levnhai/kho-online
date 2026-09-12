@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from '@/app/providers/ThemeContext';
 import { AuthProvider } from '@/app/providers/AuthContext';
+import { SocketProvider } from '@/app/providers/SocketContext';
 import { CartProvider } from '@/entities/cart/CartContext';
 import { AppRouter } from '@/app/routers/AppRouter';
 import { ScrollToTop } from '@/app/routers/ScrollToTop';
@@ -13,9 +14,11 @@ export const App: React.FC = () => {
       <ScrollToTop />
       <ThemeProvider>
         <AuthProvider>
-          <CartProvider>
-            <AppRouter />
-          </CartProvider>
+          <SocketProvider>
+            <CartProvider>
+              <AppRouter />
+            </CartProvider>
+          </SocketProvider>
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>

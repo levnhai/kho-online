@@ -75,14 +75,6 @@ export const LoginPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Notice alert if redirected from checkout */}
-        {notice && (
-          <div className="flex items-center gap-2 p-3.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-800 dark:text-amber-300 text-xs font-semibold">
-            <AlertCircle size={18} className="flex-shrink-0 text-amber-600 dark:text-amber-400" />
-            <span>{notice}</span>
-          </div>
-        )}
-
         {/* Error Alert */}
         {error && (
           <div className="flex items-center gap-2 p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 rounded-xl text-rose-700 dark:text-rose-400 text-xs font-semibold">

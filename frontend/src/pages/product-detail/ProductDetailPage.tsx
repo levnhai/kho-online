@@ -91,6 +91,7 @@ export const ProductDetailPage: React.FC = () => {
 
   const [product, setProduct] = useState<Product | null>(null);
   const [selectedSize, setSelectedSize] = useState<string>('');
+  const [selectedColor, setSelectedColor] = useState<string>('');
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [addedMessage, setAddedMessage] = useState(false);
@@ -106,6 +107,11 @@ export const ProductDetailPage: React.FC = () => {
           setSelectedSize(data.sizes[0].name);
         } else {
           setSelectedSize('');
+        }
+        if (data?.colors && data.colors.length > 0) {
+          setSelectedColor(data.colors[0]);
+        } else {
+          setSelectedColor('');
         }
       })
       .catch((err) => {
@@ -156,13 +162,13 @@ export const ProductDetailPage: React.FC = () => {
   };
 
   const handleAddToCart = () => {
-    addToCart(product, quantity, selectedSize || undefined);
+    addToCart(product, quantity, selectedSize || undefined, selectedColor || undefined);
     setAddedMessage(true);
     setTimeout(() => setAddedMessage(false), 3000);
   };
 
   const handleBuyNow = () => {
-    addToCart(product, quantity, selectedSize || undefined);
+    addToCart(product, quantity, selectedSize || undefined, selectedColor || undefined);
     navigate('/checkout');
   };
 
@@ -280,6 +286,41 @@ export const ProductDetailPage: React.FC = () => {
                         <span className="text-[10px] font-semibold text-rose-600 dark:text-rose-400">
                           {formatCurrency(sPrice)}
                         </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* COLOR SELECTOR */}
+            {product.colors && product.colors.length > 0 && (
+              <div className="mb-5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs sm:text-sm font-bold text-gray-800 dark:text-gray-200">
+                    Màu sắc:{' '}
+                    <span className="text-purple-600 dark:text-purple-400 font-extrabold">{selectedColor}</span>
+                  </span>
+                  <span className="text-[11px] text-gray-400 dark:text-gray-500">
+                    {product.colors.length} màu
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {product.colors.map((c) => {
+                    const isSelected = c === selectedColor;
+                    return (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setSelectedColor(c)}
+                        className={`py-2 px-3 sm:px-4 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 ${
+                          isSelected
+                            ? 'border-purple-600 bg-purple-50/90 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 ring-2 ring-purple-500/20 shadow-xs'
+                            : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600'
+                        }`}
+                      >
+                        <span>{c}</span>
+                        {isSelected && <CheckCircle2 size={13} className="text-purple-600 dark:text-purple-400" />}
                       </button>
                     );
                   })}

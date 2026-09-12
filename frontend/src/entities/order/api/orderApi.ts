@@ -25,4 +25,7 @@ export const orderApi = {
   updateStatus: (id: string, status: OrderStatus): Promise<Order> => {
     return api.patch(`/orders/${id}/status`, { status });
   },
+  cancelMyOrder: (id: string): Promise<Order> => {
+    return api.patch(`/orders/${id}/cancel`);
+  },
 };

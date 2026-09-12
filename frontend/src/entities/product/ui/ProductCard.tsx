@@ -69,14 +69,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
           {product.name}
         </Link>
 
-        {/* Stock status */}
-        <p className="text-[11px] sm:text-xs text-gray-400 dark:text-slate-400 mb-2">
-          {product.stock > 0 ? (
-            <span>Còn <strong className="text-gray-700 dark:text-gray-200 font-semibold">{product.stock}</strong> SP</span>
-          ) : (
-            <span className="text-rose-500 font-bold">Hết hàng</span>
+        {/* Stock & Variants status */}
+        <div className="flex items-center justify-between text-[11px] sm:text-xs text-gray-400 dark:text-slate-400 mb-2">
+          <p>
+            {product.stock > 0 ? (
+              <span>Còn <strong className="text-gray-700 dark:text-gray-200 font-semibold">{product.stock}</strong> SP</span>
+            ) : (
+              <span className="text-rose-500 font-bold">Hết hàng</span>
+            )}
+          </p>
+          {product.colors && product.colors.length > 0 && (
+            <span className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-1.5 py-0.5 rounded border border-purple-100 dark:border-purple-900/40">
+              {product.colors.length} màu
+            </span>
           )}
-        </p>
+        </div>
 
         {/* Price Area */}
         <div className="mt-auto mb-3">

@@ -45,6 +45,7 @@ export interface Product {
   salePrice?: number;
   stock: number;
   sizes?: ProductSize[];
+  colors?: string[];
   images: string[];
   image?: string;
   description?: string;
@@ -61,6 +62,7 @@ export interface OrderItem {
   product: string | Product;
   name: string;
   size?: string;
+  color?: string;
   price: number;
   quantity: number;
   image: string;
@@ -74,7 +76,17 @@ export interface CustomerInfo {
   note?: string;
 }
 
-export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'SHIPPING' | 'DELIVERED' | 'CANCELLED' | 'FAILED';
+export type OrderStatus =
+  | 'PENDING'
+  | 'SHIPPING_TO_VN'
+  | 'IN_VN_WAREHOUSE'
+  | 'SHIPPING'
+  | 'COMPLETED'
+  | 'CANCELLED'
+  | 'CONFIRMED'
+  | 'DELIVERED'
+  | 'FAILED'
+  | string;
 export type PaymentMethod = 'COD' | 'BANK_TRANSFER' | 'ONLINE';
 
 export interface Order {
@@ -96,6 +108,7 @@ export interface CartItem {
   product: Product;
   quantity: number;
   selectedSize?: string;
+  selectedColor?: string;
 }
 
 export interface ImportItem {
@@ -104,6 +117,7 @@ export interface ImportItem {
   productName: string;
   productImage?: string;
   size?: string;
+  color?: string;
   quantity: number;
   importPrice: number;
   total: number;
@@ -145,6 +159,7 @@ export interface CreateImportItemDto {
   productName: string;
   productImage?: string;
   size?: string;
+  color?: string;
   quantity: number;
   importPrice: number;
 }

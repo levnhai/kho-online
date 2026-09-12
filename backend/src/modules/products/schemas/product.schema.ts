@@ -51,6 +51,9 @@ export class Product {
   sizes: ProductSize[];
 
   @Prop({ type: [String], default: [] })
+  colors: string[];
+
+  @Prop({ type: [String], default: [] })
   images: string[];
 
   @Prop({ default: '' })
