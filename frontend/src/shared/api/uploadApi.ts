@@ -24,14 +24,14 @@ export const uploadApi = {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await api.post<UploadSingleResponse>('/upload/single', formData, {
+    const response: any = await api.post('/upload/single', formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'Content-Type': undefined,
       },
       skipCache: true,
     });
 
-    return response.data;
+    return response?.data || response;
   },
 
   /**
@@ -43,13 +43,13 @@ export const uploadApi = {
       formData.append('files', file);
     });
 
-    const response = await api.post<UploadMultipleResponse>('/upload/multiple', formData, {
+    const response: any = await api.post('/upload/multiple', formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'Content-Type': undefined,
       },
       skipCache: true,
     });
 
-    return response.data;
+    return response?.data || response;
   },
 };

@@ -54,7 +54,7 @@ export const AdminProductsPage: React.FC = () => {
   const [salePrice, setSalePrice] = useState<number | "">("");
   const [stock, setStock] = useState<number | "">("");
   const [imagesList, setImagesList] = useState<string[]>([]);
-  const [newImageUrl, setNewImageUrl] = useState("");
+  const [imagesText, setImagesText] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState("active");
 
@@ -72,8 +72,6 @@ export const AdminProductsPage: React.FC = () => {
   // Image Upload State
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
-  const [isDragOver, setIsDragOver] = useState(false);
-  const [showUrlInput, setShowUrlInput] = useState(false);
 
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
@@ -122,10 +120,11 @@ export const AdminProductsPage: React.FC = () => {
     setColorsList([]);
     setNewColorName("");
     setImagesList([]);
-    setNewImageUrl("");
+    setImagesText("");
     setDescription("");
     setStatus("active");
     setFormError("");
+    setUploadError("");
     setIsModalOpen(true);
   };
 
@@ -146,12 +145,23 @@ export const AdminProductsPage: React.FC = () => {
     setNewSizeStock("");
     setColorsList(Array.isArray(p.colors) ? p.colors : []);
     setNewColorName("");
-    setImagesList(Array.isArray(p.images) ? p.images.filter(Boolean) : []);
-    setNewImageUrl("");
+    const initialImgs = Array.isArray(p.images) ? p.images.filter(Boolean) : [];
+    setImagesList(initialImgs);
+    setImagesText(initialImgs.join("\n"));
     setDescription(p.description || "");
     setStatus(p.status || "active");
     setFormError("");
+    setUploadError("");
     setIsModalOpen(true);
+  };
+
+  const handleImagesTextChange = (text: string) => {
+    setImagesText(text);
+    const parsed = text
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+    setImagesList(parsed);
   };
 
   const handleFilesSelect = async (files: FileList | File[]) => {
@@ -177,16 +187,23 @@ export const AdminProductsPage: React.FC = () => {
     setUploadError("");
 
     try {
+      let newUrls: string[] = [];
       if (validFiles.length === 1) {
         const res = await uploadApi.uploadSingle(validFiles[0]);
         if (res?.url) {
-          setImagesList((prev) => [...prev, res.url]);
+          newUrls = [res.url];
         }
       } else {
         const res = await uploadApi.uploadMultiple(validFiles);
         if (res?.urls && res.urls.length > 0) {
-          setImagesList((prev) => [...prev, ...res.urls]);
+          newUrls = res.urls;
         }
+      }
+
+      if (newUrls.length > 0) {
+        const updated = [...imagesList, ...newUrls];
+        setImagesList(updated);
+        setImagesText(updated.join("\n"));
       }
     } catch (err: any) {
       setUploadError(err.message || "Tải ảnh lên thất bại, vui lòng thử lại");
@@ -201,25 +218,13 @@ export const AdminProductsPage: React.FC = () => {
     const [selected] = updated.splice(indexToPrimary, 1);
     updated.unshift(selected);
     setImagesList(updated);
-  };
-
-  const handleAddImage = () => {
-    const trimmed = newImageUrl.trim();
-    if (!trimmed) return;
-    if (!imagesList.includes(trimmed)) {
-      setImagesList([...imagesList, trimmed]);
-    }
-    setNewImageUrl("");
+    setImagesText(updated.join("\n"));
   };
 
   const handleRemoveImage = (indexToRemove: number) => {
-    setImagesList(imagesList.filter((_, idx) => idx !== indexToRemove));
-  };
-
-  const handleUpdateImage = (indexToUpdate: number, value: string) => {
-    const updated = [...imagesList];
-    updated[indexToUpdate] = value;
+    const updated = imagesList.filter((_, idx) => idx !== indexToRemove);
     setImagesList(updated);
+    setImagesText(updated.join("\n"));
   };
 
   const handleAddSize = () => {
@@ -274,9 +279,6 @@ export const AdminProductsPage: React.FC = () => {
     try {
       // Gom tất cả ảnh hợp lệ
       const finalImages = imagesList.map((img) => img.trim()).filter(Boolean);
-      if (newImageUrl.trim() && !finalImages.includes(newImageUrl.trim())) {
-        finalImages.push(newImageUrl.trim());
-      }
 
       const payload: any = {
         name,
@@ -927,162 +929,135 @@ export const AdminProductsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Quản lý danh sách hình ảnh (Upload tệp từ máy + Dán URL) */}
-          <div className="p-4 bg-gray-50 dark:bg-slate-900/60 rounded-2xl border border-gray-200 dark:border-slate-700 space-y-3.5">
+          {/* Quản lý danh sách hình ảnh */}
+          <div className="p-3 bg-gray-50 dark:bg-slate-900/50 rounded-xl border border-gray-200 dark:border-slate-700 space-y-2.5">
+            {/* Header: Tiêu đề bên trái, Nút '+ Thêm ảnh' chuyển sang bên phải */}
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
-                <ImageIcon size={15} className="text-blue-500" />
+                <ImageIcon size={14} className="text-blue-500" />
                 <span>
                   Hình ảnh sản phẩm ({imagesList.length} ảnh)
                 </span>
               </label>
-              <span className="text-[10px] text-gray-500 dark:text-gray-400">
-                Ảnh đầu tiên sẽ là ảnh đại diện
-              </span>
+
+              {/* Nút bấm '+ Thêm ảnh' nằm bên phải */}
+              <div>
+                <input
+                  id="product-file-upload"
+                  type="file"
+                  multiple
+                  accept="image/png, image/jpeg, image/jpg, image/webp, image/gif, image/svg+xml"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                      handleFilesSelect(e.target.files);
+                      e.target.value = "";
+                    }
+                  }}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="product-file-upload"
+                  className={`inline-flex items-center gap-1.5 text-xs font-bold py-1.5 px-3 rounded-lg cursor-pointer transition-all shadow-xs ${
+                    isUploading
+                      ? "bg-blue-100 dark:bg-blue-950 text-blue-500 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white"
+                  }`}
+                >
+                  {isUploading ? (
+                    <>
+                      <Loader2 size={13} className="animate-spin" />
+                      <span>Đang tải...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={13} />
+                      <span>Thêm ảnh</span>
+                    </>
+                  )}
+                </label>
+              </div>
             </div>
 
             {/* Error Message nếu có lỗi upload */}
             {uploadError && (
-              <div className="flex items-center gap-2 p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs rounded-xl animate-fade-in">
-                <AlertCircle size={15} className="flex-shrink-0 text-rose-500" />
+              <div className="flex items-center gap-2 p-2 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs rounded-lg animate-fade-in">
+                <AlertCircle size={14} className="flex-shrink-0 text-rose-500" />
                 <span className="flex-1">{uploadError}</span>
                 <button
                   type="button"
                   onClick={() => setUploadError("")}
                   className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                 >
-                  <X size={14} />
+                  <X size={13} />
                 </button>
               </div>
             )}
 
-            {/* Vùng Kéo & Thả / Chọn ảnh Upload */}
-            <div
-              onDragOver={(e) => {
-                e.preventDefault();
-                setIsDragOver(true);
-              }}
-              onDragLeave={() => setIsDragOver(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setIsDragOver(false);
-                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                  handleFilesSelect(e.dataTransfer.files);
-                }
-              }}
-              className={`relative border-2 border-dashed rounded-2xl p-5 text-center transition-all cursor-pointer ${
-                isDragOver
-                  ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/20 scale-[0.99]"
-                  : "border-gray-300 dark:border-slate-700 hover:border-blue-400 hover:bg-white dark:hover:bg-slate-800/60 bg-white/60 dark:bg-slate-800/40"
-              }`}
-              onClick={() => {
-                const input = document.getElementById("product-file-upload") as HTMLInputElement;
-                if (input) input.click();
-              }}
-            >
-              <input
-                id="product-file-upload"
-                type="file"
-                multiple
-                accept="image/png, image/jpeg, image/jpg, image/webp, image/gif, image/svg+xml"
-                onChange={(e) => {
-                  if (e.target.files && e.target.files.length > 0) {
-                    handleFilesSelect(e.target.files);
-                    e.target.value = "";
-                  }
-                }}
-                className="hidden"
+            {/* Ô textarea nhập link ảnh (xuống dòng mỗi dòng là 1 link khác nhau) */}
+            <div>
+              <textarea
+                rows={2}
+                value={imagesText}
+                onChange={(e) => handleImagesTextChange(e.target.value)}
+                placeholder="Dán link ảnh tại đây (xuống dòng để nhập mỗi link ảnh khác nhau)..."
+                className="w-full text-xs p-2.5 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-blue-500 font-mono resize-y"
               />
-
-              {isUploading ? (
-                <div className="flex flex-col items-center justify-center py-2 space-y-2">
-                  <Loader2 size={28} className="animate-spin text-blue-600 dark:text-blue-400" />
-                  <p className="text-xs font-semibold text-blue-600 dark:text-blue-400">
-                    Đang tải ảnh lên máy chủ...
-                  </p>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center space-y-1.5">
-                  <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-xs">
-                    <UploadCloud size={20} />
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">
-                      Nhấn để chọn ảnh
-                    </span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      {" "}hoặc kéo thả ảnh vào đây
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-gray-400 dark:text-slate-500">
-                    Hỗ trợ PNG, JPG, WEBP, GIF (Tối đa 10MB/ảnh, có thể chọn nhiều ảnh cùng lúc)
-                  </p>
-                </div>
-              )}
+              <div className="flex items-center justify-between text-[10px] text-gray-400 dark:text-gray-500 mt-1 px-0.5">
+                <span>Xuống dòng (Enter) là mỗi link khác nhau</span>
+                <span>{imagesList.length > 0 ? "Ảnh đầu tiên là ảnh đại diện" : ""}</span>
+              </div>
             </div>
 
-            {/* Gallery Grid xem trước các ảnh đã thêm */}
+            {/* Danh sách ảnh đã thêm (Thumbnail gallery) */}
             {imagesList.length > 0 && (
-              <div className="space-y-2">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-h-56 overflow-y-auto p-1">
+              <div className="pt-1">
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 max-h-48 overflow-y-auto p-1">
                   {imagesList.map((url, idx) => {
                     const isPrimary = idx === 0;
                     return (
                       <div
                         key={idx}
-                        className={`group relative rounded-xl overflow-hidden border bg-white dark:bg-slate-800 shadow-xs transition-all ${
+                        className={`group relative rounded-lg overflow-hidden border bg-white dark:bg-slate-800 shadow-xs transition-all aspect-square ${
                           isPrimary
-                            ? "border-blue-500 ring-2 ring-blue-500/30"
-                            : "border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600"
+                            ? "border-blue-500 ring-2 ring-blue-500/40"
+                            : "border-gray-200 dark:border-slate-700"
                         }`}
                       >
-                        {/* Ảnh thumbnail */}
-                        <div className="aspect-square w-full bg-gray-100 dark:bg-slate-900 relative">
-                          <img
-                            src={getImageUrl(url)}
-                            alt={`preview-${idx}`}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src =
-                                "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100&q=80";
-                            }}
-                          />
+                        <img
+                          src={getImageUrl(url)}
+                          alt={`preview-${idx}`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src =
+                              "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100&q=80";
+                          }}
+                        />
 
-                          {/* Badge ảnh chính */}
-                          {isPrimary && (
-                            <span className="absolute top-1.5 left-1.5 bg-blue-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-xs flex items-center gap-0.5">
-                              <Star size={9} fill="currentColor" /> Ảnh chính
-                            </span>
-                          )}
+                        {isPrimary && (
+                          <span className="absolute top-1 left-1 bg-blue-600 text-white text-[8px] font-black px-1 py-0.5 rounded shadow-xs">
+                            Chính
+                          </span>
+                        )}
 
-                          {/* Overlay thao tác khi hover */}
-                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 p-1">
-                            {!isPrimary && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSetPrimaryImage(idx);
-                                }}
-                                className="p-1.5 bg-white/90 dark:bg-slate-800/90 hover:bg-blue-600 hover:text-white text-gray-700 dark:text-gray-200 rounded-lg text-[10px] font-bold shadow transition-colors flex items-center gap-1"
-                                title="Đặt làm ảnh chính"
-                              >
-                                <Star size={12} />
-                              </button>
-                            )}
-
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 p-0.5">
+                          {!isPrimary && (
                             <button
                               type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemoveImage(idx);
-                              }}
-                              className="p-1.5 bg-rose-600/90 hover:bg-rose-700 text-white rounded-lg shadow transition-colors"
-                              title="Xóa ảnh này"
+                              onClick={() => handleSetPrimaryImage(idx)}
+                              className="p-1 bg-white/90 text-gray-800 hover:bg-blue-600 hover:text-white rounded text-[9px] font-bold shadow"
+                              title="Đặt làm ảnh chính"
                             >
-                              <Trash2 size={12} />
+                              <Star size={11} />
                             </button>
-                          </div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImage(idx)}
+                            className="p-1 bg-rose-600 text-white hover:bg-rose-700 rounded shadow"
+                            title="Xóa ảnh"
+                          >
+                            <Trash2 size={11} />
+                          </button>
                         </div>
                       </div>
                     );
@@ -1090,60 +1065,6 @@ export const AdminProductsPage: React.FC = () => {
                 </div>
               </div>
             )}
-
-            {/* Tuỳ chọn phụ: Dán URL hình ảnh */}
-            <div className="pt-1 border-t border-gray-200/60 dark:border-slate-800">
-              {!showUrlInput ? (
-                <button
-                  type="button"
-                  onClick={() => setShowUrlInput(true)}
-                  className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-semibold"
-                >
-                  <LinkIcon size={12} />
-                  <span>Hoặc thêm ảnh bằng liên kết URL (Internet)</span>
-                </button>
-              ) : (
-                <div className="space-y-1.5 animate-fade-in">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-400">
-                      Dán URL hình ảnh từ internet:
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowUrlInput(false)}
-                      className="text-[10px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                    >
-                      Đóng
-                    </button>
-                  </div>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={newImageUrl}
-                      onChange={(e) => setNewImageUrl(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          handleAddImage();
-                        }
-                      }}
-                      placeholder="https://images.unsplash.com/..."
-                      className="flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-                    />
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      icon={<Plus size={13} />}
-                      onClick={handleAddImage}
-                      className="text-xs whitespace-nowrap py-1.5"
-                    >
-                      Thêm link
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
 
           <div>

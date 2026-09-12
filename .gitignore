@@ -37,8 +37,7 @@ Thumbs.db
 *.sln
 *.sw?
 
-# Temporary & Cache
-.temp/
-.cache/
-.parcel-cache/
-.eslintcache/
+# Uploads & Media
+uploads/
+*/uploads/
+**/uploads/
