@@ -32,6 +32,7 @@ import {
   getOrderStatusText,
   getOrderStatusColor,
   getPaymentMethodText,
+  cleanProductName,
 } from '@/shared/lib/formatters';
 import { playNotificationSound } from '@/shared/lib/sound';
 import { Button } from '@/shared/ui/Button';
@@ -515,7 +516,7 @@ export const AccountPage: React.FC = () => {
                               </div>
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="font-black text-blue-600 dark:text-blue-400 text-sm sm:text-base">
-                                  #{ord.orderCode}
+                                  {ord.orderCode?.startsWith('#') ? ord.orderCode : `#${ord.orderCode}`}
                                 </span>
                                 <span className="text-gray-300 dark:text-slate-600 hidden sm:inline">•</span>
                                 <span className="text-[11px] sm:text-xs text-gray-400 dark:text-gray-400 flex items-center gap-1">
@@ -546,13 +547,14 @@ export const AccountPage: React.FC = () => {
                           <div className="divide-y divide-gray-100 dark:divide-slate-700/60">
                             {ord.items.map((item, idx) => {
                               const productId = typeof item.product === 'object' ? (item.product as any)?._id : item.product;
+                              const displayName = cleanProductName(item.name);
                               return (
                                 <div key={idx} className="py-3 first:pt-0 last:pb-0 flex items-start sm:items-center gap-3 sm:gap-4">
                                   {/* Ảnh sản phẩm */}
                                   <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 flex-shrink-0">
                                     <img
                                       src={item.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200&q=80'}
-                                      alt={item.name}
+                                      alt={displayName}
                                       className="w-full h-full object-cover"
                                     />
                                   </div>
@@ -564,11 +566,11 @@ export const AccountPage: React.FC = () => {
                                         to={`/products/${productId}`}
                                         className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 line-clamp-1 sm:line-clamp-2 transition-colors"
                                       >
-                                        {item.name}
+                                        {displayName}
                                       </Link>
                                     ) : (
                                       <p className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white line-clamp-1 sm:line-clamp-2">
-                                        {item.name}
+                                        {displayName}
                                       </p>
                                     )}
 
@@ -606,25 +608,27 @@ export const AccountPage: React.FC = () => {
                           </div>
 
                           {/* 3. Footer Đơn Hàng: Thông tin nhận hàng & Tổng tiền & Nút tác vụ */}
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 pt-3 border-t border-gray-100 dark:border-slate-700/80">
-                            <div className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 flex items-start gap-1.5 max-w-md">
-                              <MapPin size={14} className="text-gray-400 dark:text-gray-500 flex-shrink-0 mt-0.5" />
+                          <div className="pt-3 border-t border-gray-100 dark:border-slate-700/80 space-y-2.5">
+                            {/* Dòng 1: Thông tin giao hàng */}
+                            <div className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5 min-w-0">
+                              <MapPin size={13} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
                               <span className="truncate">
                                 Giao tới: <strong className="text-gray-800 dark:text-gray-200">{ord.customerInfo?.name}</strong> ({ord.customerInfo?.phone}) - {ord.customerInfo?.address}
                               </span>
                             </div>
 
-                            <div className="flex flex-wrap items-center justify-between sm:justify-end gap-3 sm:gap-4 flex-shrink-0">
-                              <div>
-                                <span className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 block sm:text-right">
+                            {/* Dòng 2: Tổng tiền (bên trái) & Các nút hành động (bên phải) */}
+                            <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-dashed border-gray-100 dark:border-slate-700/60">
+                              <div className="flex items-baseline gap-2">
+                                <span className="text-[11px] sm:text-xs text-gray-400 dark:text-gray-500">
                                   Tổng thanh toán ({totalQuantity} SP):
                                 </span>
-                                <span className="text-base sm:text-xl font-black text-rose-600 dark:text-rose-400 block sm:text-right">
+                                <span className="text-base sm:text-lg font-black text-rose-600 dark:text-rose-400">
                                   {formatCurrency(ord.totalAmount)}
                                 </span>
                               </div>
 
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap ml-auto">
                                 {ord.status === 'PENDING' && (
                                   <button
                                     type="button"
@@ -709,7 +713,7 @@ export const AccountPage: React.FC = () => {
                           className="w-10 h-10 rounded-xl object-cover border border-gray-100 dark:border-slate-700 flex-shrink-0"
                         />
                         <div className="min-w-0">
-                          <p className="font-bold text-gray-900 dark:text-white truncate">{item.name}</p>
+                          <p className="font-bold text-gray-900 dark:text-white truncate">{cleanProductName(item.name)}</p>
                           <div className="text-gray-400 dark:text-gray-400 text-[11px] flex items-center gap-1.5 mt-0.5 flex-wrap">
                             {item.size && (
                               <span className="px-1.5 py-0.2 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded font-medium text-[10px]">

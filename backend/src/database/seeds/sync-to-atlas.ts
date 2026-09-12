@@ -37,10 +37,30 @@ async function checkDatabase() {
     console.log(`- Đơn hàng (Orders): ${orderCount}`);
     console.log(`- Đơn nhập hàng (Imports): ${importCount}`);
 
-    const categories = await db.collection('categories').find().project({ name: 1, slug: 1, subcategories: 1 }).toArray();
-    console.log('\nDanh mục hiện có trong DB:', categories.map(c => `${c.name} (${c.slug})`));
+    // Cập nhật subcategories chuẩn cho các danh mục nếu chưa có
+    const categorySubcategoriesMap: Record<string, string[]> = {
+      'dien-thoai': ['iPhone', 'Samsung Galaxy', 'Xiaomi', 'OPPO', 'Vivo'],
+      'laptop': ['MacBook', 'Laptop Gaming', 'Laptop Văn Phòng', 'ASUS ROG', 'Dell XPS'],
+      'may-tinh-bang': ['iPad Pro / Air', 'Samsung Galaxy Tab', 'Xiaomi Pad'],
+      'phu-kien': ['Tai nghe AirPods / Buds', 'Chuột & Bàn phím', 'Củ sạc & Cáp nhanh', 'Loa Bluetooth', 'Bao da & Ốp lưng'],
+      'do-gia-dung': ['Robot hút bụi lau nhà', 'Nồi chiên không dầu', 'Quạt thông minh', 'Máy lọc không khí'],
+      'thoi-trang': ['Apple Watch & Smartwatch', 'Balo công nghệ', 'Túi chống sốc', 'Dây đeo & Phụ kiện'],
+    };
 
-    console.log('\n✅ Toàn bộ dữ liệu được quản lý động trực tiếp từ Database qua API.');
+    for (const [slug, subcategories] of Object.entries(categorySubcategoriesMap)) {
+      await db.collection('categories').updateOne(
+        { slug },
+        { $set: { subcategories, updatedAt: new Date() } }
+      );
+    }
+    console.log('✅ Đã cập nhật thể loại con (subcategories) thành công cho các danh mục.');
+
+    const categories = await db.collection('categories').find().project({ name: 1, slug: 1, subcategories: 1 }).toArray();
+    console.log('\nDanh mục sau cập nhật:');
+    categories.forEach(c => {
+      console.log(`- ${c.name} (${c.slug}): [${(c.subcategories || []).join(', ')}]`);
+    });
+
     await mongoose.disconnect();
     process.exit(0);
   } catch (err: any) {
@@ -50,3 +70,4 @@ async function checkDatabase() {
 }
 
 checkDatabase();
+

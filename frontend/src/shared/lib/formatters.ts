@@ -118,3 +118,17 @@ export function getPaymentMethodText(method: string): string {
   }
 }
 
+/**
+ * Trả về tên thuần của sản phẩm, loại bỏ triệt để phần variant nối thêm nếu có
+ * Ví dụ: "Laptop ASUS ROG Zephyrus G16 RTX 4070 (32GB RAM / 1TB SSD - Eclipse Gray (Xám Nhật Thực))" -> "Laptop ASUS ROG Zephyrus G16 RTX 4070"
+ */
+export function cleanProductName(name?: string): string {
+  if (!name) return '';
+  if (name.includes(' (')) {
+    return name.split(' (')[0].trim();
+  }
+  return name.trim();
+}
+
+
+

@@ -567,28 +567,29 @@ export const AdminProductsPage: React.FC = () => {
               <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Thể loại con / Nhóm
               </label>
-              {modalSubcategories && modalSubcategories.length > 0 ? (
-                <select
-                  value={subcategory}
-                  onChange={(e) => setSubcategory(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white p-2 text-xs focus:outline-none focus:border-blue-500"
-                >
-                  <option value="">-- Chọn thể loại con --</option>
-                  {modalSubcategories.map((sub, idx) => (
-                    <option key={idx} value={sub}>
-                      {sub}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type="text"
-                  value={subcategory}
-                  onChange={(e) => setSubcategory(e.target.value)}
-                  placeholder="VD: iPhone, ROG, Gaming..."
-                  className="w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white p-2 text-xs focus:outline-none focus:border-blue-500"
-                />
-              )}
+              <select
+                value={subcategory}
+                onChange={(e) => setSubcategory(e.target.value)}
+                disabled={!modalSubcategories || modalSubcategories.length === 0}
+                className="w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white p-2 text-xs focus:outline-none focus:border-blue-500 disabled:opacity-60 disabled:bg-gray-100 dark:disabled:bg-slate-900 cursor-pointer disabled:cursor-not-allowed"
+              >
+                {modalSubcategories && modalSubcategories.length > 0 ? (
+                  <>
+                    <option value="">-- Chọn thể loại con --</option>
+                    {modalSubcategories.map((sub, idx) => (
+                      <option key={idx} value={sub}>
+                        {sub}
+                      </option>
+                    ))}
+                    {/* Giữ lại subcategory hiện tại nếu đang edit mà không nằm trong danh sách chuẩn */}
+                    {subcategory && !modalSubcategories.includes(subcategory) && (
+                      <option value={subcategory}>{subcategory}</option>
+                    )}
+                  </>
+                ) : (
+                  <option value="">-- Thể loại này chưa có nhóm con --</option>
+                )}
+              </select>
             </div>
 
             <div>

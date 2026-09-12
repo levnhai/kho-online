@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Eye, CheckCircle2, AlertCircle, ShoppingBag, Filter, BellRing } from 'lucide-react';
 import { orderApi } from '@/entities/order/api/orderApi';
 import { Order, OrderStatus } from '@/shared/types';
-import { formatCurrency, formatDate, getOrderStatusText, getOrderStatusColor } from '@/shared/lib/formatters';
+import { formatCurrency, formatDate, getOrderStatusText, getOrderStatusColor, cleanProductName } from '@/shared/lib/formatters';
 import { playNotificationSound } from '@/shared/lib/sound';
 import { useSocket } from '@/app/providers/SocketContext';
 import { OrderStatusTimeline } from '@/entities/order/ui/OrderStatusTimeline';
@@ -316,7 +316,7 @@ export const AdminOrdersPage: React.FC = () => {
                         className="w-8 h-8 rounded-lg object-cover border border-gray-100 dark:border-slate-700"
                       />
                       <div>
-                        <p className="font-bold text-gray-900 dark:text-white truncate max-w-[150px] sm:max-w-none">{item.name}</p>
+                        <p className="font-bold text-gray-900 dark:text-white truncate max-w-[150px] sm:max-w-none">{cleanProductName(item.name)}</p>
                         <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
                           {item.size && (
                             <span className="px-1.5 py-0.2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[9px] font-bold rounded">

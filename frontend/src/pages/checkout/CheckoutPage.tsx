@@ -163,22 +163,15 @@ export const CheckoutPage: React.FC = () => {
           address,
           note,
         },
-        items: items.map((item) => {
-          const variantParts: string[] = [];
-          if (item.selectedSize) variantParts.push(item.selectedSize);
-          if (item.selectedColor) variantParts.push(item.selectedColor);
-          const variantSuffix = variantParts.length > 0 ? ` (${variantParts.join(' - ')})` : '';
-
-          return {
-            product: item.product._id,
-            name: `${item.product.name}${variantSuffix}`,
-            size: item.selectedSize || '',
-            color: item.selectedColor || '',
-            quantity: item.quantity,
-            price: getCartItemPrice(item),
-            image: item.product.images?.[0] || '',
-          };
-        }),
+        items: items.map((item) => ({
+          product: item.product._id,
+          name: item.product.name,
+          size: item.selectedSize || '',
+          color: item.selectedColor || '',
+          quantity: item.quantity,
+          price: getCartItemPrice(item),
+          image: item.product.images?.[0] || '',
+        })),
         paymentMethod,
       };
 

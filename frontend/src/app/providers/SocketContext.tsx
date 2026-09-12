@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from './AuthContext';
+import { apiCache } from '@/shared/lib/apiCache';
 
 interface SocketContextType {
   socket: Socket | null;
@@ -55,6 +56,17 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     newSocket.on('disconnect', () => {
       console.log('⚡ Socket.IO Disconnected');
       setIsConnected(false);
+    });
+
+    // Tự động dọn dẹp cache khi nhận tín hiệu cập nhật realtime từ Socket
+    newSocket.on('ORDER_CREATED', () => {
+      apiCache.invalidate('/orders');
+      apiCache.invalidate('/statistics');
+    });
+
+    newSocket.on('ORDER_STATUS_UPDATED', () => {
+      apiCache.invalidate('/orders');
+      apiCache.invalidate('/statistics');
     });
 
     setSocket(newSocket);
