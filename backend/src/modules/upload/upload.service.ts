@@ -2,12 +2,24 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import * as path from 'path';
 import * as fs from 'fs';
 
+export interface UploadFile {
+  fieldname?: string;
+  originalname: string;
+  encoding?: string;
+  mimetype: string;
+  size: number;
+  destination?: string;
+  filename: string;
+  path?: string;
+  buffer?: Buffer;
+}
+
 @Injectable()
 export class UploadService {
   /**
    * Format uploaded file to return a friendly URL and metadata
    */
-  formatFileResponse(file: Express.Multer.File, req?: any) {
+  formatFileResponse(file: UploadFile, req?: any) {
     if (!file) {
       throw new BadRequestException('Không tìm thấy tệp tải lên');
     }
@@ -28,7 +40,7 @@ export class UploadService {
   /**
    * Format multiple uploaded files
    */
-  formatMultipleFilesResponse(files: Express.Multer.File[], req?: any) {
+  formatMultipleFilesResponse(files: UploadFile[], req?: any) {
     if (!files || files.length === 0) {
       throw new BadRequestException('Chưa chọn tệp ảnh nào để tải lên');
     }

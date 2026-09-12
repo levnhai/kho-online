@@ -67,6 +67,18 @@ export const multerStorageOptions = {
   },
 };
 
+export interface UploadFile {
+  fieldname?: string;
+  originalname: string;
+  encoding?: string;
+  mimetype: string;
+  size: number;
+  destination?: string;
+  filename: string;
+  path?: string;
+  buffer?: Buffer;
+}
+
 @Controller('upload')
 export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
@@ -77,7 +89,7 @@ export class UploadController {
    */
   @Post('single')
   @UseInterceptors(FileInterceptor('file', multerStorageOptions))
-  uploadSingle(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
+  uploadSingle(@UploadedFile() file: UploadFile, @Req() req: any) {
     if (!file) {
       throw new BadRequestException('Vui lòng chọn một tệp hình ảnh để tải lên');
     }
@@ -90,7 +102,7 @@ export class UploadController {
    */
   @Post('multiple')
   @UseInterceptors(FilesInterceptor('files', 10, multerStorageOptions))
-  uploadMultiple(@UploadedFiles() files: Express.Multer.File[], @Req() req: any) {
+  uploadMultiple(@UploadedFiles() files: UploadFile[], @Req() req: any) {
     if (!files || files.length === 0) {
       throw new BadRequestException('Vui lòng chọn ít nhất một tệp hình ảnh để tải lên');
     }
