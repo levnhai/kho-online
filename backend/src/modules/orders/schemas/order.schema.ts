@@ -31,6 +31,9 @@ export class OrderItem {
   name: string;
 
   @Prop({ default: '', trim: true })
+  sellingOption: string;
+
+  @Prop({ default: '', trim: true })
   size: string;
 
   @Prop({ default: '', trim: true })

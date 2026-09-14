@@ -91,7 +91,7 @@ export const Footer: React.FC = () => {
             </div>
             <div className="flex flex-col">
               <span className="text-2xl font-black tracking-wider bg-gradient-to-r from-white via-slate-100 to-blue-300 bg-clip-text text-transparent">
-                CHANG
+                C.H.A.N.G
               </span>
               <span className="text-[10px] font-bold text-blue-400 tracking-widest uppercase -mt-1">
                 Online Store
@@ -99,7 +99,7 @@ export const Footer: React.FC = () => {
             </div>
           </div>
           <p className="text-sm text-slate-400 leading-relaxed mb-4">
-            CHANG Online – Hệ thống phân phối thiết bị công nghệ, điện thoại, máy
+            C.H.A.N.G Online – Hệ thống phân phối thiết bị công nghệ, điện thoại, máy
             tính và đồ gia dụng thông minh chính hãng hàng đầu Việt Nam.
           </p>
           <div className="space-y-2 text-xs text-slate-400">

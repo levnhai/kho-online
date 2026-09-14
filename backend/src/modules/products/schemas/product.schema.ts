@@ -5,6 +5,18 @@ import { Category } from '../../categories/schemas/category.schema';
 export type ProductDocument = Product & Document;
 
 @Schema({ _id: false })
+export class ProductSellingOption {
+  @Prop({ required: true, trim: true })
+  name: string;
+
+  @Prop({ required: true, min: 0 })
+  price: number;
+}
+
+export const ProductSellingOptionSchema =
+  SchemaFactory.createForClass(ProductSellingOption);
+
+@Schema({ _id: false })
 export class ProductSize {
   @Prop({ required: true, trim: true })
   name: string;
@@ -46,6 +58,9 @@ export class Product {
 
   @Prop({ required: true, default: 0, min: 0 })
   stock: number;
+
+  @Prop({ type: [ProductSellingOptionSchema], default: [] })
+  sellingOptions: ProductSellingOption[];
 
   @Prop({ type: [ProductSizeSchema], default: [] })
   sizes: ProductSize[];

@@ -18,72 +18,80 @@ export class OrdersService {
     return `#DH${randomNum}`;
   }
 
-  async create(userId: string, createOrderDto: any): Promise<OrderDocument> {
+  async create(userId: string, createOrderDto: any): Promise<any> {
     const { items, customerInfo, paymentMethod } = createOrderDto;
 
     if (!items || items.length === 0) {
       throw new BadRequestException('Giỏ hàng không có sản phẩm');
     }
 
-    let subtotal = 0;
-    const orderItems = [];
+    const createdOrders: OrderDocument[] = [];
 
     for (const item of items) {
       const product = await this.productModel.findById(item.product);
       if (!product) {
         throw new NotFoundException(`Sản phẩm với ID ${item.product} không tồn tại`);
       }
-      if (product.stock < item.quantity) {
-        throw new BadRequestException(`Sản phẩm ${product.name} chỉ còn lại ${product.stock} chiếc`);
-      }
 
-      const itemPrice = item.price && item.price > 0 ? item.price : (product.salePrice && product.salePrice > 0 ? product.salePrice : product.price);
-      const total = itemPrice * item.quantity;
-      subtotal += total;
+      const itemPrice =
+        item.price && item.price > 0
+          ? item.price
+          : product.salePrice && product.salePrice > 0
+          ? product.salePrice
+          : product.price;
+      const subtotal = itemPrice * item.quantity;
+      const shippingFee = 0;
+      const totalAmount = subtotal;
 
-      orderItems.push({
+      const orderItem = {
         product: product._id,
         name: item.name || product.name,
+        sellingOption: item.sellingOption || '',
         size: item.size || '',
         color: item.color || '',
         price: itemPrice,
         quantity: item.quantity,
         image: item.image || product.images?.[0] || '',
-        total,
-      });
+        total: subtotal,
+      };
 
-      // Trừ tồn kho và tăng lượt bán
+      // Tăng lượt bán
       await this.productModel.findByIdAndUpdate(product._id, {
-        $inc: { stock: -item.quantity, soldCount: item.quantity },
+        $inc: { soldCount: item.quantity },
       });
+
+      let orderCode = this.generateOrderCode();
+      let existing = await this.orderModel.findOne({ orderCode });
+      while (existing) {
+        orderCode = this.generateOrderCode();
+        existing = await this.orderModel.findOne({ orderCode });
+      }
+
+      const order = new this.orderModel({
+        orderCode,
+        customer: new mongoose.Types.ObjectId(userId),
+        customerInfo,
+        items: [orderItem],
+        subtotal,
+        shippingFee,
+        totalAmount,
+        paymentMethod: paymentMethod || 'COD',
+        status: OrderStatus.PENDING,
+        orderDate: new Date(),
+      });
+
+      const savedOrder = await order.save();
+      this.eventsGateway.notifyOrderCreated(savedOrder);
+      createdOrders.push(savedOrder);
     }
 
-    const shippingFee = subtotal >= 5000000 ? 0 : 30000;
-    const totalAmount = subtotal + shippingFee;
-
-    let orderCode = this.generateOrderCode();
-    let existing = await this.orderModel.findOne({ orderCode });
-    while (existing) {
-      orderCode = this.generateOrderCode();
-      existing = await this.orderModel.findOne({ orderCode });
-    }
-
-    const order = new this.orderModel({
-      orderCode,
-      customer: new mongoose.Types.ObjectId(userId),
-      customerInfo,
-      items: orderItems,
-      subtotal,
-      shippingFee,
-      totalAmount,
-      paymentMethod: paymentMethod || 'COD',
-      status: OrderStatus.PENDING,
-      orderDate: new Date(),
-    });
-
-    const savedOrder = await order.save();
-    this.eventsGateway.notifyOrderCreated(savedOrder);
-    return savedOrder;
+    const orderCodes = createdOrders.map((o) => o.orderCode);
+    return {
+      orderCode: orderCodes.join(', '),
+      orderCodes,
+      orders: createdOrders,
+      count: createdOrders.length,
+    };
   }
 
   async findMyOrders(userId: string): Promise<OrderDocument[]> {
@@ -174,11 +182,11 @@ export class OrdersService {
       throw new NotFoundException('Không tìm thấy đơn hàng');
     }
 
-    // Nếu đơn hàng bị huỷ từ trạng thái khác CANCELLED -> hoàn lại kho
+    // Nếu đơn hàng bị huỷ từ trạng thái khác CANCELLED -> giảm lại lượt bán
     if (status === OrderStatus.CANCELLED && order.status !== OrderStatus.CANCELLED) {
       for (const item of order.items) {
         await this.productModel.findByIdAndUpdate(item.product, {
-          $inc: { stock: item.quantity, soldCount: -item.quantity },
+          $inc: { soldCount: -item.quantity },
         });
       }
     }

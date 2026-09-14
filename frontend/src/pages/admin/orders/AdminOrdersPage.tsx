@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Eye, CheckCircle2, AlertCircle, ShoppingBag, Filter, BellRing } from 'lucide-react';
+import { Search, Eye, CheckCircle2, AlertCircle, ShoppingBag, Filter, BellRing, Calendar, User, MapPin, CreditCard } from 'lucide-react';
 import { orderApi } from '@/entities/order/api/orderApi';
 import { Order, OrderStatus } from '@/shared/types';
-import { formatCurrency, formatDate, getOrderStatusText, getOrderStatusColor, cleanProductName } from '@/shared/lib/formatters';
+import { formatCurrency, formatDate, getOrderStatusText, getOrderStatusColor, getPaymentMethodText, cleanProductName } from '@/shared/lib/formatters';
 import { playNotificationSound } from '@/shared/lib/sound';
 import { useSocket } from '@/app/providers/SocketContext';
 import { OrderStatusTimeline } from '@/entities/order/ui/OrderStatusTimeline';
 import { Button } from '@/shared/ui/Button';
 import { Modal } from '@/shared/ui/Modal';
 import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
+import { getImageUrl, handleImageError } from '@/shared/lib/imageHelper';
 
 export const AdminOrdersPage: React.FC = () => {
   const { socket } = useSocket();
@@ -157,6 +158,7 @@ export const AdminOrdersPage: React.FC = () => {
           >
             <option value="">Tất cả trạng thái</option>
             <option value="PENDING">Chờ xử lý</option>
+            <option value="CONFIRMED">Đã xác nhận</option>
             <option value="SHIPPING_TO_VN">Hàng đang về Việt Nam</option>
             <option value="IN_VN_WAREHOUSE">Đã về kho Việt Nam</option>
             <option value="SHIPPING">Vận chuyển</option>
@@ -229,6 +231,7 @@ export const AdminOrdersPage: React.FC = () => {
                           className={`font-bold py-1 px-2.5 rounded-lg border text-xs cursor-pointer focus:outline-none transition-colors shadow-2xs ${color.bg} ${color.text} ${color.border}`}
                         >
                           <option value="PENDING" className="bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 font-bold py-1">Chờ xử lý</option>
+                          <option value="CONFIRMED" className="bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 font-bold py-1">Đã xác nhận</option>
                           <option value="SHIPPING_TO_VN" className="bg-white dark:bg-slate-900 text-sky-600 dark:text-sky-400 font-bold py-1">Hàng đang về Việt Nam</option>
                           <option value="IN_VN_WAREHOUSE" className="bg-white dark:bg-slate-900 text-purple-600 dark:text-purple-400 font-bold py-1">Đã về kho Việt Nam</option>
                           <option value="SHIPPING" className="bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 font-bold py-1">Vận chuyển</option>
@@ -261,90 +264,156 @@ export const AdminOrdersPage: React.FC = () => {
         <Modal
           isOpen={!!selectedOrder}
           onClose={() => setSelectedOrder(null)}
-          title={`Chi tiết ${selectedOrder.orderCode}`}
+          title={`Chi tiết ${selectedOrder.orderCode.startsWith('#') ? selectedOrder.orderCode : `#${selectedOrder.orderCode}`}`}
           maxWidth="xl"
         >
-          <div className="space-y-4 text-xs max-h-[75vh] overflow-y-auto pr-1">
-            <div className="bg-gray-50 dark:bg-slate-800 p-3 rounded-2xl border border-gray-100 dark:border-slate-700">
-              <OrderStatusTimeline status={selectedOrder.status} />
-            </div>
+          <div className="space-y-4 text-xs max-h-[78vh] overflow-y-auto pr-1">
+            <OrderStatusTimeline status={selectedOrder.status} />
 
-            <div className="p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
-              <span className="font-bold text-gray-900 dark:text-white text-xs">
-                Cập nhật trạng thái:
+            {/* Thanh cập nhật trạng thái đơn hàng */}
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/60 dark:to-indigo-950/60 border border-blue-200 dark:border-blue-800/80 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-xs">
+              <span className="font-extrabold text-blue-900 dark:text-blue-200 text-xs sm:text-sm">
+                Cập nhật trạng thái đơn hàng:
               </span>
 
               <select
                 value={selectedOrder.status}
                 disabled={updatingStatus}
                 onChange={(e) => handleUpdateStatus(selectedOrder._id, e.target.value as OrderStatus)}
-                className="font-bold py-1.5 px-2.5 rounded-xl border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-300 text-xs shadow-2xs focus:outline-none"
+                className="font-bold py-2 px-3 rounded-xl border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-300 text-xs shadow-xs focus:outline-none cursor-pointer"
               >
                 <option value="PENDING" className="bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 font-bold py-1">1. Chờ xử lý</option>
-                <option value="SHIPPING_TO_VN" className="bg-white dark:bg-slate-900 text-sky-600 dark:text-sky-400 font-bold py-1">2. Hàng đang về Việt Nam</option>
-                <option value="IN_VN_WAREHOUSE" className="bg-white dark:bg-slate-900 text-purple-600 dark:text-purple-400 font-bold py-1">3. Đã về kho Việt Nam</option>
-                <option value="SHIPPING" className="bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 font-bold py-1">4. Vận chuyển</option>
-                <option value="COMPLETED" className="bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 font-bold py-1">5. Hoàn thành</option>
-                <option value="CANCELLED" className="bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 font-bold py-1">6. Đã huỷ</option>
+                <option value="CONFIRMED" className="bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 font-bold py-1">2. Đã xác nhận</option>
+                <option value="SHIPPING_TO_VN" className="bg-white dark:bg-slate-900 text-sky-600 dark:text-sky-400 font-bold py-1">3. Hàng đang về Việt Nam</option>
+                <option value="IN_VN_WAREHOUSE" className="bg-white dark:bg-slate-900 text-purple-600 dark:text-purple-400 font-bold py-1">4. Đã về kho Việt Nam</option>
+                <option value="SHIPPING" className="bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 font-bold py-1">5. Vận chuyển</option>
+                <option value="COMPLETED" className="bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 font-bold py-1">6. Hoàn thành</option>
+                <option value="CANCELLED" className="bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 font-bold py-1">7. Đã huỷ</option>
               </select>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-gray-50 dark:bg-slate-800 p-3 rounded-2xl">
-              <div>
-                <p className="font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider mb-0.5">Khách nhận:</p>
-                <p className="font-bold text-gray-900 dark:text-white">{selectedOrder.customerInfo?.name}</p>
-                <p className="text-gray-500 dark:text-slate-400">{selectedOrder.customerInfo?.phone}</p>
+            {/* Thông tin đơn hàng tóm tắt */}
+            <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-gray-50 dark:bg-slate-800/80 rounded-2xl border border-gray-100 dark:border-slate-700/80 text-gray-600 dark:text-gray-300">
+              <div className="flex items-center gap-1.5 font-medium">
+                <Calendar size={14} className="text-blue-500" />
+                <span>Ngày đặt: <strong>{formatDate(selectedOrder.orderDate || (selectedOrder as any).createdAt)}</strong></span>
               </div>
-              <div>
-                <p className="font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider mb-0.5">Địa chỉ:</p>
-                <p className="text-gray-800 dark:text-slate-200">{selectedOrder.customerInfo?.address}</p>
+              <div className="flex items-center gap-1.5 font-medium">
+                <CreditCard size={14} className="text-emerald-500" />
+                <span>PTTT: <strong className="uppercase">{getPaymentMethodText(selectedOrder.paymentMethod)}</strong></span>
+              </div>
+            </div>
+
+            {/* Thông tin khách hàng & Địa chỉ */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="bg-gray-50 dark:bg-slate-800/80 p-3.5 rounded-2xl border border-gray-100 dark:border-slate-700/80 space-y-1.5">
+                <div className="flex items-center gap-1.5 text-gray-400 dark:text-gray-400 font-bold uppercase tracking-wider text-[10px]">
+                  <User size={12} className="text-blue-500" />
+                  <span>Khách hàng nhận</span>
+                </div>
+                <p className="font-extrabold text-gray-900 dark:text-white text-sm">
+                  {selectedOrder.customerInfo?.name || (typeof selectedOrder.customer === 'object' ? (selectedOrder.customer as any)?.name : 'Khách hàng')}
+                </p>
+                <p className="text-gray-600 dark:text-gray-300 font-medium">
+                  SĐT: {selectedOrder.customerInfo?.phone || (typeof selectedOrder.customer === 'object' ? (selectedOrder.customer as any)?.phone : 'Chưa có')}
+                </p>
+              </div>
+
+              <div className="bg-gray-50 dark:bg-slate-800/80 p-3.5 rounded-2xl border border-gray-100 dark:border-slate-700/80 space-y-1.5">
+                <div className="flex items-center gap-1.5 text-gray-400 dark:text-gray-400 font-bold uppercase tracking-wider text-[10px]">
+                  <MapPin size={12} className="text-rose-500" />
+                  <span>Địa chỉ nhận hàng</span>
+                </div>
+                <p className="text-gray-800 dark:text-slate-200 font-medium leading-relaxed">
+                  {selectedOrder.customerInfo?.address || 'Chưa cung cấp'}
+                </p>
+                {selectedOrder.customerInfo?.note && (
+                  <p className="text-[11px] text-amber-600 dark:text-amber-400 italic pt-0.5">
+                    Ghi chú: {selectedOrder.customerInfo.note}
+                  </p>
+                )}
               </div>
             </div>
 
             {/* Mặt hàng */}
-            <div className="space-y-1.5">
-              <p className="font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider">
-                MẶT HÀNG ({selectedOrder.items.length})
-              </p>
-              <div className="divide-y divide-gray-100 dark:divide-slate-700 max-h-40 overflow-y-auto">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700/80 p-3.5 space-y-3">
+              <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-700/80 pb-2">
+                <p className="font-bold text-gray-900 dark:text-white text-xs uppercase tracking-wider">
+                  SẢN PHẨM ĐƠN HÀNG ({selectedOrder.items.length})
+                </p>
+              </div>
+
+              <div className="divide-y divide-gray-100 dark:divide-slate-700/70">
                 {selectedOrder.items.map((item, idx) => (
-                  <div key={idx} className="py-2 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                  <div key={idx} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
                       <img
-                        src={item.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100&q=80'}
+                        src={getImageUrl(item.image)}
                         alt={item.name}
-                        className="w-8 h-8 rounded-lg object-cover border border-gray-100 dark:border-slate-700"
+                        onError={handleImageError}
+                        className="w-12 h-12 rounded-xl object-cover border border-gray-100 dark:border-slate-700 flex-shrink-0 shadow-2xs"
                       />
-                      <div>
-                        <p className="font-bold text-gray-900 dark:text-white truncate max-w-[150px] sm:max-w-none">{cleanProductName(item.name)}</p>
-                        <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-bold text-gray-900 dark:text-white text-xs truncate">
+                          {cleanProductName(item.name)}
+                        </p>
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                          {item.sellingOption && (
+                            <span className="px-2 py-0.5 bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800/80 rounded-md font-bold text-[10px]">
+                              {item.sellingOption}
+                            </span>
+                          )}
                           {item.size && (
-                            <span className="px-1.5 py-0.2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[9px] font-bold rounded">
+                            <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-800/80 rounded-md font-bold text-[10px]">
                               Size: {item.size}
                             </span>
                           )}
                           {item.color && (
-                            <span className="px-1.5 py-0.2 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-[9px] font-bold rounded">
+                            <span className="px-2 py-0.5 bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-800/80 rounded-md font-bold text-[10px]">
                               Màu: {item.color}
                             </span>
                           )}
-                          <p className="text-gray-400 dark:text-slate-400 text-[10px]">
-                            {formatCurrency(item.price)} x {item.quantity}
-                          </p>
                         </div>
+                        <p className="text-gray-400 dark:text-gray-400 text-[11px] mt-1">
+                          {formatCurrency(item.price)} × {item.quantity}
+                        </p>
                       </div>
                     </div>
-                    <span className="font-bold text-gray-900 dark:text-white">{formatCurrency(item.total)}</span>
+
+                    <div className="text-right flex-shrink-0">
+                      <span className="font-extrabold text-gray-900 dark:text-white text-sm block">
+                        {formatCurrency(item.total || item.price * item.quantity)}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="border-t border-gray-100 dark:border-slate-700 pt-2 flex justify-between items-baseline text-sm">
-              <span className="font-bold text-gray-800 dark:text-slate-200">Tổng tiền:</span>
-              <span className="text-rose-600 dark:text-rose-400 font-black text-base">
-                {formatCurrency(selectedOrder.totalAmount)}
-              </span>
+            {/* Chi phí thanh toán */}
+            <div className="bg-gray-50 dark:bg-slate-800/80 p-3.5 rounded-2xl border border-gray-100 dark:border-slate-700/80 space-y-2">
+              <div className="flex justify-between text-gray-500 dark:text-gray-400 text-xs">
+                <span>Tạm tính hàng hoá:</span>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {formatCurrency(selectedOrder.subtotal || selectedOrder.items.reduce((s, it) => s + (it.total || it.price * it.quantity), 0))}
+                </span>
+              </div>
+                <div className="flex justify-between text-gray-500 dark:text-gray-400 text-xs">
+                  <span>Phí vận chuyển:</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {!selectedOrder.shippingFee || selectedOrder.shippingFee === 0 ? (
+                      <span className="text-emerald-600 dark:text-emerald-400 font-bold">Miễn phí</span>
+                    ) : (
+                      formatCurrency(selectedOrder.shippingFee)
+                    )}
+                  </span>
+                </div>
+              <div className="border-t border-gray-200 dark:border-slate-700 pt-2 flex justify-between items-baseline">
+                <span className="font-extrabold text-gray-900 dark:text-white text-sm">Tổng cộng đơn hàng:</span>
+                <span className="text-rose-600 dark:text-rose-400 text-lg sm:text-xl font-black">
+                  {formatCurrency(selectedOrder.totalAmount)}
+                </span>
+              </div>
             </div>
           </div>
         </Modal>

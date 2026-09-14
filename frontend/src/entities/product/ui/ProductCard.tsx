@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ShoppingCart, Eye, Star } from 'lucide-react';
 import { Product } from '@/shared/types';
 import { formatCurrency } from '@/shared/lib/formatters';
-import { getImageUrl } from '@/shared/lib/imageHelper';
+import { getImageUrl, handleImageError } from '@/shared/lib/imageHelper';
 import { Button } from '@/shared/ui/Button';
 
 interface ProductCardProps {
@@ -12,29 +12,10 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
-  const hasDiscount = product.salePrice && product.salePrice > 0 && product.salePrice < product.price;
-  const discountPercent = hasDiscount
-    ? Math.round(((product.price - product.salePrice!) / product.price) * 100)
-    : 0;
-
   const categoryName = typeof product.category === 'object' ? product.category?.name : 'Sản phẩm';
 
   return (
     <div className="group relative bg-white dark:bg-slate-800 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-slate-700/80 shadow-xs hover:shadow-xl hover:border-blue-100 dark:hover:border-slate-600 transition-all duration-300 flex flex-col overflow-hidden">
-      {/* Discount Badge */}
-      {hasDiscount && (
-        <span className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 bg-rose-500 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md sm:rounded-lg shadow-sm">
-          -{discountPercent}%
-        </span>
-      )}
-
-      {/* Stock warning */}
-      {product.stock <= 5 && product.stock > 0 && (
-        <span className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10 bg-amber-500/95 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-md backdrop-blur-xs">
-          Sắp hết
-        </span>
-      )}
-
       {/* Image */}
       <Link
         to={`/products/${product._id}`}
@@ -43,6 +24,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
         <img
           src={getImageUrl(product.images?.[0])}
           alt={product.name}
+          onError={handleImageError}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
         />
@@ -70,34 +52,20 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
           {product.name}
         </Link>
 
-        {/* Stock & Variants status */}
-        <div className="flex items-center justify-between text-[11px] sm:text-xs text-gray-400 dark:text-slate-400 mb-2">
-          <p>
-            {product.stock > 0 ? (
-              <span>Còn <strong className="text-gray-700 dark:text-gray-200 font-semibold">{product.stock}</strong> SP</span>
-            ) : (
-              <span className="text-rose-500 font-bold">Hết hàng</span>
-            )}
-          </p>
-          {product.colors && product.colors.length > 0 && (
+        {/* Colors badge if available */}
+        {product.colors && product.colors.length > 0 && (
+          <div className="mb-2">
             <span className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-1.5 py-0.5 rounded border border-purple-100 dark:border-purple-900/40">
               {product.colors.length} màu
             </span>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Price Area */}
         <div className="mt-auto mb-3">
-          <div className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-2">
-            <span className="text-sm sm:text-lg font-black text-rose-600 dark:text-rose-400">
-              {formatCurrency(hasDiscount ? product.salePrice! : product.price)}
-            </span>
-            {hasDiscount && (
-              <span className="text-[10px] sm:text-xs text-gray-400 line-through">
-                {formatCurrency(product.price)}
-              </span>
-            )}
-          </div>
+          <span className="text-sm sm:text-lg font-black text-rose-600 dark:text-rose-400">
+            {formatCurrency(product.price)}
+          </span>
         </div>
 
         {/* Action Buttons */}
@@ -117,7 +85,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
             variant="primary"
             size="sm"
             className="w-full text-[11px] sm:text-xs font-semibold py-1.5 px-1 sm:px-2 whitespace-nowrap"
-            disabled={product.stock <= 0}
             onClick={() => onAddToCart && onAddToCart(product)}
             icon={<ShoppingCart size={13} />}
           >

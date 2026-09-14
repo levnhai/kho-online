@@ -73,7 +73,7 @@ export const LoginPage: React.FC = () => {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-3xl font-black tracking-widest bg-gradient-to-r from-blue-600 via-indigo-500 to-cyan-500 dark:from-blue-400 dark:via-indigo-300 dark:to-cyan-300 bg-clip-text text-transparent">
-                CHANG
+                C.H.A.N.G
               </span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700/50 shadow-xs">
                 STORE
@@ -82,7 +82,7 @@ export const LoginPage: React.FC = () => {
           </Link>
           <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white mt-2">Đăng nhập tài khoản</h2>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Chào mừng bạn quay trở lại với hệ thống bán hàng CHANG
+            Chào mừng bạn quay trở lại với hệ thống bán hàng C.H.A.N.G
           </p>
         </div>
 

@@ -19,6 +19,7 @@ import { DashboardData } from '@/entities/statistics/model/types';
 import { formatCurrency, formatDate, getOrderStatusText, getOrderStatusColor } from '@/shared/lib/formatters';
 import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
 import { Button } from '@/shared/ui/Button';
+import { getImageUrl, handleImageError } from '@/shared/lib/imageHelper';
 
 type TimeRange = 'today' | '7days' | 'month' | 'year';
 
@@ -323,8 +324,9 @@ export const AdminDashboardPage: React.FC = () => {
                         {medals[idx]}
                       </span>
                       <img
-                        src={sp.images?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100&q=80'}
+                        src={getImageUrl(sp.images?.[0])}
                         alt={sp.name}
+                        onError={handleImageError}
                         className="w-7 h-7 rounded-lg object-cover border border-gray-100 dark:border-slate-700 flex-shrink-0"
                       />
                       <div className="min-w-0 flex-1">
@@ -332,7 +334,7 @@ export const AdminDashboardPage: React.FC = () => {
                           {sp.name}
                         </p>
                         <p className="text-[10px] text-rose-600 dark:text-rose-400 font-bold">
-                          {formatCurrency(sp.salePrice || sp.price)}
+                          {formatCurrency(sp.price)}
                         </p>
                       </div>
                     </div>

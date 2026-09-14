@@ -17,6 +17,40 @@ export interface SubCategory {
   productCount?: number;
 }
 
+export interface ColorItem {
+  _id: string;
+  name: string;
+  code: string;
+  hexCode: string;
+  description?: string;
+  isActive?: boolean;
+  productCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SetOptionItem {
+  _id: string;
+  name: string;
+  code?: string;
+  description?: string;
+  order?: number;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SizeItem {
+  _id: string;
+  name: string;
+  code?: string;
+  description?: string;
+  order?: number;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Category {
   _id: string;
   name: string;
@@ -25,6 +59,11 @@ export interface Category {
   icon?: string;
   productCount?: number;
   subcategories?: string[];
+}
+
+export interface ProductSellingOption {
+  name: string;
+  price: number;
 }
 
 export interface ProductSize {
@@ -44,6 +83,7 @@ export interface Product {
   price: number;
   salePrice?: number;
   stock: number;
+  sellingOptions?: ProductSellingOption[];
   sizes?: ProductSize[];
   colors?: string[];
   images: string[];
@@ -61,6 +101,7 @@ export interface Product {
 export interface OrderItem {
   product: string | Product;
   name: string;
+  sellingOption?: string;
   size?: string;
   color?: string;
   price: number;
@@ -107,6 +148,7 @@ export interface Order {
 export interface CartItem {
   product: Product;
   quantity: number;
+  selectedOption?: string;
   selectedSize?: string;
   selectedColor?: string;
 }
