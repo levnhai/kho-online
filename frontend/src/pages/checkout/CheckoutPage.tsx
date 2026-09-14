@@ -461,60 +461,6 @@ export const CheckoutPage: React.FC = () => {
                     </p>
                   </div>
                 </label>
-
-                {/* BANK_TRANSFER */}
-                <label
-                  className={`flex items-start gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
-                    paymentMethod === 'BANK_TRANSFER'
-                      ? 'border-blue-600 bg-blue-50/50 dark:bg-blue-900/20 dark:border-blue-500'
-                      : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="BANK_TRANSFER"
-                    checked={paymentMethod === 'BANK_TRANSFER'}
-                    onChange={() => setPaymentMethod('BANK_TRANSFER')}
-                    className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 font-bold text-gray-900 dark:text-white text-sm">
-                      <Smartphone size={18} className="text-blue-600 dark:text-blue-400" />
-                      <span>Chuyển khoản ngân hàng (QR Code 24/7)</span>
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                      Chuyển tiền nhanh qua mã VietQR hoặc số tài khoản ngân hàng chính thức của CHANG.
-                    </p>
-                  </div>
-                </label>
-
-                {/* ONLINE */}
-                <label
-                  className={`flex items-start gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
-                    paymentMethod === 'ONLINE'
-                      ? 'border-blue-600 bg-blue-50/50 dark:bg-blue-900/20 dark:border-blue-500'
-                      : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="ONLINE"
-                    checked={paymentMethod === 'ONLINE'}
-                    onChange={() => setPaymentMethod('ONLINE')}
-                    className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 font-bold text-gray-900 dark:text-white text-sm">
-                      <CreditCard size={18} className="text-indigo-600 dark:text-indigo-400" />
-                      <span>Thanh toán trực tuyến (VNPAY, MoMo, Visa/Master)</span>
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                      Cổng thanh toán điện tử an toàn, hỗ trợ quét mã ví điện tử hoặc thẻ quốc tế.
-                    </p>
-                  </div>
-                </label>
               </div>
             </div>
           </div>
