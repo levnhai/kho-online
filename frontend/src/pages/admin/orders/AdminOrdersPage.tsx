@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Eye, CheckCircle2, AlertCircle, ShoppingBag, Filter, BellRing, Calendar, User, MapPin, CreditCard } from 'lucide-react';
+import { Search, Eye, CheckCircle2, AlertCircle, ShoppingBag, Filter, BellRing, Calendar, User, MapPin, CreditCard, Trash2 } from 'lucide-react';
 import { orderApi } from '@/entities/order/api/orderApi';
 import { Order, OrderStatus } from '@/shared/types';
 import { formatCurrency, formatDate, getOrderStatusText, getOrderStatusColor, getPaymentMethodText, cleanProductName } from '@/shared/lib/formatters';
@@ -28,6 +28,7 @@ export const AdminOrdersPage: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [clearing, setClearing] = useState(false);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -122,6 +123,45 @@ export const AdminOrdersPage: React.FC = () => {
     }
   };
 
+  const handleDeleteOrder = async (orderId: string, orderCode: string) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn đơn hàng ${orderCode}?`)) {
+      return;
+    }
+    try {
+      await orderApi.deleteOrder(orderId);
+      setOrders((prev) => prev.filter((o) => o._id !== orderId));
+      setTotal((prev) => Math.max(0, prev - 1));
+      if (selectedOrder?._id === orderId) {
+        setSelectedOrder(null);
+      }
+      setActionSuccess(`Đã xóa đơn hàng ${orderCode} thành công`);
+      setTimeout(() => setActionSuccess(''), 3000);
+    } catch (err: any) {
+      alert(err.message || 'Xóa đơn hàng thất bại');
+    }
+  };
+
+  const handleClearAllOrders = async () => {
+    const confirmed = window.confirm(
+      '⚠️ BẠN CÓ CHẮC CHẮN MUỐN XÓA TOÀN BỘ ĐƠN HÀNG THỬ NGHIỆM KHÔNG?\n\n- Toàn bộ danh sách đơn hàng sẽ bị xóa.\n- Doanh thu và lượt bán sẽ được reset về 0.'
+    );
+    if (!confirmed) return;
+
+    setClearing(true);
+    try {
+      const res = await orderApi.clearAllOrders();
+      setOrders([]);
+      setTotal(0);
+      setSelectedOrder(null);
+      setActionSuccess(res?.message || 'Đã xóa toàn bộ đơn hàng test thành công');
+      setTimeout(() => setActionSuccess(''), 4000);
+    } catch (err: any) {
+      alert(err.message || 'Xóa đơn hàng thất bại');
+    } finally {
+      setClearing(false);
+    }
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6 text-gray-900 dark:text-white">
       {/* Realtime Alert banner for new orders */}
@@ -179,8 +219,25 @@ export const AdminOrdersPage: React.FC = () => {
           </select>
         </div>
 
-        <div className="text-[11px] sm:text-xs font-bold text-gray-500 dark:text-slate-400 text-right sm:text-left">
-          Tổng số: <strong className="text-blue-600 dark:text-blue-400">{total}</strong> đơn
+        <div className="flex items-center gap-3 justify-between sm:justify-end">
+          <div className="text-[11px] sm:text-xs font-bold text-gray-500 dark:text-slate-400">
+            Tổng số: <strong className="text-blue-600 dark:text-blue-400">{total}</strong> đơn
+          </div>
+
+          {orders.length > 0 && (
+            <Button
+              type="button"
+              variant="danger"
+              size="sm"
+              loading={clearing}
+              icon={<Trash2 size={13} />}
+              onClick={handleClearAllOrders}
+              className="text-xs py-1.5 px-2.5 font-bold whitespace-nowrap cursor-pointer"
+              title="Xóa sạch toàn bộ danh sách đơn hàng test"
+            >
+              Xóa tất cả đơn test
+            </Button>
+          )}
         </div>
       </div>
 
@@ -270,15 +327,25 @@ export const AdminOrdersPage: React.FC = () => {
                         </select>
                       </td>
                       <td className="py-3.5 px-4 text-right">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          icon={<Eye size={13} />}
-                          onClick={() => setSelectedOrder(ord)}
-                          className="text-xs py-1 px-2.5 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-650"
-                        >
-                          Chi tiết
-                        </Button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            icon={<Eye size={13} />}
+                            onClick={() => setSelectedOrder(ord)}
+                            className="text-xs py-1 px-2.5 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-650"
+                          >
+                            Chi tiết
+                          </Button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteOrder(ord._id, ord.orderCode)}
+                            className="p-1.5 text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
+                            title="Xóa đơn hàng này"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

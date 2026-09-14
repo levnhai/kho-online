@@ -232,4 +232,36 @@ export class OrdersService {
     ]);
     return result[0]?.total || 0;
   }
+
+  async delete(id: string): Promise<{ success: boolean; message: string }> {
+    const order = await this.orderModel.findById(id);
+    if (!order) {
+      throw new NotFoundException('Không tìm thấy đơn hàng');
+    }
+
+    // Giảm số lượt bán nếu đơn hàng chưa bị huỷ
+    if (order.status !== OrderStatus.CANCELLED) {
+      for (const item of order.items) {
+        if (item.product) {
+          await this.productModel.findByIdAndUpdate(item.product, {
+            $inc: { soldCount: -item.quantity },
+          });
+        }
+      }
+    }
+
+    await this.orderModel.findByIdAndDelete(id);
+    return { success: true, message: 'Đã xóa đơn hàng thành công' };
+  }
+
+  async clearAllOrders(): Promise<{ success: boolean; deletedCount: number; message: string }> {
+    const res = await this.orderModel.deleteMany({});
+    // Reset soldCount của tất cả sản phẩm về 0
+    await this.productModel.updateMany({}, { soldCount: 0 });
+    return {
+      success: true,
+      deletedCount: res.deletedCount || 0,
+      message: `Đã xóa toàn bộ ${res.deletedCount || 0} đơn hàng và làm mới số liệu thống kê`,
+    };
+  }
 }

@@ -1,15 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { BarChart3, TrendingUp, DollarSign, PackageCheck, Calendar } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { BarChart3, TrendingUp, DollarSign, PackageCheck, Calendar, Trash2, CheckCircle2 } from 'lucide-react';
 import { statApi } from '@/entities/statistics/api/statApi';
+import { orderApi } from '@/entities/order/api/orderApi';
 import { formatCurrency } from '@/shared/lib/formatters';
 import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
+import { Button } from '@/shared/ui/Button';
 
 export const AdminStatisticsPage: React.FC = () => {
   const [range, setRange] = useState<'today' | 'week' | 'month' | 'year'>('month');
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [clearing, setClearing] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
 
-  useEffect(() => {
+  const fetchStats = useCallback(() => {
     setLoading(true);
     statApi
       .getSalesReport(range)
@@ -17,6 +21,29 @@ export const AdminStatisticsPage: React.FC = () => {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [range]);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
+
+  const handleClearAllTestData = async () => {
+    const confirmed = window.confirm(
+      '⚠️ BẠN CÓ CHẮC CHẮN MUỐN XÓA TOÀN BỘ ĐƠN HÀNG THỬ NGHIỆM KHÔNG?\n\n- Toàn bộ đơn hàng sẽ được xóa vĩnh viễn.\n- Doanh thu và số lượt bán của các sản phẩm sẽ được reset về 0 để chuẩn bị bán hàng thật.'
+    );
+    if (!confirmed) return;
+
+    setClearing(true);
+    try {
+      const res = await orderApi.clearAllOrders();
+      setSuccessMsg(res?.message || 'Đã xóa toàn bộ đơn hàng test và làm mới số liệu thống kê về 0 thành công!');
+      fetchStats();
+      setTimeout(() => setSuccessMsg(''), 4000);
+    } catch (err: any) {
+      alert(err.message || 'Xóa dữ liệu test thất bại');
+    } finally {
+      setClearing(false);
+    }
+  };
 
   const rangeButtons = [
     { label: 'Hôm nay', value: 'today' },
@@ -27,27 +54,50 @@ export const AdminStatisticsPage: React.FC = () => {
 
   return (
     <div className="space-y-4 sm:space-y-8">
-      {/* Range filter buttons */}
+      {/* Alert thành công */}
+      {successMsg && (
+        <div className="p-3 sm:p-4 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 rounded-2xl border border-emerald-200 dark:border-emerald-800 text-xs font-semibold flex items-center gap-2 animate-fade-in">
+          <CheckCircle2 size={16} />
+          <span>{successMsg}</span>
+        </div>
+      )}
+
+      {/* Range filter buttons & Reset data button */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-800 p-4 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm transition-colors">
         <div className="flex items-center gap-2 font-bold text-gray-900 dark:text-white text-xs sm:text-sm">
           <Calendar size={16} className="text-blue-600 dark:text-blue-400" />
           <span>Khoảng thời gian:</span>
         </div>
 
-        <div className="grid grid-cols-2 sm:flex gap-1.5 sm:gap-2">
-          {rangeButtons.map((btn) => (
-            <button
-              key={btn.value}
-              onClick={() => setRange(btn.value as any)}
-              className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-bold transition-all text-center ${
-                range === btn.value
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600'
-              }`}
-            >
-              {btn.label}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2 justify-between sm:justify-end">
+          <div className="grid grid-cols-2 sm:flex gap-1.5 sm:gap-2">
+            {rangeButtons.map((btn) => (
+              <button
+                key={btn.value}
+                onClick={() => setRange(btn.value as any)}
+                className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-bold transition-all text-center cursor-pointer ${
+                  range === btn.value
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600'
+                }`}
+              >
+                {btn.label}
+              </button>
+            ))}
+          </div>
+
+          <Button
+            type="button"
+            variant="danger"
+            size="sm"
+            loading={clearing}
+            icon={<Trash2 size={14} />}
+            onClick={handleClearAllTestData}
+            className="text-xs py-1.5 px-3 font-bold cursor-pointer"
+            title="Xóa toàn bộ các đơn hàng thử nghiệm và đưa thống kê về 0"
+          >
+            Xóa dữ liệu test
+          </Button>
         </div>
       </div>
 

@@ -11,7 +11,12 @@ export class AuthService {
   ) {}
 
   async register(registerDto: any) {
-    const phone = (registerDto.phone || '').trim();
+    const name = (registerDto.name || '').trim();
+    if (!name) {
+      throw new BadRequestException('Vui lòng nhập họ và tên');
+    }
+
+    const phone = (registerDto.phone || '').trim().replace(/\s+/g, '');
     if (!phone) {
       throw new BadRequestException('Vui lòng nhập số điện thoại');
     }
@@ -21,23 +26,30 @@ export class AuthService {
       throw new BadRequestException('Số điện thoại không hợp lệ (gồm 10 số, ví dụ 0912345678)');
     }
 
+    const password = registerDto.password;
+    if (!password || typeof password !== 'string' || password.length < 6) {
+      throw new BadRequestException('Mật khẩu phải có độ dài tối thiểu 6 ký tự');
+    }
+
     const existingPhone = await this.usersService.findByPhone(phone);
     if (existingPhone) {
       throw new BadRequestException('Số điện thoại này đã được đăng ký tài khoản');
     }
 
+    let email = '';
     if (registerDto.email && registerDto.email.trim()) {
-      const existingEmail = await this.usersService.findByEmail(registerDto.email.trim());
+      email = registerDto.email.trim().toLowerCase();
+      const existingEmail = await this.usersService.findByEmail(email);
       if (existingEmail) {
         throw new BadRequestException('Email này đã được sử dụng');
       }
     }
 
     const user = await this.usersService.create({
-      name: registerDto.name?.trim(),
+      name,
       phone,
-      email: registerDto.email?.trim()?.toLowerCase() || '',
-      password: registerDto.password,
+      email,
+      password,
     });
 
     const token = this.generateToken(user);
@@ -45,10 +57,10 @@ export class AuthService {
       user: {
         _id: user._id,
         name: user.name,
-        email: user.email,
+        email: user.email || '',
         phone: user.phone,
         role: user.role,
-        address: user.address,
+        address: user.address || '',
       },
       token,
     };

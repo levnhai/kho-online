@@ -26,6 +26,7 @@ import {
   DollarSign,
   ChevronRight,
   ChevronLeft,
+  Check,
 } from "lucide-react";
 import { productApi } from "@/entities/product/api/productApi";
 import { categoryApi } from "@/entities/category/api/categoryApi";
@@ -59,9 +60,18 @@ export const AdminProductsPage: React.FC = () => {
   const [newCustomOptionName, setNewCustomOptionName] = useState("");
   const [isCreatingSize, setIsCreatingSize] = useState(false);
   const [newCustomSizeName, setNewCustomSizeName] = useState("");
-  const [isCreatingColor, setIsCreatingColor] = useState(false);
+  const [isAddSizeModalOpen, setIsAddSizeModalOpen] = useState(false);
+  const [selectedModalSizes, setSelectedModalSizes] = useState<string[]>([]);
+  const [customModalSizeName, setCustomModalSizeName] = useState("");
+  const [modalSizePrice, setModalSizePrice] = useState<number | "">("");
+  const [modalSizeError, setModalSizeError] = useState("");
+  const [isCreateColorModalOpen, setIsCreateColorModalOpen] = useState(false);
   const [newCustomColorName, setNewCustomColorName] = useState("");
+  const [newCustomColorCode, setNewCustomColorCode] = useState("");
   const [newCustomColorHex, setNewCustomColorHex] = useState("#3B82F6");
+  const [colorModalAutoAssign, setColorModalAutoAssign] = useState(true);
+  const [colorModalLoading, setColorModalLoading] = useState(false);
+  const [colorModalError, setColorModalError] = useState("");
   const [selectedColorSelect, setSelectedColorSelect] = useState("");
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -210,6 +220,11 @@ export const AdminProductsPage: React.FC = () => {
     setNewCustomOptionName("");
     setIsCreatingSize(false);
     setNewCustomSizeName("");
+    setIsAddSizeModalOpen(false);
+    setSelectedModalSizes([]);
+    setCustomModalSizeName("");
+    setModalSizePrice("");
+    setModalSizeError("");
     setIsCreatingColor(false);
     setNewCustomColorName("");
     setSelectedColorSelect("");
@@ -252,6 +267,11 @@ export const AdminProductsPage: React.FC = () => {
     setNewCustomOptionName("");
     setIsCreatingSize(false);
     setNewCustomSizeName("");
+    setIsAddSizeModalOpen(false);
+    setSelectedModalSizes([]);
+    setCustomModalSizeName("");
+    setModalSizePrice("");
+    setModalSizeError("");
     setIsCreatingColor(false);
     setNewCustomColorName("");
     setSelectedColorSelect("");
@@ -432,6 +452,98 @@ export const AdminProductsPage: React.FC = () => {
     setSizesList(updated);
   };
 
+  const handleOpenAddSizeModal = () => {
+    setSelectedModalSizes([]);
+    setCustomModalSizeName("");
+    setModalSizeError("");
+    const defaultPrice =
+      typeof price === "number" && price > 0
+        ? price
+        : sizesList.length > 0 && sizesList[0].price > 0
+          ? sizesList[0].price
+          : "";
+    setModalSizePrice(defaultPrice);
+    setIsAddSizeModalOpen(true);
+  };
+
+  const handleToggleModalSize = (sizeName: string) => {
+    if (sizesList.some((s) => s.name === sizeName)) return;
+    setSelectedModalSizes((prev) =>
+      prev.includes(sizeName)
+        ? prev.filter((s) => s !== sizeName)
+        : [...prev, sizeName],
+    );
+  };
+
+  const handleSelectAllAvailableSizes = () => {
+    const available = dbSizes
+      .map((s) => s.name)
+      .filter((name) => !sizesList.some((s) => s.name === name));
+    setSelectedModalSizes(available);
+  };
+
+  const handleConfirmAddSizes = async () => {
+    setModalSizeError("");
+    const sizesToAdd: string[] = [...selectedModalSizes];
+
+    const customTrimmed = customModalSizeName.trim();
+    if (customTrimmed) {
+      if (
+        sizesList.some(
+          (s) => s.name.toLowerCase() === customTrimmed.toLowerCase(),
+        )
+      ) {
+        setModalSizeError(
+          `Kích cỡ "${customTrimmed}" đã có trong danh sách sản phẩm!`,
+        );
+        return;
+      }
+
+      const existsInDb = dbSizes.some(
+        (s) => s.name.toLowerCase() === customTrimmed.toLowerCase(),
+      );
+      if (!existsInDb) {
+        try {
+          const created = await sizeApi.create({ name: customTrimmed });
+          setDbSizes((prev) => [...prev, created]);
+        } catch (err: any) {
+          console.error("Lỗi tạo size mới:", err);
+        }
+      }
+
+      if (!sizesToAdd.includes(customTrimmed)) {
+        sizesToAdd.push(customTrimmed);
+      }
+    }
+
+    if (sizesToAdd.length === 0) {
+      setModalSizeError(
+        "Vui lòng chọn ít nhất một kích cỡ hoặc nhập kích cỡ mới!",
+      );
+      return;
+    }
+
+    const finalPrice =
+      typeof modalSizePrice === "number"
+        ? modalSizePrice
+        : typeof price === "number"
+          ? price
+          : 0;
+
+    const newItems: ProductSize[] = sizesToAdd.map((sz) => ({
+      name: sz,
+      price: productType === "set" ? 0 : finalPrice,
+      salePrice: 0,
+      stock: 0,
+    }));
+
+    setSizesList((prev) => [...prev, ...newItems]);
+    setIsAddSizeModalOpen(false);
+    setSelectedModalSizes([]);
+    setCustomModalSizeName("");
+    setModalSizeError("");
+  };
+
   const handleAddNewSizeRow = (presetName?: string) => {
     const defaultPrice =
       typeof price === "number" ? price : sellingOptionsList[0]?.price || 0;
@@ -475,7 +587,7 @@ export const AdminProductsPage: React.FC = () => {
   const handleSelectColorDropdown = (colorValue: string) => {
     if (!colorValue) return;
     if (colorValue === "__NEW__") {
-      setIsCreatingColor(true);
+      handleOpenCreateColorModal();
       setSelectedColorSelect("");
       return;
     }
@@ -485,24 +597,49 @@ export const AdminProductsPage: React.FC = () => {
     setSelectedColorSelect("");
   };
 
-  const handleCreateNewColor = async () => {
-    if (!newCustomColorName.trim()) {
-      alert("Vui lòng nhập tên Màu sắc mới");
+  const handleOpenCreateColorModal = () => {
+    setNewCustomColorName("");
+    setNewCustomColorCode(`M${dbColors.length + 1}`);
+    setNewCustomColorHex("#3B82F6");
+    setColorModalAutoAssign(true);
+    setColorModalError("");
+    setIsCreateColorModalOpen(true);
+  };
+
+  const handleCreateNewColor = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const trimmedName = newCustomColorName.trim();
+    if (!trimmedName) {
+      setColorModalError("Vui lòng nhập tên màu sắc");
       return;
     }
+
+    const codeToUse = (
+      newCustomColorCode.trim() || `M${dbColors.length + 1}`
+    ).toUpperCase();
+
+    setColorModalLoading(true);
+    setColorModalError("");
+
     try {
       const created = await colorApi.create({
-        name: newCustomColorName.trim(),
-        hexCode: newCustomColorHex || "#000000",
+        name: trimmedName,
+        code: codeToUse,
+        hexCode: newCustomColorHex ? newCustomColorHex.toUpperCase() : "#000000",
+        isActive: true,
       });
+
       setDbColors((prev) => [...prev, created]);
-      if (!colorsList.includes(created.name)) {
+      if (colorModalAutoAssign && !colorsList.includes(created.name)) {
         setColorsList((prev) => [...prev, created.name]);
       }
+      setIsCreateColorModalOpen(false);
       setNewCustomColorName("");
-      setIsCreatingColor(false);
+      setNewCustomColorCode("");
     } catch (err: any) {
-      alert(err.message || "Tạo màu mới thất bại");
+      setColorModalError(err.message || "Tạo màu mới thất bại");
+    } finally {
+      setColorModalLoading(false);
     }
   };
 
@@ -1496,11 +1633,6 @@ export const AdminProductsPage: React.FC = () => {
                         Bảng Size / Phiên bản ({sizesList.length} size)
                       </span>
                     </div>
-                    <p className="text-[11px] text-indigo-700/80 dark:text-indigo-400/80">
-                      {productType === "set"
-                        ? "* Chọn các kích cỡ khả dụng (S, M, L...) cho Set đồ. Giá bán được xác định tự động theo từng món trong Set."
-                        : "* Chọn kích cỡ từ danh mục hệ thống và nhập giá bán tương ứng cho từng size."}
-                    </p>
                   </div>
 
                   <Button
@@ -1508,8 +1640,8 @@ export const AdminProductsPage: React.FC = () => {
                     variant="secondary"
                     size="sm"
                     icon={<Plus size={14} />}
-                    onClick={() => handleAddNewSizeRow()}
-                    className="text-xs py-1.5 px-3 bg-white dark:bg-slate-800 border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 font-bold hover:bg-indigo-50 dark:hover:bg-indigo-900/40 shrink-0 shadow-2xs"
+                    onClick={handleOpenAddSizeModal}
+                    className="text-xs py-1.5 px-3 bg-white dark:bg-slate-800 border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 font-bold hover:bg-indigo-50 dark:hover:bg-indigo-900/40 shrink-0 shadow-2xs cursor-pointer"
                   >
                     Thêm size
                   </Button>
@@ -1613,9 +1745,9 @@ export const AdminProductsPage: React.FC = () => {
                                 </option>
                               ))}
                               {s.name &&
-                                !dbSizes.some((item) => item.name === s.name) && (
-                                  <option value={s.name}>{s.name}</option>
-                                )}
+                                !dbSizes.some(
+                                  (item) => item.name === s.name,
+                                ) && <option value={s.name}>{s.name}</option>}
                               <option
                                 value="__NEW__"
                                 className="text-blue-600 font-bold"
@@ -1679,8 +1811,8 @@ export const AdminProductsPage: React.FC = () => {
                       icon={<Plus size={14} />}
                       onClick={() => handleAddNewSizeRow()}
                       className="text-xs font-bold text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-700"
-                    >d
-                      + Thêm size
+                    >
+                      d + Thêm size
                     </Button>
                   </div>
                 )}
@@ -1696,97 +1828,14 @@ export const AdminProductsPage: React.FC = () => {
                         size={18}
                         className="text-purple-600 dark:text-purple-400"
                       />
-                      <span>
-                        Màu sắc sản phẩm ({colorsList.length} màu đã chọn)
-                      </span>
+                      <span>Màu sắc ({colorsList.length})</span>
                     </div>
                     <p className="text-[11px] text-purple-700/80 dark:text-purple-400/80">
                       * Chọn màu từ thẻ select bên dưới để gán màu sắc cho sản
                       phẩm.
                     </p>
                   </div>
-
-                  {/* Nút thao tác nhanh */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    {dbColors.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={handleSelectAllColors}
-                        className="px-2.5 py-1 rounded-lg text-xs font-bold bg-white dark:bg-slate-800 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-purple-900/40 transition-colors shadow-2xs cursor-pointer"
-                      >
-                        Chọn tất cả ({dbColors.length})
-                      </button>
-                    )}
-                    {colorsList.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={handleDeselectAllColors}
-                        className="px-2.5 py-1 rounded-lg text-xs font-bold bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors shadow-2xs cursor-pointer"
-                      >
-                        Bỏ chọn tất cả
-                      </button>
-                    )}
-                  </div>
                 </div>
-
-                {/* Form inline tạo Màu mới vào API */}
-                {isCreatingColor && (
-                  <div className="p-3 bg-blue-50/90 dark:bg-blue-950/50 rounded-xl border border-blue-200 dark:border-blue-800 space-y-2 animate-fade-in shadow-xs">
-                    <div className="flex items-center justify-between text-xs font-bold text-blue-900 dark:text-blue-200">
-                      <span className="flex items-center gap-1.5">
-                        <Plus
-                          size={14}
-                          className="text-blue-600 dark:text-blue-400"
-                        />
-                        Tạo Màu sắc mới vào danh mục hệ thống:
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setIsCreatingColor(false)}
-                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5 cursor-pointer"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={newCustomColorName}
-                        onChange={(e) => setNewCustomColorName(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            handleCreateNewColor();
-                          }
-                        }}
-                        placeholder="Tên màu (VD: Xám Titan, Hồng Pastel, Voi, Mèo...)"
-                        className="flex-1 text-xs px-3 py-2 rounded-lg border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-                        autoFocus
-                      />
-                      <div className="flex items-center gap-1.5 px-2 py-1 bg-white dark:bg-slate-800 rounded-lg border border-blue-300 dark:border-blue-700">
-                        <input
-                          type="color"
-                          value={newCustomColorHex}
-                          onChange={(e) => setNewCustomColorHex(e.target.value)}
-                          className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent"
-                          title="Chọn mã màu"
-                        />
-                        <span className="text-[10px] font-mono text-gray-600 dark:text-gray-300">
-                          {newCustomColorHex}
-                        </span>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="primary"
-                        size="sm"
-                        onClick={handleCreateNewColor}
-                        className="text-xs py-2 px-3 whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white font-bold"
-                      >
-                        Lưu vào API
-                      </Button>
-                    </div>
-                  </div>
-                )}
 
                 {/* Chọn Màu: DÙNG THẺ SELECT */}
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
@@ -1828,10 +1877,10 @@ export const AdminProductsPage: React.FC = () => {
                     variant="secondary"
                     size="sm"
                     icon={<Plus size={14} />}
-                    onClick={() => setIsCreatingColor(true)}
+                    onClick={handleOpenCreateColorModal}
                     className="text-xs py-2 px-3 bg-white dark:bg-slate-800 border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 font-bold hover:bg-purple-50 shrink-0"
                   >
-                    + Tạo màu mới
+                    Tạo màu mới
                   </Button>
                 </div>
 
@@ -2086,6 +2135,369 @@ export const AdminProductsPage: React.FC = () => {
               className="font-bold shadow-xs px-4"
             >
               {modalMode === "create" ? "THÊM SẢN PHẨM" : "LƯU THAY ĐỔI"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* ======================================================== */}
+      {/* MODAL THÊM KÍCH CỠ (SIZE) VÀO SẢN PHẨM */}
+      {/* ======================================================== */}
+      <Modal
+        isOpen={isAddSizeModalOpen}
+        onClose={() => setIsAddSizeModalOpen(false)}
+        title="Thêm Kích Cỡ (Size)"
+        size="md"
+      >
+        <div className="space-y-4">
+          {/* Chọn size từ hệ thống */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                <Layers
+                  size={15}
+                  className="text-indigo-600 dark:text-indigo-400"
+                />
+                <span>Chọn kích cỡ có sẵn từ hệ thống:</span>
+              </label>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleSelectAllAvailableSizes}
+                  className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline font-bold cursor-pointer"
+                >
+                  Chọn tất cả
+                </button>
+                <span className="text-gray-300 dark:text-slate-600">|</span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedModalSizes([])}
+                  className="text-[11px] text-gray-500 hover:underline font-semibold cursor-pointer"
+                >
+                  Bỏ chọn
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2 p-3 bg-gray-50 dark:bg-slate-800/60 rounded-xl border border-gray-200 dark:border-slate-700 max-h-48 overflow-y-auto">
+              {dbSizes.length === 0 ? (
+                <p className="text-xs text-gray-400 italic">
+                  Chưa có danh mục kích cỡ nào trong hệ thống.
+                </p>
+              ) : (
+                dbSizes.map((sz) => {
+                  const alreadyInProduct = sizesList.some(
+                    (s) => s.name === sz.name,
+                  );
+                  const isSelected = selectedModalSizes.includes(sz.name);
+
+                  return (
+                    <button
+                      key={sz._id}
+                      type="button"
+                      disabled={alreadyInProduct}
+                      onClick={() => handleToggleModalSize(sz.name)}
+                      className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer ${
+                        alreadyInProduct
+                          ? "bg-gray-100 dark:bg-slate-800/80 text-gray-400 dark:text-slate-500 border-gray-200 dark:border-slate-700 cursor-not-allowed opacity-75"
+                          : isSelected
+                            ? "bg-indigo-600 text-white border-indigo-600 shadow-xs ring-2 ring-indigo-500/40"
+                            : "bg-white dark:bg-slate-900 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-slate-600 hover:border-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/30"
+                      }`}
+                    >
+                      {alreadyInProduct ? (
+                        <Check size={13} className="text-gray-400" />
+                      ) : isSelected ? (
+                        <Check size={13} className="text-white" />
+                      ) : null}
+                      <span>{sz.name}</span>
+                      {alreadyInProduct && (
+                        <span className="text-[10px] font-normal text-gray-400 dark:text-slate-500">
+                          (Đã có)
+                        </span>
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* Nhập kích cỡ tùy chỉnh / mới */}
+          <div className="p-3 bg-blue-50/80 dark:bg-blue-950/30 rounded-xl border border-blue-200/80 dark:border-blue-900/50 space-y-2">
+            <label className="text-xs font-bold text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
+              <Plus size={14} className="text-blue-600 dark:text-blue-400" />
+              <span>Kích thước mới: </span>
+            </label>
+            <input
+              type="text"
+              value={customModalSizeName}
+              onChange={(e) => setCustomModalSizeName(e.target.value)}
+              placeholder="VD: 3XL, 4XL, 128GB, 512GB, Size 34..."
+              className="w-full text-xs px-3 py-2 rounded-lg border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+            />
+          </div>
+
+          {/* Giá bán cho size (chỉ áp dụng cho bán lẻ) */}
+          {productType === "single" && (
+            <div>
+              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                Giá bán áp dụng cho các size thêm mới (VNĐ):
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  value={modalSizePrice === "" ? "" : modalSizePrice}
+                  onChange={(e) =>
+                    setModalSizePrice(
+                      e.target.value === "" ? "" : Number(e.target.value),
+                    )
+                  }
+                  placeholder="0"
+                  className="w-full text-xs font-bold pr-10 pl-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 dark:text-slate-500 pointer-events-none">
+                  VNĐ
+                </span>
+              </div>
+            </div>
+          )}
+
+          {modalSizeError && (
+            <div className="p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs rounded-lg flex items-center gap-1.5 animate-fade-in">
+              <AlertCircle size={14} className="flex-shrink-0 text-rose-500" />
+              <span className="font-medium">{modalSizeError}</span>
+            </div>
+          )}
+
+          {/* Footer modal buttons */}
+          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-slate-800">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsAddSizeModalOpen(false)}
+            >
+              Hủy
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={handleConfirmAddSizes}
+              className="font-bold shadow-xs px-4 bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              {selectedModalSizes.length +
+                (customModalSizeName.trim() ? 1 : 0) >
+              0
+                ? `Thêm (${selectedModalSizes.length + (customModalSizeName.trim() ? 1 : 0)}) size`
+                : "Thêm vào sản phẩm"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ======================================================== */}
+      {/* MODAL TẠO MÀU SẮC MỚI VÀO HỆ THỐNG */}
+      {/* ======================================================== */}
+      <Modal
+        isOpen={isCreateColorModalOpen}
+        onClose={() => setIsCreateColorModalOpen(false)}
+        title="Tạo Màu Sắc Mới"
+        size="md"
+      >
+        <form onSubmit={handleCreateNewColor} className="space-y-4">
+          {/* Preview trực quan màu sắc */}
+          <div className="flex items-center gap-3.5 p-3.5 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 rounded-2xl border border-purple-200/80 dark:border-purple-800/50">
+            <div
+              className="w-14 h-14 rounded-2xl border-2 border-white dark:border-slate-800 shadow-md flex-shrink-0 flex items-center justify-center transition-all duration-300"
+              style={{ backgroundColor: newCustomColorHex || "#000000" }}
+            >
+              <Palette
+                size={22}
+                className={
+                  ["#FFFFFF", "#FFFF00", "#F5F5DC"].includes(
+                    newCustomColorHex.toUpperCase(),
+                  )
+                    ? "text-gray-800"
+                    : "text-white drop-shadow-sm"
+                }
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-[11px] font-mono font-extrabold px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-900/60 text-purple-800 dark:text-purple-300">
+                  {newCustomColorCode || `M${dbColors.length + 1}`}
+                </span>
+                <span className="text-xs font-mono font-bold text-gray-500 dark:text-slate-400">
+                  {newCustomColorHex || "#000000"}
+                </span>
+              </div>
+              <div className="font-extrabold text-sm text-gray-900 dark:text-white truncate">
+                {newCustomColorName.trim() || "Tên màu hiển thị"}
+              </div>
+            </div>
+          </div>
+
+          {/* Nhập Tên màu & Mã ký hiệu */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-gray-700 dark:text-slate-300">
+                Tên màu <span className="text-rose-500">*</span>
+              </label>
+              <Input
+                type="text"
+                placeholder="VD: Xám Titan, Hồng Pastel, Voi..."
+                value={newCustomColorName}
+                onChange={(e) => setNewCustomColorName(e.target.value)}
+                autoFocus
+                required
+                className="rounded-xl text-xs"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-gray-700 dark:text-slate-300">
+                Mã ký hiệu (Code)
+              </label>
+              <Input
+                type="text"
+                placeholder={`VD: M${dbColors.length + 1}, TITAN, HONG...`}
+                value={newCustomColorCode}
+                onChange={(e) => setNewCustomColorCode(e.target.value.toUpperCase())}
+                className="rounded-xl text-xs uppercase font-mono font-bold"
+              />
+            </div>
+          </div>
+
+          {/* Chọn mã màu HEX & Native Color Picker */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-gray-700 dark:text-slate-300">
+              Mã màu HEX & Bảng chọn màu
+            </label>
+            <div className="flex items-center gap-2.5">
+              <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-gray-300 dark:border-slate-600 shadow-2xs flex-shrink-0 cursor-pointer">
+                <input
+                  type="color"
+                  value={
+                    newCustomColorHex.startsWith("#")
+                      ? newCustomColorHex
+                      : "#000000"
+                  }
+                  onChange={(e) =>
+                    setNewCustomColorHex(e.target.value.toUpperCase())
+                  }
+                  className="absolute -top-2 -left-2 w-14 h-14 cursor-pointer opacity-100"
+                  title="Chọn màu trực quan"
+                />
+              </div>
+
+              <Input
+                type="text"
+                placeholder="#000000"
+                value={newCustomColorHex}
+                onChange={(e) =>
+                  setNewCustomColorHex(e.target.value.toUpperCase())
+                }
+                className="flex-1 font-mono font-bold uppercase rounded-xl text-xs"
+                maxLength={7}
+              />
+            </div>
+          </div>
+
+          {/* Bảng màu mẫu chọn nhanh */}
+          <div className="space-y-1.5">
+            <span className="text-[11px] font-bold text-gray-500 dark:text-slate-400">
+              Gợi ý màu thông dụng:
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                { name: "Đen", hex: "#000000" },
+                { name: "Trắng", hex: "#FFFFFF" },
+                { name: "Đỏ", hex: "#EF4444" },
+                { name: "Xanh dương", hex: "#3B82F6" },
+                { name: "Xanh Navy", hex: "#1E3A8A" },
+                { name: "Xanh lá", hex: "#10B981" },
+                { name: "Vàng", hex: "#F59E0B" },
+                { name: "Cam", hex: "#F97316" },
+                { name: "Tím", hex: "#8B5CF6" },
+                { name: "Hồng", hex: "#EC4899" },
+                { name: "Xám", hex: "#6B7280" },
+                { name: "Nâu", hex: "#78350F" },
+                { name: "Be / Kem", hex: "#F5F5DC" },
+              ].map((c) => (
+                <button
+                  key={c.name}
+                  type="button"
+                  onClick={() => {
+                    setNewCustomColorHex(c.hex);
+                    if (!newCustomColorName.trim()) {
+                      setNewCustomColorName(c.name);
+                    }
+                  }}
+                  className="px-2 py-1 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-purple-400 dark:hover:border-purple-600 flex items-center gap-1.5 text-[11px] font-medium transition-colors cursor-pointer"
+                >
+                  <span
+                    className="w-3 h-3 rounded-full border border-black/10 shrink-0"
+                    style={{ backgroundColor: c.hex }}
+                  />
+                  <span>{c.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Checkbox tự động gán vào sản phẩm */}
+          <div className="pt-1">
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={colorModalAutoAssign}
+                onChange={(e) => setColorModalAutoAssign(e.target.checked)}
+                className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-gray-300"
+              />
+              <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+                Tự động gắn màu này vào sản phẩm ngay sau khi tạo
+              </span>
+            </label>
+          </div>
+
+          {/* Lỗi nếu có */}
+          {colorModalError && (
+            <div className="p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs rounded-lg flex items-center gap-1.5 animate-fade-in">
+              <AlertCircle size={14} className="flex-shrink-0 text-rose-500" />
+              <span className="font-medium">{colorModalError}</span>
+            </div>
+          )}
+
+          {/* Footer buttons */}
+          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-slate-800">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsCreateColorModalOpen(false)}
+            >
+              Hủy
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              disabled={colorModalLoading}
+              className="font-bold shadow-xs px-4 bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-1.5"
+            >
+              {colorModalLoading ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  <span>Đang lưu...</span>
+                </>
+              ) : (
+                <>
+                  <Plus size={14} />
+                  <span>Tạo màu mới</span>
+                </>
+              )}
             </Button>
           </div>
         </form>
