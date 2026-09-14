@@ -225,7 +225,7 @@ export const AdminProductsPage: React.FC = () => {
     setCustomModalSizeName("");
     setModalSizePrice("");
     setModalSizeError("");
-    setIsCreatingColor(false);
+    setIsCreateColorModalOpen(false);
     setNewCustomColorName("");
     setSelectedColorSelect("");
     setSizesList([]);
@@ -272,7 +272,7 @@ export const AdminProductsPage: React.FC = () => {
     setCustomModalSizeName("");
     setModalSizePrice("");
     setModalSizeError("");
-    setIsCreatingColor(false);
+    setIsCreateColorModalOpen(false);
     setNewCustomColorName("");
     setSelectedColorSelect("");
     setSizesList(Array.isArray(p.sizes) ? p.sizes : []);
