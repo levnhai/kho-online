@@ -13,6 +13,7 @@ import { UploadModule } from './modules/upload/upload.module';
 import { ColorsModule } from './modules/colors/colors.module';
 import { SetOptionsModule } from './modules/set-options/set-options.module';
 import { SizesModule } from './modules/sizes/sizes.module';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -37,5 +38,6 @@ import { SizesModule } from './modules/sizes/sizes.module';
     SetOptionsModule,
     SizesModule,
   ],
+  controllers: [AppController],
 })
 export class AppModule {}
