@@ -100,6 +100,7 @@ export interface Product {
 
 export interface OrderItem {
   product: string | Product;
+  productCode?: string;
   name: string;
   sellingOption?: string;
   size?: string;

@@ -157,7 +157,14 @@ export const AccountPage: React.FC = () => {
       const matchesSearch =
         !q ||
         ord.orderCode.toLowerCase().includes(q) ||
-        ord.items.some((it) => it.name.toLowerCase().includes(q));
+        ord.items.some(
+          (it) =>
+            it.name.toLowerCase().includes(q) ||
+            (it.productCode && it.productCode.toLowerCase().includes(q)) ||
+            (typeof it.product === 'object' &&
+              it.product?.code &&
+              it.product.code.toLowerCase().includes(q))
+        );
       return matchesStatus && matchesSearch;
     });
   }, [orders, statusFilter, searchQuery]);
@@ -633,6 +640,11 @@ export const AccountPage: React.FC = () => {
 
                                     {/* Nhãn phân loại & Số lượng */}
                                     <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                                      {(item.productCode || (typeof item.product === 'object' && item.product?.code)) && (
+                                        <span className="inline-flex items-center px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 rounded-md font-mono font-bold text-[10px]">
+                                          Mã SP: {item.productCode || (typeof item.product === 'object' && item.product?.code)}
+                                        </span>
+                                      )}
                                       {item.sellingOption && (
                                         <span className="inline-flex items-center px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60 rounded-md font-semibold text-[10px]">
                                           {item.sellingOption}
@@ -825,6 +837,11 @@ export const AccountPage: React.FC = () => {
                             {displayName}
                           </p>
                           <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                            {(item.productCode || (typeof item.product === 'object' && item.product?.code)) && (
+                              <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded text-[10px] font-mono font-bold border border-slate-200 dark:border-slate-600">
+                                Mã SP: {item.productCode || (typeof item.product === 'object' && item.product?.code)}
+                              </span>
+                            )}
                             {item.sellingOption && (
                               <span className="px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 rounded text-[10px] font-semibold border border-emerald-200 dark:border-emerald-800/60">
                                 {item.sellingOption}

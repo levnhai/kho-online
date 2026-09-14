@@ -27,6 +27,9 @@ export class OrderItem {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Product', required: true })
   product: string;
 
+  @Prop({ default: '', trim: true })
+  productCode: string;
+
   @Prop({ required: true })
   name: string;
 

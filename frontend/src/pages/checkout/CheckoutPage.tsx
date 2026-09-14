@@ -237,6 +237,7 @@ export const CheckoutPage: React.FC = () => {
         },
         items: items.map((item) => ({
           product: item.product._id,
+          productCode: item.product.code || '',
           name: item.product.name,
           sellingOption: item.selectedOption || '',
           size: item.selectedSize || '',

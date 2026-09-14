@@ -11,6 +11,18 @@ import { Modal } from '@/shared/ui/Modal';
 import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
 import { getImageUrl, handleImageError } from '@/shared/lib/imageHelper';
 
+const getOrderItemCode = (item: any): string => {
+  if (item.productCode) return item.productCode;
+  if (typeof item.product === 'object' && item.product?.code) return item.product.code;
+  return '';
+};
+
+const getOrderProductCodes = (order: Order): string[] => {
+  if (!order.items || order.items.length === 0) return [];
+  const codes = order.items.map((it) => getOrderItemCode(it)).filter(Boolean);
+  return Array.from(new Set(codes));
+};
+
 export const AdminOrdersPage: React.FC = () => {
   const { socket } = useSocket();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -143,7 +155,7 @@ export const AdminOrdersPage: React.FC = () => {
           <div className="relative flex-1">
             <input
               type="text"
-              placeholder="Tìm theo Mã đơn, tên khách, SĐT..."
+              placeholder="Tìm theo Mã đơn, Mã SP, tên khách, SĐT..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-8 pr-3 py-2 text-xs border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white rounded-xl focus:border-blue-500 focus:outline-none placeholder-gray-400 dark:placeholder-slate-400 shadow-2xs"
@@ -182,10 +194,11 @@ export const AdminOrdersPage: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs min-w-[650px]">
+            <table className="w-full text-left text-xs min-w-[720px]">
               <thead>
                 <tr className="bg-slate-100/80 dark:bg-slate-900/90 text-gray-600 dark:text-slate-300 border-b border-gray-200 dark:border-slate-700/80 font-bold uppercase tracking-wider">
                   <th className="py-3 px-4">Mã đơn</th>
+                  <th className="py-3 px-3">Mã SP</th>
                   <th className="py-3 px-3">Khách hàng</th>
                   <th className="py-3 px-3">Tổng tiền</th>
                   <th className="py-3 px-3">Ngày đặt</th>
@@ -197,10 +210,27 @@ export const AdminOrdersPage: React.FC = () => {
               <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                 {orders.map((ord) => {
                   const color = getOrderStatusColor(ord.status);
+                  const pCodes = getOrderProductCodes(ord);
                   return (
                     <tr key={ord._id} className="hover:bg-gray-50/60 dark:hover:bg-slate-700/40 transition-colors">
                       <td className="py-3.5 px-4 font-extrabold text-blue-600 dark:text-blue-400 text-xs sm:text-sm">
                         {ord.orderCode}
+                      </td>
+                      <td className="py-3.5 px-3">
+                        {pCodes.length === 0 ? (
+                          <span className="text-gray-400 dark:text-slate-500 font-mono text-xs">-</span>
+                        ) : (
+                          <div className="flex flex-wrap gap-1 items-center max-w-[140px]">
+                            {pCodes.map((c) => (
+                              <span
+                                key={c}
+                                className="font-mono font-bold text-[11px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700/80 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-600/80 shadow-2xs"
+                              >
+                                {c}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </td>
                       <td className="py-3.5 px-3">
                         <div className="flex flex-col">
@@ -344,49 +374,57 @@ export const AdminOrdersPage: React.FC = () => {
               </div>
 
               <div className="divide-y divide-gray-100 dark:divide-slate-700/70">
-                {selectedOrder.items.map((item, idx) => (
-                  <div key={idx} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <img
-                        src={getImageUrl(item.image)}
-                        alt={item.name}
-                        onError={handleImageError}
-                        className="w-12 h-12 rounded-xl object-cover border border-gray-100 dark:border-slate-700 flex-shrink-0 shadow-2xs"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p className="font-bold text-gray-900 dark:text-white text-xs truncate">
-                          {cleanProductName(item.name)}
-                        </p>
-                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                          {item.sellingOption && (
-                            <span className="px-2 py-0.5 bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800/80 rounded-md font-bold text-[10px]">
-                              {item.sellingOption}
-                            </span>
-                          )}
-                          {item.size && (
-                            <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-800/80 rounded-md font-bold text-[10px]">
-                              Size: {item.size}
-                            </span>
-                          )}
-                          {item.color && (
-                            <span className="px-2 py-0.5 bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-800/80 rounded-md font-bold text-[10px]">
-                              Màu: {item.color}
-                            </span>
-                          )}
+                {selectedOrder.items.map((item, idx) => {
+                  const pCode = getOrderItemCode(item);
+                  return (
+                    <div key={idx} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <img
+                          src={getImageUrl(item.image)}
+                          alt={item.name}
+                          onError={handleImageError}
+                          className="w-12 h-12 rounded-xl object-cover border border-gray-100 dark:border-slate-700 flex-shrink-0 shadow-2xs"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold text-gray-900 dark:text-white text-xs truncate">
+                            {cleanProductName(item.name)}
+                          </p>
+                          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                            {pCode && (
+                              <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-700/80 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-600/80 rounded-md font-mono font-bold text-[10px]">
+                                Mã SP: {pCode}
+                              </span>
+                            )}
+                            {item.sellingOption && (
+                              <span className="px-2 py-0.5 bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800/80 rounded-md font-bold text-[10px]">
+                                {item.sellingOption}
+                              </span>
+                            )}
+                            {item.size && (
+                              <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-800/80 rounded-md font-bold text-[10px]">
+                                Size: {item.size}
+                              </span>
+                            )}
+                            {item.color && (
+                              <span className="px-2 py-0.5 bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-800/80 rounded-md font-bold text-[10px]">
+                                Màu: {item.color}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-gray-400 dark:text-gray-400 text-[11px] mt-1">
+                            {formatCurrency(item.price)} × {item.quantity}
+                          </p>
                         </div>
-                        <p className="text-gray-400 dark:text-gray-400 text-[11px] mt-1">
-                          {formatCurrency(item.price)} × {item.quantity}
-                        </p>
+                      </div>
+
+                      <div className="text-right flex-shrink-0">
+                        <span className="font-extrabold text-gray-900 dark:text-white text-sm block">
+                          {formatCurrency(item.total || item.price * item.quantity)}
+                        </span>
                       </div>
                     </div>
-
-                    <div className="text-right flex-shrink-0">
-                      <span className="font-extrabold text-gray-900 dark:text-white text-sm block">
-                        {formatCurrency(item.total || item.price * item.quantity)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 

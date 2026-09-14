@@ -45,6 +45,7 @@ export class OrdersService {
 
       const orderItem = {
         product: product._id,
+        productCode: product.code || item.productCode || '',
         name: item.name || product.name,
         sellingOption: item.sellingOption || '',
         size: item.size || '',
@@ -103,6 +104,7 @@ export class OrdersService {
           { customer: userId as any },
         ],
       })
+      .populate('items.product', 'name code images')
       .sort({ createdAt: -1 })
       .exec();
   }
@@ -131,7 +133,11 @@ export class OrdersService {
   }
 
   async findById(id: string): Promise<OrderDocument> {
-    const order = await this.orderModel.findById(id).populate('customer', 'name email phone').exec();
+    const order = await this.orderModel
+      .findById(id)
+      .populate('customer', 'name email phone')
+      .populate('items.product', 'name code images')
+      .exec();
     if (!order) {
       throw new NotFoundException('Không tìm thấy đơn hàng');
     }
@@ -147,10 +153,27 @@ export class OrdersService {
     }
 
     if (search) {
+      const q = search.trim();
+      const matchedProducts = await this.productModel
+        .find(
+          {
+            $or: [
+              { code: { $regex: q, $options: 'i' } },
+              { name: { $regex: q, $options: 'i' } },
+            ],
+          },
+          { _id: 1 }
+        )
+        .exec();
+      const productIds = matchedProducts.map((p) => p._id);
+
       filter.$or = [
-        { orderCode: { $regex: search, $options: 'i' } },
-        { 'customerInfo.name': { $regex: search, $options: 'i' } },
-        { 'customerInfo.phone': { $regex: search, $options: 'i' } },
+        { orderCode: { $regex: q, $options: 'i' } },
+        { 'customerInfo.name': { $regex: q, $options: 'i' } },
+        { 'customerInfo.phone': { $regex: q, $options: 'i' } },
+        { 'items.productCode': { $regex: q, $options: 'i' } },
+        { 'items.name': { $regex: q, $options: 'i' } },
+        ...(productIds.length > 0 ? [{ 'items.product': { $in: productIds } }] : []),
       ];
     }
 
@@ -160,6 +183,7 @@ export class OrdersService {
       this.orderModel
         .find(filter)
         .populate('customer', 'name email phone')
+        .populate('items.product', 'name code images')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(Number(limit))
