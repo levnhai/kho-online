@@ -12,7 +12,7 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
-  const hasDiscount = product.salePrice && product.salePrice > 0 && product.salePrice < product.price;
+  const hasDiscount = Boolean(product.salePrice && product.salePrice > 0 && product.salePrice < product.price);
   const discountPercent = hasDiscount
     ? Math.round(((product.price - product.salePrice!) / product.price) * 100)
     : 0;
@@ -28,12 +28,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
         </span>
       )}
 
-      {/* Stock warning */}
-      {product.stock <= 5 && product.stock > 0 && (
-        <span className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10 bg-amber-500/95 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-md backdrop-blur-xs">
-          Sắp hết
-        </span>
-      )}
 
       {/* Image */}
       <Link
@@ -73,11 +67,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
         {/* Stock & Variants status */}
         <div className="flex items-center justify-between text-[11px] sm:text-xs text-gray-400 dark:text-slate-400 mb-2">
           <p>
-            {product.stock > 0 ? (
-              <span>Còn <strong className="text-gray-700 dark:text-gray-200 font-semibold">{product.stock}</strong> SP</span>
-            ) : (
-              <span className="text-rose-500 font-bold">Hết hàng</span>
-            )}
+            <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Còn hàng</span>
           </p>
           {product.colors && product.colors.length > 0 && (
             <span className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-1.5 py-0.5 rounded border border-purple-100 dark:border-purple-900/40">
@@ -117,7 +107,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
             variant="primary"
             size="sm"
             className="w-full text-[11px] sm:text-xs font-semibold py-1.5 px-1 sm:px-2 whitespace-nowrap"
-            disabled={product.stock <= 0}
             onClick={() => onAddToCart && onAddToCart(product)}
             icon={<ShoppingCart size={13} />}
           >

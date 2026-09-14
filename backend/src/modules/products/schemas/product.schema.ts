@@ -44,7 +44,7 @@ export class Product {
   @Prop({ default: 0, min: 0 })
   salePrice: number;
 
-  @Prop({ required: true, default: 0, min: 0 })
+  @Prop({ default: 9999, min: 0 })
   stock: number;
 
   @Prop({ type: [ProductSizeSchema], default: [] })

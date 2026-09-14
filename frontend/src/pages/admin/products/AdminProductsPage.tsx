@@ -520,11 +520,7 @@ export const AdminProductsPage: React.FC = () => {
                       </td>
                       <td className="py-2.5 px-3 text-center">
                         <span
-                          className={`font-bold px-1.5 py-0.5 rounded text-[10px] ${
-                            p.stock <= 5
-                              ? "bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300"
-                              : "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300"
-                          }`}
+                          className="font-bold px-1.5 py-0.5 rounded text-[10px] bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300"
                         >
                           {p.stock}
                         </span>

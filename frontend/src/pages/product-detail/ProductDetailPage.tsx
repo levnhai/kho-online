@@ -161,7 +161,7 @@ export const ProductDetailPage: React.FC = () => {
   };
 
   const handleIncrease = () => {
-    if (quantity < currentStock) setQuantity(quantity + 1);
+    if (quantity < 99) setQuantity(quantity + 1);
   };
 
   const handleAddToCart = () => {
@@ -227,11 +227,7 @@ export const ProductDetailPage: React.FC = () => {
               </span>
               <span className="text-gray-300 dark:text-gray-600">|</span>
               <span>
-                {currentStock > 0 ? (
-                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">Còn {currentStock} SP</span>
-                ) : (
-                  <span className="text-rose-500 dark:text-rose-400 font-bold">Tạm hết hàng</span>
-                )}
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold">Còn hàng</span>
               </span>
             </div>
 
@@ -347,7 +343,7 @@ export const ProductDetailPage: React.FC = () => {
                 </span>
                 <button
                   onClick={handleIncrease}
-                  disabled={quantity >= currentStock}
+                  disabled={quantity >= 99}
                   className="p-2 sm:p-2.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-600 disabled:opacity-30 transition-colors"
                 >
                   <Plus size={15} />
@@ -369,7 +365,6 @@ export const ProductDetailPage: React.FC = () => {
                 variant="outline"
                 size="lg"
                 onClick={handleAddToCart}
-                disabled={product.stock <= 0}
                 icon={<ShoppingCart size={18} />}
                 className="w-full border-blue-600 dark:border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-bold"
               >
@@ -380,7 +375,6 @@ export const ProductDetailPage: React.FC = () => {
                 variant="primary"
                 size="lg"
                 onClick={handleBuyNow}
-                disabled={product.stock <= 0}
                 icon={<Zap size={18} />}
                 className="w-full font-bold shadow-lg shadow-blue-600/25"
               >
@@ -451,7 +445,6 @@ export const ProductDetailPage: React.FC = () => {
 
         <button
           onClick={handleAddToCart}
-          disabled={product.stock <= 0}
           className="p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl border border-blue-200 dark:border-blue-800 active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center"
           title="Thêm vào giỏ"
         >
@@ -460,7 +453,6 @@ export const ProductDetailPage: React.FC = () => {
 
         <button
           onClick={handleBuyNow}
-          disabled={product.stock <= 0}
           className="flex-1 py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xs rounded-xl shadow-md active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center gap-1.5"
         >
           <Zap size={15} />

@@ -21,14 +21,8 @@ export const getCartItemOriginalPrice = (item: CartItem): number => {
   return item.product.price;
 };
 
-export const getCartItemMaxStock = (item: CartItem): number => {
-  if (item.selectedSize && item.product.sizes && item.product.sizes.length > 0) {
-    const sizeObj = item.product.sizes.find((s) => s.name === item.selectedSize);
-    if (sizeObj && sizeObj.stock !== undefined && sizeObj.stock > 0) {
-      return sizeObj.stock;
-    }
-  }
-  return item.product.stock;
+export const getCartItemMaxStock = (_item: CartItem): number => {
+  return 9999;
 };
 
 interface CartContextType {

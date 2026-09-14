@@ -33,9 +33,7 @@ export class OrdersService {
       if (!product) {
         throw new NotFoundException(`Sản phẩm với ID ${item.product} không tồn tại`);
       }
-      if (product.stock < item.quantity) {
-        throw new BadRequestException(`Sản phẩm ${product.name} chỉ còn lại ${product.stock} chiếc`);
-      }
+      // Hàng luôn luôn còn nên không cần kiểm tra tồn kho
 
       const itemPrice = item.price && item.price > 0 ? item.price : (product.salePrice && product.salePrice > 0 ? product.salePrice : product.price);
       const total = itemPrice * item.quantity;
@@ -52,9 +50,9 @@ export class OrdersService {
         total,
       });
 
-      // Trừ tồn kho và tăng lượt bán
+      // Tăng lượt bán (không giới hạn và không trừ tồn kho)
       await this.productModel.findByIdAndUpdate(product._id, {
-        $inc: { stock: -item.quantity, soldCount: item.quantity },
+        $inc: { soldCount: item.quantity },
       });
     }
 
@@ -174,11 +172,11 @@ export class OrdersService {
       throw new NotFoundException('Không tìm thấy đơn hàng');
     }
 
-    // Nếu đơn hàng bị huỷ từ trạng thái khác CANCELLED -> hoàn lại kho
+    // Nếu đơn hàng bị huỷ từ trạng thái khác CANCELLED -> giảm lượt bán
     if (status === OrderStatus.CANCELLED && order.status !== OrderStatus.CANCELLED) {
       for (const item of order.items) {
         await this.productModel.findByIdAndUpdate(item.product, {
-          $inc: { stock: item.quantity, soldCount: -item.quantity },
+          $inc: { soldCount: -item.quantity },
         });
       }
     }
