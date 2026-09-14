@@ -20,6 +20,7 @@ import { formatCurrency, formatDate } from '@/shared/lib/formatters';
 import { Button } from '@/shared/ui/Button';
 import { Modal } from '@/shared/ui/Modal';
 import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
+import { getImageUrl, handleImageError, DEFAULT_PRODUCT_FALLBACK_IMAGE } from '@/shared/lib/imageHelper';
 
 export const IMPORT_STATUS_CONFIG: Record<
   string,
@@ -290,7 +291,7 @@ export const AdminImportsPage: React.FC = () => {
         return (firstItem.product as any).images[0];
       }
     }
-    return 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=150&q=80';
+    return DEFAULT_PRODUCT_FALLBACK_IMAGE;
   };
 
   // Helper lấy tên đơn hàng
@@ -460,13 +461,10 @@ export const AdminImportsPage: React.FC = () => {
                       <td className="py-3.5 px-4 text-center">
                         <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 mx-auto flex items-center justify-center flex-shrink-0">
                           <img
-                            src={imgUrl}
+                            src={getImageUrl(imgUrl)}
                             alt={title}
                             className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as any).src =
-                                'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=150&q=80';
-                            }}
+                            onError={handleImageError}
                           />
                         </div>
                       </td>
@@ -668,13 +666,10 @@ export const AdminImportsPage: React.FC = () => {
                 <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 flex items-center justify-center overflow-hidden flex-shrink-0">
                   {image ? (
                     <img
-                      src={image}
+                      src={getImageUrl(image)}
                       alt="Preview"
                       className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as any).src =
-                          'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=150&q=80';
-                      }}
+                      onError={handleImageError}
                     />
                   ) : (
                     <ImageIcon size={18} className="text-gray-400" />
@@ -682,7 +677,7 @@ export const AdminImportsPage: React.FC = () => {
                 </div>
                 <input
                   type="text"
-                  placeholder="https://images.unsplash.com/..."
+                  placeholder="https://... hoặc /uploads/..."
                   value={image}
                   onChange={(e) => setImage(e.target.value)}
                   className="flex-1 px-3 py-2 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none"

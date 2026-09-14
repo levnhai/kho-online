@@ -24,6 +24,9 @@ const invalidateRelatedCache = (url: string = "") => {
     apiCache.invalidate("/categories");
     apiCache.invalidate("/products");
   }
+  if (url.includes("/colors")) {
+    apiCache.invalidate("/colors");
+  }
   if (url.includes("/orders")) {
     apiCache.invalidate("/orders");
     apiCache.invalidate("/statistics");

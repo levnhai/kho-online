@@ -10,6 +10,10 @@ import { StatisticsModule } from './modules/statistics/statistics.module';
 import { ImportsModule } from './modules/imports/imports.module';
 import { EventsModule } from './modules/events/events.module';
 import { UploadModule } from './modules/upload/upload.module';
+import { ColorsModule } from './modules/colors/colors.module';
+import { SetOptionsModule } from './modules/set-options/set-options.module';
+import { SizesModule } from './modules/sizes/sizes.module';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -30,6 +34,10 @@ import { UploadModule } from './modules/upload/upload.module';
     ImportsModule,
     EventsModule,
     UploadModule,
+    ColorsModule,
+    SetOptionsModule,
+    SizesModule,
   ],
+  controllers: [AppController],
 })
 export class AppModule {}

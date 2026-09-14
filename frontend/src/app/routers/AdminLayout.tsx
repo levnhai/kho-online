@@ -45,6 +45,9 @@ export const AdminLayout: React.FC = () => {
   } else if (location.pathname.includes('/admin/categories')) {
     title = 'Quản Lý Thể Loại';
     subtitle = 'Cấu hình và phân nhóm danh mục hàng hoá';
+  } else if (location.pathname.includes('/admin/colors')) {
+    title = 'Quản Lý Màu Sắc';
+    subtitle = 'Định nghĩa bảng mã màu (M1, M2...) và màu sắc chuẩn cho sản phẩm';
   } else if (location.pathname.includes('/admin/orders')) {
     title = 'Quản Lý Đơn Hàng';
     subtitle = 'Kiểm duyệt và cập nhật tiến trình giao hàng cho khách';

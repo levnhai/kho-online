@@ -17,7 +17,14 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    try {
+      const savedUser = localStorage.getItem('kho_user');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch {
+      return null;
+    }
+  });
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('kho_token'));
   const [loading, setLoading] = useState(true);
 
@@ -26,12 +33,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const savedToken = localStorage.getItem('kho_token');
       if (savedToken) {
         try {
-          const profile: any = await api.get('/auth/profile');
+          const profile: any = await api.get('/auth/profile', { skipCache: true });
           setUser(profile);
-        } catch (err) {
+          localStorage.setItem('kho_user', JSON.stringify(profile));
+        } catch (err: any) {
           console.error('Fetch profile error:', err);
-          logout();
+          // Chỉ logout nếu token thực sự không hợp lệ / hết hạn
+          if (err?.response?.status === 401 || err?.status === 401) {
+            logout();
+          }
         }
+      } else {
+        setUser(null);
+        localStorage.removeItem('kho_user');
       }
       setLoading(false);
     };
@@ -42,6 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const response: any = await api.post('/auth/login', credentials);
     const { token: receivedToken, user: receivedUser } = response;
     localStorage.setItem('kho_token', receivedToken);
+    localStorage.setItem('kho_user', JSON.stringify(receivedUser));
     setToken(receivedToken);
     setUser(receivedUser);
     return response;
@@ -51,6 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const response: any = await api.post('/auth/register', data);
     const { token: receivedToken, user: receivedUser } = response;
     localStorage.setItem('kho_token', receivedToken);
+    localStorage.setItem('kho_user', JSON.stringify(receivedUser));
     setToken(receivedToken);
     setUser(receivedUser);
     return response;
@@ -58,12 +74,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     localStorage.removeItem('kho_token');
+    localStorage.removeItem('kho_user');
     setToken(null);
     setUser(null);
   };
 
   const updateUser = (updatedUser: Partial<User>) => {
-    setUser((prev) => (prev ? { ...prev, ...updatedUser } : null));
+    setUser((prev) => {
+      if (!prev) return null;
+      const newUser = { ...prev, ...updatedUser };
+      localStorage.setItem('kho_user', JSON.stringify(newUser));
+      return newUser;
+    });
   };
 
   const isAdmin = user?.role === 'admin';

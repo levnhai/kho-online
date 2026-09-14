@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ShoppingCart, Eye, Star } from 'lucide-react';
 import { Product } from '@/shared/types';
 import { formatCurrency } from '@/shared/lib/formatters';
-import { getImageUrl } from '@/shared/lib/imageHelper';
+import { getImageUrl, handleImageError } from '@/shared/lib/imageHelper';
 import { Button } from '@/shared/ui/Button';
 
 interface ProductCardProps {
@@ -28,7 +28,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
         </span>
       )}
 
-
       {/* Image */}
       <Link
         to={`/products/${product._id}`}
@@ -37,6 +36,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
         <img
           src={getImageUrl(product.images?.[0])}
           alt={product.name}
+          onError={handleImageError}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
         />
@@ -64,7 +64,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
           {product.name}
         </Link>
 
-        {/* Stock & Variants status */}
+        {/* Stock & Colors status */}
         <div className="flex items-center justify-between text-[11px] sm:text-xs text-gray-400 dark:text-slate-400 mb-2">
           <p>
             <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Còn hàng</span>
@@ -78,16 +78,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
 
         {/* Price Area */}
         <div className="mt-auto mb-3">
-          <div className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-2">
-            <span className="text-sm sm:text-lg font-black text-rose-600 dark:text-rose-400">
-              {formatCurrency(hasDiscount ? product.salePrice! : product.price)}
-            </span>
-            {hasDiscount && (
-              <span className="text-[10px] sm:text-xs text-gray-400 line-through">
-                {formatCurrency(product.price)}
-              </span>
-            )}
-          </div>
+          <span className="text-sm sm:text-lg font-black text-rose-600 dark:text-rose-400">
+            {formatCurrency(product.price)}
+          </span>
         </div>
 
         {/* Action Buttons */}

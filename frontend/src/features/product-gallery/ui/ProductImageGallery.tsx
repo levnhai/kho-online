@@ -9,22 +9,21 @@ import {
   RotateCcw,
   Move,
 } from 'lucide-react';
+import { handleImageError, DEFAULT_PRODUCT_FALLBACK_IMAGE } from '@/shared/lib/imageHelper';
 
 interface ProductImageGalleryProps {
   images: string[];
   productName: string;
-  hasDiscount?: boolean;
 }
 
 export const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
   images: rawImages,
   productName,
-  hasDiscount,
 }) => {
   // Đảm bảo luôn có ít nhất 1 ảnh hợp lệ
   const safeImages = (rawImages && rawImages.length > 0)
     ? rawImages
-    : ['https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=1000&q=80'];
+    : [DEFAULT_PRODUCT_FALLBACK_IMAGE];
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -166,15 +165,9 @@ export const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
         <img
           src={activeImage}
           alt={productName}
+          onError={handleImageError}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
-
-        {/* Giảm giá badge */}
-        {hasDiscount && (
-          <span className="absolute top-3 left-3 bg-rose-500 text-white font-black text-xs sm:text-sm px-2.5 py-1 rounded-lg shadow-md z-10">
-            Giảm giá
-          </span>
-        )}
 
         {/* Số thứ tự ảnh */}
         {safeImages.length > 1 && (
@@ -248,6 +241,7 @@ export const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
               <img
                 src={img}
                 alt={`${productName} thumbnail ${idx + 1}`}
+                onError={handleImageError}
                 className="w-full h-full object-cover"
               />
               {activeIndex === idx && (
@@ -334,6 +328,7 @@ export const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
             <img
               src={activeImage}
               alt={`${productName} full`}
+              onError={handleImageError}
               style={{
                 transform: `scale(${zoomLevel}) translate(${panOffset.x / zoomLevel}px, ${panOffset.y / zoomLevel}px)`,
                 transition: isDragging ? 'none' : 'transform 0.2s ease-out',

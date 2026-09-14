@@ -5,6 +5,7 @@ import {
   Package,
   Truck,
   FolderTree,
+  Palette,
   ShoppingBag,
   Users,
   BarChart3,
@@ -28,6 +29,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
     { to: '/admin/products', label: 'Sản phẩm', icon: Package },
     { to: '/admin/imports', label: 'Nhập hàng', icon: Truck },
     { to: '/admin/categories', label: 'Thể loại', icon: FolderTree },
+    { to: '/admin/colors', label: 'Màu sắc', icon: Palette },
     { to: '/admin/orders', label: 'Đơn hàng', icon: ShoppingBag },
     { to: '/admin/customers', label: 'Khách hàng', icon: Users },
     { to: '/admin/statistics', label: 'Thống kê', icon: BarChart3 },
@@ -61,7 +63,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
             </div>
             <div className="flex flex-col">
               <span className="text-xl font-black tracking-wider bg-gradient-to-r from-white via-slate-100 to-blue-200 bg-clip-text text-transparent">
-                CHANG
+                C.H.A.N.G
               </span>
               <span className="text-[10px] text-blue-400 font-bold tracking-widest uppercase">
                 Hệ thống quản trị

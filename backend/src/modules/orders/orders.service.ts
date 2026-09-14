@@ -18,15 +18,14 @@ export class OrdersService {
     return `#DH${randomNum}`;
   }
 
-  async create(userId: string, createOrderDto: any): Promise<OrderDocument> {
+  async create(userId: string, createOrderDto: any): Promise<any> {
     const { items, customerInfo, paymentMethod } = createOrderDto;
 
     if (!items || items.length === 0) {
       throw new BadRequestException('Giỏ hàng không có sản phẩm');
     }
 
-    let subtotal = 0;
-    const orderItems = [];
+    const createdOrders: OrderDocument[] = [];
 
     for (const item of items) {
       const product = await this.productModel.findById(item.product);
@@ -37,51 +36,60 @@ export class OrdersService {
 
       const itemPrice = item.price && item.price > 0 ? item.price : (product.salePrice && product.salePrice > 0 ? product.salePrice : product.price);
       const total = itemPrice * item.quantity;
-      subtotal += total;
+      const subtotal = total;
+      const shippingFee = subtotal >= 5000000 ? 0 : 30000;
+      const totalAmount = subtotal + shippingFee;
 
-      orderItems.push({
+      const orderItem = {
         product: product._id,
+        productCode: product.code || item.productCode || '',
         name: item.name || product.name,
+        sellingOption: item.sellingOption || '',
         size: item.size || '',
         color: item.color || '',
         price: itemPrice,
         quantity: item.quantity,
         image: item.image || product.images?.[0] || '',
-        total,
-      });
+        total: subtotal,
+      };
 
-      // Tăng lượt bán (không giới hạn và không trừ tồn kho)
+      // Trừ tồn kho và tăng lượt bán
       await this.productModel.findByIdAndUpdate(product._id, {
         $inc: { soldCount: item.quantity },
       });
+
+      let orderCode = this.generateOrderCode();
+      let existing = await this.orderModel.findOne({ orderCode });
+      while (existing) {
+        orderCode = this.generateOrderCode();
+        existing = await this.orderModel.findOne({ orderCode });
+      }
+
+      const order = new this.orderModel({
+        orderCode,
+        customer: new mongoose.Types.ObjectId(userId),
+        customerInfo,
+        items: [orderItem],
+        subtotal,
+        shippingFee,
+        totalAmount,
+        paymentMethod: paymentMethod || 'COD',
+        status: OrderStatus.PENDING,
+        orderDate: new Date(),
+      });
+
+      const savedOrder = await order.save();
+      this.eventsGateway.notifyOrderCreated(savedOrder);
+      createdOrders.push(savedOrder);
     }
 
-    const shippingFee = subtotal >= 5000000 ? 0 : 30000;
-    const totalAmount = subtotal + shippingFee;
-
-    let orderCode = this.generateOrderCode();
-    let existing = await this.orderModel.findOne({ orderCode });
-    while (existing) {
-      orderCode = this.generateOrderCode();
-      existing = await this.orderModel.findOne({ orderCode });
-    }
-
-    const order = new this.orderModel({
-      orderCode,
-      customer: new mongoose.Types.ObjectId(userId),
-      customerInfo,
-      items: orderItems,
-      subtotal,
-      shippingFee,
-      totalAmount,
-      paymentMethod: paymentMethod || 'COD',
-      status: OrderStatus.PENDING,
-      orderDate: new Date(),
-    });
-
-    const savedOrder = await order.save();
-    this.eventsGateway.notifyOrderCreated(savedOrder);
-    return savedOrder;
+    const orderCodes = createdOrders.map((o) => o.orderCode);
+    return {
+      orderCode: orderCodes.join(', '),
+      orderCodes,
+      orders: createdOrders,
+      count: createdOrders.length,
+    };
   }
 
   async findMyOrders(userId: string): Promise<OrderDocument[]> {
@@ -93,6 +101,7 @@ export class OrdersService {
           { customer: userId as any },
         ],
       })
+      .populate('items.product', 'name code images')
       .sort({ createdAt: -1 })
       .exec();
   }
@@ -121,7 +130,11 @@ export class OrdersService {
   }
 
   async findById(id: string): Promise<OrderDocument> {
-    const order = await this.orderModel.findById(id).populate('customer', 'name email phone').exec();
+    const order = await this.orderModel
+      .findById(id)
+      .populate('customer', 'name email phone')
+      .populate('items.product', 'name code images')
+      .exec();
     if (!order) {
       throw new NotFoundException('Không tìm thấy đơn hàng');
     }
@@ -137,10 +150,27 @@ export class OrdersService {
     }
 
     if (search) {
+      const q = search.trim();
+      const matchedProducts = await this.productModel
+        .find(
+          {
+            $or: [
+              { code: { $regex: q, $options: 'i' } },
+              { name: { $regex: q, $options: 'i' } },
+            ],
+          },
+          { _id: 1 }
+        )
+        .exec();
+      const productIds = matchedProducts.map((p) => p._id);
+
       filter.$or = [
-        { orderCode: { $regex: search, $options: 'i' } },
-        { 'customerInfo.name': { $regex: search, $options: 'i' } },
-        { 'customerInfo.phone': { $regex: search, $options: 'i' } },
+        { orderCode: { $regex: q, $options: 'i' } },
+        { 'customerInfo.name': { $regex: q, $options: 'i' } },
+        { 'customerInfo.phone': { $regex: q, $options: 'i' } },
+        { 'items.productCode': { $regex: q, $options: 'i' } },
+        { 'items.name': { $regex: q, $options: 'i' } },
+        ...(productIds.length > 0 ? [{ 'items.product': { $in: productIds } }] : []),
       ];
     }
 
@@ -150,6 +180,7 @@ export class OrdersService {
       this.orderModel
         .find(filter)
         .populate('customer', 'name email phone')
+        .populate('items.product', 'name code images')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(Number(limit))
@@ -172,7 +203,7 @@ export class OrdersService {
       throw new NotFoundException('Không tìm thấy đơn hàng');
     }
 
-    // Nếu đơn hàng bị huỷ từ trạng thái khác CANCELLED -> giảm lượt bán
+    // Nếu đơn hàng bị huỷ từ trạng thái khác CANCELLED -> hoàn lại kho
     if (status === OrderStatus.CANCELLED && order.status !== OrderStatus.CANCELLED) {
       for (const item of order.items) {
         await this.productModel.findByIdAndUpdate(item.product, {
@@ -197,5 +228,37 @@ export class OrdersService {
       { $group: { _id: null, total: { $sum: '$totalAmount' } } },
     ]);
     return result[0]?.total || 0;
+  }
+
+  async delete(id: string): Promise<{ success: boolean; message: string }> {
+    const order = await this.orderModel.findById(id);
+    if (!order) {
+      throw new NotFoundException('Không tìm thấy đơn hàng');
+    }
+
+    // Giảm số lượt bán nếu đơn hàng chưa bị huỷ
+    if (order.status !== OrderStatus.CANCELLED) {
+      for (const item of order.items) {
+        if (item.product) {
+          await this.productModel.findByIdAndUpdate(item.product, {
+            $inc: { soldCount: -item.quantity },
+          });
+        }
+      }
+    }
+
+    await this.orderModel.findByIdAndDelete(id);
+    return { success: true, message: 'Đã xóa đơn hàng thành công' };
+  }
+
+  async clearAllOrders(): Promise<{ success: boolean; deletedCount: number; message: string }> {
+    const res = await this.orderModel.deleteMany({});
+    // Reset soldCount của tất cả sản phẩm về 0
+    await this.productModel.updateMany({}, { soldCount: 0 });
+    return {
+      success: true,
+      deletedCount: res.deletedCount || 0,
+      message: `Đã xóa toàn bộ ${res.deletedCount || 0} đơn hàng và làm mới số liệu thống kê`,
+    };
   }
 }

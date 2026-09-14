@@ -9,17 +9,34 @@ import {
   Smartphone,
   ShieldCheck,
   ShoppingBag,
+  MapPin,
+  Clock,
+  X,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '@/app/providers/AuthContext';
 import { useCart, getCartItemPrice } from '@/entities/cart/CartContext';
 import { orderApi } from '@/entities/order/api/orderApi';
+import { userApi } from '@/entities/user/api/userApi';
 import { formatCurrency } from '@/shared/lib/formatters';
+import { getImageUrl, handleImageError } from '@/shared/lib/imageHelper';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
+import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
 import { PaymentMethod } from '@/shared/types';
 
+interface SavedAddressItem {
+  address: string;
+  name?: string;
+  phone?: string;
+  updatedAt?: string;
+}
+
+const STORAGE_LAST_SHIPPING = 'kho_online_last_shipping';
+const STORAGE_SAVED_ADDRESSES = 'kho_online_address_history';
+
 export const CheckoutPage: React.FC = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const { items, totalAmount, clearCart } = useCart();
   const navigate = useNavigate();
 
@@ -27,18 +44,80 @@ export const CheckoutPage: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [note, setNote] = useState('');
+  const [saveInfo, setSaveInfo] = useState(true);
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddressItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('COD');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [orderSuccess, setOrderSuccess] = useState<{ orderCode: string } | null>(null);
+  const [orderSuccess, setOrderSuccess] = useState<{ orderCode: string; orderCodes?: string[] } | null>(null);
 
+  // Load thông tin và lịch sử địa chỉ
   useEffect(() => {
-    if (user) {
-      setName(user.name || '');
-      setPhone(user.phone || '');
-      setAddress(user.address || '');
+    let localHistory: SavedAddressItem[] = [];
+    try {
+      const rawHistory = localStorage.getItem(STORAGE_SAVED_ADDRESSES);
+      if (rawHistory) {
+        localHistory = JSON.parse(rawHistory);
+      }
+    } catch {
+      localHistory = [];
     }
+
+    let lastShipping: any = null;
+    try {
+      const rawLast = localStorage.getItem(STORAGE_LAST_SHIPPING);
+      if (rawLast) {
+        lastShipping = JSON.parse(rawLast);
+      }
+    } catch {
+      lastShipping = null;
+    }
+
+    // Ưu tiên nạp từ thông tin user -> sau đó nạp từ last shipping
+    const initialName = user?.name || lastShipping?.name || '';
+    const initialPhone = user?.phone || lastShipping?.phone || '';
+    const initialAddress = user?.address || lastShipping?.address || '';
+
+    if (initialName) setName(initialName);
+    if (initialPhone) setPhone(initialPhone);
+    if (initialAddress) setAddress(initialAddress);
+
+    // Nếu user đã có địa chỉ trong profile mà chưa có trong history, thêm vào đầu
+    if (user?.address && !localHistory.some((item) => item.address.trim().toLowerCase() === user.address?.trim().toLowerCase())) {
+      localHistory.unshift({
+        address: user.address,
+        name: user.name || '',
+        phone: user.phone || '',
+        updatedAt: new Date().toISOString(),
+      });
+    }
+
+    setSavedAddresses(localHistory);
   }, [user]);
+
+  // Xóa 1 địa chỉ khỏi lịch sử
+  const handleRemoveSavedAddress = (addrToRemove: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = savedAddresses.filter((item) => item.address !== addrToRemove);
+    setSavedAddresses(updated);
+    localStorage.setItem(STORAGE_SAVED_ADDRESSES, JSON.stringify(updated));
+  };
+
+  // Áp dụng địa chỉ từ lịch sử
+  const handleSelectAddress = (item: SavedAddressItem) => {
+    setAddress(item.address);
+    if (item.name && !name) setName(item.name);
+    if (item.phone && !phone) setPhone(item.phone);
+  };
+
+  // Nếu auth đang khởi tạo: Hiển thị spinner thay vì báo chưa đăng nhập
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center py-16 px-4 transition-colors">
+        <LoadingSpinner text="Đang tải thông tin đặt hàng..." />
+      </div>
+    );
+  }
 
   // Nếu chưa đăng nhập: Yêu cầu đăng nhập theo đúng đề bài
   if (!isAuthenticated) {
@@ -118,13 +197,6 @@ export const CheckoutPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 text-blue-900 dark:text-blue-300">
-            <span className="text-xs font-semibold uppercase tracking-wider block text-blue-600 dark:text-blue-400 mb-1">
-              Mã đơn hàng của bạn
-            </span>
-            <span className="text-2xl font-black tracking-wider">{orderSuccess.orderCode}</span>
-          </div>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
             <Link to="/account?tab=orders">
               <Button variant="primary" size="md" className="w-full font-bold">
@@ -142,8 +214,8 @@ export const CheckoutPage: React.FC = () => {
     );
   }
 
-  const shippingFee = totalAmount >= 5000000 ? 0 : 30000;
-  const grandTotal = totalAmount + shippingFee;
+  const shippingFee = 0;
+  const grandTotal = totalAmount;
 
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -158,14 +230,16 @@ export const CheckoutPage: React.FC = () => {
     try {
       const orderData = {
         customerInfo: {
-          name,
-          phone,
-          address,
-          note,
+          name: name.trim(),
+          phone: phone.trim(),
+          address: address.trim(),
+          note: note.trim(),
         },
         items: items.map((item) => ({
           product: item.product._id,
+          productCode: item.product.code || '',
           name: item.product.name,
+          sellingOption: item.selectedOption || '',
           size: item.selectedSize || '',
           color: item.selectedColor || '',
           quantity: item.quantity,
@@ -176,8 +250,54 @@ export const CheckoutPage: React.FC = () => {
       };
 
       const res = await orderApi.create(orderData);
+
+      // Lưu thông tin giao hàng & lịch sử địa chỉ cho lần sau
+      if (saveInfo) {
+        try {
+          const currentShipping = {
+            name: name.trim(),
+            phone: phone.trim(),
+            address: address.trim(),
+          };
+          localStorage.setItem(STORAGE_LAST_SHIPPING, JSON.stringify(currentShipping));
+
+          const rawHistory = localStorage.getItem(STORAGE_SAVED_ADDRESSES);
+          let prevList: SavedAddressItem[] = rawHistory ? JSON.parse(rawHistory) : [];
+          
+          // Lọc bỏ địa chỉ trùng lặp và đưa địa chỉ hiện tại lên đầu
+          prevList = prevList.filter(
+            (item) => item.address.trim().toLowerCase() !== address.trim().toLowerCase()
+          );
+          prevList.unshift({
+            address: address.trim(),
+            name: name.trim(),
+            phone: phone.trim(),
+            updatedAt: new Date().toISOString(),
+          });
+
+          // Tối đa 5 địa chỉ gần nhất
+          const finalHistory = prevList.slice(0, 5);
+          localStorage.setItem(STORAGE_SAVED_ADDRESSES, JSON.stringify(finalHistory));
+          setSavedAddresses(finalHistory);
+
+          // Cập nhật thông tin profile của User nếu đang đăng nhập
+          if (user) {
+            userApi.updateProfile({
+              name: name.trim(),
+              phone: phone.trim(),
+              address: address.trim(),
+            }).catch(() => {});
+          }
+        } catch (storageErr) {
+          console.warn('Không thể lưu thông tin vào localStorage:', storageErr);
+        }
+      }
+
       clearCart();
-      setOrderSuccess({ orderCode: res.orderCode });
+      setOrderSuccess({
+        orderCode: res.orderCode,
+        orderCodes: res.orderCodes || (res.orderCode ? [res.orderCode] : []),
+      });
     } catch (err: any) {
       setError(err.message || 'Có lỗi xảy ra khi tạo đơn hàng, vui lòng thử lại');
     } finally {
@@ -197,9 +317,17 @@ export const CheckoutPage: React.FC = () => {
           <div className="lg:col-span-7 space-y-6">
             {/* THÔNG TIN ĐẶT HÀNG */}
             <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-gray-100 dark:border-slate-700 shadow-sm space-y-5 transition-colors">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white pb-3 border-b border-gray-100 dark:border-slate-700">
-                THÔNG TIN ĐẶT HÀNG
-              </h3>
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-slate-700">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                  THÔNG TIN ĐẶT HÀNG
+                </h3>
+                {savedAddresses.length > 0 && (
+                  <span className="text-xs text-blue-600 dark:text-blue-400 font-medium flex items-center gap-1">
+                    <Sparkles size={13} />
+                    Đã lưu {savedAddresses.length} địa chỉ
+                  </span>
+                )}
+              </div>
 
               {error && (
                 <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 rounded-xl text-rose-700 dark:text-rose-400 text-xs font-semibold">
@@ -224,13 +352,68 @@ export const CheckoutPage: React.FC = () => {
                 />
               </div>
 
-              <Input
-                label="Địa chỉ giao hàng chi tiết *"
-                placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                required
-              />
+              <div className="space-y-2">
+                <Input
+                  label="Địa chỉ giao hàng chi tiết *"
+                  placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  required
+                />
+
+                {/* Danh sách lịch sử địa chỉ đã dùng gần đây */}
+                {savedAddresses.length > 0 && (
+                  <div className="pt-1 space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                      <Clock size={13} className="text-blue-500" />
+                      <span>Địa chỉ đã dùng gần đây (bấm để chọn nhanh):</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {savedAddresses.map((item, idx) => {
+                        const isCurrent = address.trim().toLowerCase() === item.address.trim().toLowerCase();
+                        return (
+                          <div
+                            key={idx}
+                            onClick={() => handleSelectAddress(item)}
+                            role="button"
+                            title="Bấm để tự động điền địa chỉ này"
+                            className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
+                              isCurrent
+                                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-400 dark:border-blue-600 shadow-sm ring-1 ring-blue-400/30'
+                                : 'bg-gray-50 dark:bg-slate-700/60 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-slate-700'
+                            }`}
+                          >
+                            <MapPin size={13} className={isCurrent ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 group-hover:text-blue-500'} />
+                            <span className="max-w-[200px] sm:max-w-[280px] truncate">{item.address}</span>
+                            <button
+                              type="button"
+                              onClick={(e) => handleRemoveSavedAddress(item.address, e)}
+                              title="Xóa khỏi lịch sử"
+                              className="ml-1 p-0.5 text-gray-400 hover:text-rose-500 dark:hover:text-rose-400 rounded-full hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Checkbox lưu thông tin */}
+                <label className="flex items-center gap-2 cursor-pointer pt-2 select-none">
+                  <input
+                    type="checkbox"
+                    checked={saveInfo}
+                    onChange={(e) => setSaveInfo(e.target.checked)}
+                    className="w-4 h-4 rounded text-blue-600 border-gray-300 dark:border-slate-600 focus:ring-blue-500 dark:bg-slate-700"
+                  />
+                  <span className="text-xs text-gray-600 dark:text-gray-300 flex items-center gap-1">
+                    <Sparkles size={13} className="text-amber-500" />
+                    Tự động lưu thông tin giao hàng cho các lần mua sau
+                  </span>
+                </label>
+              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
@@ -279,60 +462,6 @@ export const CheckoutPage: React.FC = () => {
                     </p>
                   </div>
                 </label>
-
-                {/* BANK_TRANSFER */}
-                <label
-                  className={`flex items-start gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
-                    paymentMethod === 'BANK_TRANSFER'
-                      ? 'border-blue-600 bg-blue-50/50 dark:bg-blue-900/20 dark:border-blue-500'
-                      : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="BANK_TRANSFER"
-                    checked={paymentMethod === 'BANK_TRANSFER'}
-                    onChange={() => setPaymentMethod('BANK_TRANSFER')}
-                    className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 font-bold text-gray-900 dark:text-white text-sm">
-                      <Smartphone size={18} className="text-blue-600 dark:text-blue-400" />
-                      <span>Chuyển khoản ngân hàng (QR Code 24/7)</span>
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                      Chuyển tiền nhanh qua mã VietQR hoặc số tài khoản ngân hàng chính thức của CHANG.
-                    </p>
-                  </div>
-                </label>
-
-                {/* ONLINE */}
-                <label
-                  className={`flex items-start gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
-                    paymentMethod === 'ONLINE'
-                      ? 'border-blue-600 bg-blue-50/50 dark:bg-blue-900/20 dark:border-blue-500'
-                      : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="ONLINE"
-                    checked={paymentMethod === 'ONLINE'}
-                    onChange={() => setPaymentMethod('ONLINE')}
-                    className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 font-bold text-gray-900 dark:text-white text-sm">
-                      <CreditCard size={18} className="text-indigo-600 dark:text-indigo-400" />
-                      <span>Thanh toán trực tuyến (VNPAY, MoMo, Visa/Master)</span>
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                      Cổng thanh toán điện tử an toàn, hỗ trợ quét mã ví điện tử hoặc thẻ quốc tế.
-                    </p>
-                  </div>
-                </label>
               </div>
             </div>
           </div>
@@ -351,8 +480,9 @@ export const CheckoutPage: React.FC = () => {
                 return (
                   <div key={itemKey} className="pt-2 flex items-center gap-3">
                     <img
-                      src={item.product.images?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200&q=80'}
+                      src={getImageUrl(item.product.images?.[0])}
                       alt={item.product.name}
+                      onError={handleImageError}
                       className="w-12 h-12 rounded-lg object-cover border border-gray-100 dark:border-slate-700 flex-shrink-0"
                     />
                     <div className="flex-1 min-w-0">
@@ -360,6 +490,11 @@ export const CheckoutPage: React.FC = () => {
                         {item.product.name}
                       </p>
                       <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                        {item.selectedOption && (
+                          <span className="inline-block px-1.5 py-0.2 rounded bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 text-[10px] font-bold border border-teal-200 dark:border-teal-800">
+                            {item.selectedOption}
+                          </span>
+                        )}
                         {item.selectedSize && (
                           <span className="inline-block px-1.5 py-0.2 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold">
                             Size: {item.selectedSize}

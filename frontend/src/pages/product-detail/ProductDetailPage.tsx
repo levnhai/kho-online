@@ -11,6 +11,7 @@ import {
   Minus,
   Plus,
   ArrowLeft,
+  Boxes,
 } from 'lucide-react';
 import { productApi } from '@/entities/product/api/productApi';
 import { useCart } from '@/entities/cart/CartContext';
@@ -21,70 +22,18 @@ import { Button } from '@/shared/ui/Button';
 import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
 import { ProductImageGallery } from '@/features/product-gallery';
 
-// Helper tạo danh sách ảnh góc nhìn bổ sung chất lượng cao khi sản phẩm có ít ảnh
-const enrichProductImages = (product: Product): string[] => {
-  const baseImages = Array.isArray(product.images)
+// Lấy danh sách ảnh thực tế của sản phẩm (không thêm ảnh giả định)
+const getDisplayImages = (product: Product): string[] => {
+  const images = Array.isArray(product.images)
     ? product.images.filter(Boolean).map((img) => getImageUrl(img))
     : [];
-  if (baseImages.length >= 2) {
-    return baseImages;
+  if (images.length > 0) {
+    return images;
   }
-
-  const primaryImg = baseImages[0] || 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=1000&q=80';
-  const nameLower = product.name.toLowerCase();
-
-  // Bổ sung các góc chụp chất lượng cao theo danh mục sản phẩm
-  if (nameLower.includes('ipad') || nameLower.includes('tab') || nameLower.includes('bảng')) {
-    return [
-      primaryImg,
-      'https://images.unsplash.com/photo-1561154464-82e9adf32764?w=1000&q=80', // Góc vẽ với bút stylus
-      'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=1000&q=80', // Góc nhìn màn hình sắc nét
-      'https://images.unsplash.com/photo-1585790050230-5dd28404ccb9?w=1000&q=80', // Góc chụp nghiêng siêu mỏng
-      'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=1000&q=80', // Bàn phím & phụ kiện
-    ];
+  if (product.image) {
+    return [getImageUrl(product.image)];
   }
-
-  if (nameLower.includes('iphone') || nameLower.includes('galaxy') || nameLower.includes('phone') || nameLower.includes('thoại')) {
-    return [
-      primaryImg,
-      'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=1000&q=80', // Góc lưng & camera
-      'https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?w=1000&q=80', // Góc cầm trên tay
-      'https://images.unsplash.com/photo-1565849904461-04a58ad377e0?w=1000&q=80', // Góc cạnh bên viền kim loại
-    ];
-  }
-
-  if (nameLower.includes('macbook') || nameLower.includes('laptop') || nameLower.includes('asus') || nameLower.includes('dell')) {
-    return [
-      primaryImg,
-      'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=1000&q=80', // Góc mở nắp màn hình
-      'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=1000&q=80', // Bàn phím & trackpad
-      'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=1000&q=80', // Góc nghiêng đèn nền
-    ];
-  }
-
-  if (nameLower.includes('airpods') || nameLower.includes('tai nghe') || nameLower.includes('headphone')) {
-    return [
-      primaryImg,
-      'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=1000&q=80', // Cận cảnh tai nghe
-      'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=1000&q=80', // Hộp sạc mở nắp
-      'https://images.unsplash.com/photo-1572536147248-ac59a8abfa4b?w=1000&q=80', // Góc đeo thực tế
-    ];
-  }
-
-  if (nameLower.includes('chuột') || nameLower.includes('bàn phím') || nameLower.includes('mouse') || nameLower.includes('keyboard')) {
-    return [
-      primaryImg,
-      'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=1000&q=80', // Góc nghiêng công thái học
-      'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=1000&q=80', // Góc nhìn trên bàn làm việc
-      'https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=1000&q=80', // Cận cảnh switch & nút cuộn
-    ];
-  }
-
-  return [
-    primaryImg,
-    'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1000&q=80',
-    'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=1000&q=80',
-  ];
+  return [];
 };
 
 export const ProductDetailPage: React.FC = () => {
@@ -93,6 +42,7 @@ export const ProductDetailPage: React.FC = () => {
   const { addToCart } = useCart();
 
   const [product, setProduct] = useState<Product | null>(null);
+  const [selectedOption, setSelectedOption] = useState<string>('');
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [selectedColor, setSelectedColor] = useState<string>('');
   const [quantity, setQuantity] = useState(1);
@@ -106,6 +56,11 @@ export const ProductDetailPage: React.FC = () => {
       .getById(id)
       .then((data) => {
         setProduct(data);
+        if (data?.sellingOptions && data.sellingOptions.length > 0) {
+          setSelectedOption(data.sellingOptions[0].name);
+        } else {
+          setSelectedOption('');
+        }
         if (data?.sizes && data.sizes.length > 0) {
           setSelectedSize(data.sizes[0].name);
         } else {
@@ -145,16 +100,16 @@ export const ProductDetailPage: React.FC = () => {
     );
   }
 
-  // Tính giá & tồn kho dựa trên Size đang chọn
+  // Tính giá và tồn kho dựa trên Hình thức mua (Selling Option) hoặc Size đang chọn
+  const isSetProduct = Boolean(product.sellingOptions && product.sellingOptions.length > 0);
+  const activeOptionObj = isSetProduct ? product.sellingOptions?.find((o) => o.name === selectedOption) : null;
   const activeSizeObj = product.sizes?.find((s) => s.name === selectedSize);
-  const currentPrice = activeSizeObj ? activeSizeObj.price : product.price;
-  const currentSalePrice = activeSizeObj ? (activeSizeObj.salePrice || 0) : (product.salePrice || 0);
-  const currentStock = activeSizeObj && activeSizeObj.stock !== undefined && activeSizeObj.stock > 0 ? activeSizeObj.stock : product.stock;
-
-  const hasDiscount = Boolean(currentSalePrice && currentSalePrice > 0 && currentSalePrice < currentPrice);
-  const effectivePrice = hasDiscount ? currentSalePrice : currentPrice;
+  const currentPrice = isSetProduct
+    ? (activeOptionObj?.price ?? product.price)
+    : (activeSizeObj && activeSizeObj.price > 0 ? activeSizeObj.price : product.price);
+  const currentStock = activeSizeObj?.stock ?? (product.stock !== undefined ? product.stock : 999);
   const categoryName = typeof product.category === 'object' ? product.category?.name : 'Sản phẩm';
-  const displayImages = enrichProductImages(product);
+  const displayImages = getDisplayImages(product);
 
   const handleDecrease = () => {
     if (quantity > 1) setQuantity(quantity - 1);
@@ -165,13 +120,13 @@ export const ProductDetailPage: React.FC = () => {
   };
 
   const handleAddToCart = () => {
-    addToCart(product, quantity, selectedSize || undefined, selectedColor || undefined);
+    addToCart(product, quantity, selectedSize || undefined, selectedColor || undefined, selectedOption || undefined);
     setAddedMessage(true);
     setTimeout(() => setAddedMessage(false), 3000);
   };
 
   const handleBuyNow = () => {
-    addToCart(product, quantity, selectedSize || undefined, selectedColor || undefined);
+    addToCart(product, quantity, selectedSize || undefined, selectedColor || undefined, selectedOption || undefined);
     navigate('/checkout');
   };
 
@@ -194,7 +149,6 @@ export const ProductDetailPage: React.FC = () => {
             <ProductImageGallery
               images={displayImages}
               productName={product.name}
-              hasDiscount={hasDiscount}
             />
           </div>
 
@@ -215,7 +169,7 @@ export const ProductDetailPage: React.FC = () => {
               {product.name}
             </h1>
 
-            {/* Ratings & Stock info */}
+            {/* Ratings & Sold count */}
             <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm pb-3 border-b border-gray-100 dark:border-slate-700 mb-4 text-gray-600 dark:text-gray-400">
               <div className="flex items-center gap-1 text-amber-500">
                 <Star size={15} fill="currentColor" />
@@ -235,18 +189,52 @@ export const ProductDetailPage: React.FC = () => {
             <div className="p-3 sm:p-4 rounded-2xl bg-gray-50 dark:bg-slate-700/40 border border-gray-100 dark:border-slate-700 mb-4">
               <div className="flex items-baseline gap-2 sm:gap-3">
                 <span className="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400">
-                  {formatCurrency(effectivePrice)}
+                  {formatCurrency(currentPrice)}
                 </span>
-                {hasDiscount && (
-                  <span className="text-sm sm:text-lg text-gray-400 dark:text-gray-500 line-through">
-                    {formatCurrency(currentPrice)}
+                {selectedOption && (
+                  <span className="text-xs font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/50 px-2 py-0.5 rounded-md border border-teal-200 dark:border-teal-800">
+                    Áp dụng cho: {selectedOption}
                   </span>
                 )}
               </div>
               <p className="text-[11px] sm:text-xs text-gray-400 dark:text-gray-500 mt-1">
-                Giá đã bao gồm VAT và gói bảo hành tiêu chuẩn chính hãng.
+                Giá đã bao gồm VAT và chính sách hỗ trợ giao hàng tận nơi.
               </p>
             </div>
+
+            {/* SELLING OPTIONS SELECTOR (CẢ SET / BÁN LẺ TỪNG MÓN) */}
+            {product.sellingOptions && product.sellingOptions.length > 0 && (
+              <div className="mb-5 p-3.5 bg-teal-50/60 dark:bg-teal-950/20 rounded-2xl border border-teal-100 dark:border-teal-900/40 space-y-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {product.sellingOptions.map((opt) => {
+                    const isSelected = opt.name === selectedOption;
+                    return (
+                      <button
+                        key={opt.name}
+                        type="button"
+                        onClick={() => {
+                          setSelectedOption(opt.name);
+                          setQuantity(1);
+                        }}
+                        className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all flex flex-col items-start gap-1 text-left cursor-pointer ${
+                          isSelected
+                            ? 'border-teal-600 bg-white dark:bg-slate-800 text-teal-700 dark:text-teal-300 ring-2 ring-teal-500/30 shadow-xs'
+                            : 'border-teal-200/80 dark:border-teal-900/60 bg-white/70 dark:bg-slate-800/70 text-gray-700 dark:text-gray-300 hover:border-teal-400 dark:hover:border-teal-700'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <span className="line-clamp-1">{opt.name}</span>
+                          {isSelected && <CheckCircle2 size={13} className="text-teal-600 dark:text-teal-400 flex-shrink-0" />}
+                        </div>
+                        <span className="text-[11px] font-extrabold text-rose-600 dark:text-rose-400">
+                          {formatCurrency(opt.price)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* SIZE / VARIANT SELECTOR */}
             {product.sizes && product.sizes.length > 0 && (
@@ -263,7 +251,7 @@ export const ProductDetailPage: React.FC = () => {
                 <div className="flex flex-wrap gap-2">
                   {product.sizes.map((s) => {
                     const isSelected = s.name === selectedSize;
-                    const sPrice = s.salePrice && s.salePrice > 0 ? s.salePrice : s.price;
+                    const showSizePrice = !isSetProduct && s.price > 0;
                     return (
                       <button
                         key={s.name}
@@ -272,19 +260,19 @@ export const ProductDetailPage: React.FC = () => {
                           setSelectedSize(s.name);
                           setQuantity(1);
                         }}
-                        className={`py-2 px-3 sm:px-4 rounded-xl text-xs font-bold border transition-all flex flex-col items-start gap-0.5 ${
+                        className={`py-2 px-3 sm:px-4 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 ${
                           isSelected
                             ? 'border-blue-600 bg-blue-50/80 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 ring-2 ring-blue-500/20 shadow-xs'
                             : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600'
                         }`}
                       >
-                        <div className="flex items-center gap-1.5">
-                          <span>{s.name}</span>
-                          {isSelected && <CheckCircle2 size={13} className="text-blue-600 dark:text-blue-400" />}
-                        </div>
-                        <span className="text-[10px] font-semibold text-rose-600 dark:text-rose-400">
-                          {formatCurrency(sPrice)}
-                        </span>
+                        <span>{s.name}</span>
+                        {isSelected && <CheckCircle2 size={13} className="text-blue-600 dark:text-blue-400" />}
+                        {showSizePrice && (
+                          <span className="text-[10px] font-semibold text-rose-600 dark:text-rose-400 ml-0.5">
+                            ({formatCurrency(s.price)})
+                          </span>
+                        )}
                       </button>
                     );
                   })}
@@ -439,13 +427,13 @@ export const ProductDetailPage: React.FC = () => {
         <div className="flex-1 min-w-0">
           <span className="text-[10px] text-gray-400 dark:text-gray-500 block -mb-0.5">Tổng tiền:</span>
           <span className="text-base font-black text-rose-600 dark:text-rose-400 truncate block">
-            {formatCurrency(effectivePrice * quantity)}
+            {formatCurrency(currentPrice * quantity)}
           </span>
         </div>
 
         <button
           onClick={handleAddToCart}
-          className="p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl border border-blue-200 dark:border-blue-800 active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center"
+          className="p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl border border-blue-200 dark:border-blue-800 active:scale-95 transition-all flex items-center justify-center"
           title="Thêm vào giỏ"
         >
           <ShoppingCart size={18} />
@@ -453,7 +441,7 @@ export const ProductDetailPage: React.FC = () => {
 
         <button
           onClick={handleBuyNow}
-          className="flex-1 py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xs rounded-xl shadow-md active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center gap-1.5"
+          className="flex-1 py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xs rounded-xl shadow-md active:scale-95 transition-all flex items-center justify-center gap-1.5"
         >
           <Zap size={15} />
           <span>Mua ngay ({quantity})</span>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Mail, Lock, LogIn, AlertCircle, ShoppingBag, ArrowLeft } from 'lucide-react';
+import { Phone, Mail, Lock, Eye, EyeOff, LogIn, AlertCircle, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/app/providers/AuthContext';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
@@ -20,6 +20,7 @@ export const LoginPage: React.FC = () => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -27,7 +28,7 @@ export const LoginPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      setError('Vui lòng nhập đầy đủ email và mật khẩu');
+      setError('Vui lòng nhập đầy đủ thông tin tài khoản và mật khẩu');
       return;
     }
     setLoading(true);
@@ -73,7 +74,7 @@ export const LoginPage: React.FC = () => {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-3xl font-black tracking-widest bg-gradient-to-r from-blue-600 via-indigo-500 to-cyan-500 dark:from-blue-400 dark:via-indigo-300 dark:to-cyan-300 bg-clip-text text-transparent">
-                CHANG
+                C.H.A.N.G
               </span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700/50 shadow-xs">
                 STORE
@@ -82,7 +83,7 @@ export const LoginPage: React.FC = () => {
           </Link>
           <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white mt-2">Đăng nhập tài khoản</h2>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Chào mừng bạn quay trở lại với hệ thống bán hàng CHANG
+            Chào mừng bạn quay trở lại với hệ thống bán hàng C.H.A.N.G
           </p>
         </div>
 
@@ -97,22 +98,33 @@ export const LoginPage: React.FC = () => {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
-            label="Email / Số điện thoại"
-            type="email"
-            placeholder="example@kho.vn"
+            label="Số điện thoại / Email"
+            type="text"
+            placeholder="09xxxxxxxx hoặc email..."
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            icon={<Mail size={16} />}
+            icon={<Phone size={16} />}
             required
           />
 
           <Input
             label="Mật khẩu"
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             icon={<Lock size={16} />}
+            rightElement={
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 focus:outline-none cursor-pointer transition-colors p-1"
+                tabIndex={-1}
+                title={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            }
             required
           />
 

@@ -28,4 +28,10 @@ export const orderApi = {
   cancelMyOrder: (id: string): Promise<Order> => {
     return api.patch(`/orders/${id}/cancel`);
   },
+  deleteOrder: (id: string): Promise<any> => {
+    return api.delete(`/orders/${id}`);
+  },
+  clearAllOrders: (): Promise<any> => {
+    return api.delete('/orders/clear/all');
+  },
 };

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -35,6 +35,13 @@ export class OrdersController {
     return this.ordersService.findAll(query);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Delete('clear/all')
+  async clearAllOrders() {
+    return this.ordersService.clearAllOrders();
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get(':id')
   async findById(@Param('id') id: string) {
@@ -46,5 +53,12 @@ export class OrdersController {
   @Patch(':id/status')
   async updateStatus(@Param('id') id: string, @Body('status') status: OrderStatus) {
     return this.ordersService.updateStatus(id, status);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Delete(':id')
+  async deleteOrder(@Param('id') id: string) {
+    return this.ordersService.delete(id);
   }
 }

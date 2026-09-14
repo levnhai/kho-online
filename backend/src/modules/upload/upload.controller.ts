@@ -5,44 +5,16 @@ import {
   UploadedFile,
   UploadedFiles,
   BadRequestException,
-  Req,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import * as path from 'path';
-import * as fs from 'fs';
-import { UploadService } from './upload.service';
+import { memoryStorage } from 'multer';
+import { UploadService, UploadFile } from './upload.service';
 
-const UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'products');
-
-// Đảm bảo thư mục lưu trữ luôn tồn tại
-if (!fs.existsSync(UPLOAD_DIR)) {
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-}
-
-// Cấu hình Multer Storage
-export const multerStorageOptions = {
-  storage: diskStorage({
-    destination: (req, file, callback) => {
-      if (!fs.existsSync(UPLOAD_DIR)) {
-        fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-      }
-      callback(null, UPLOAD_DIR);
-    },
-    filename: (req, file, callback) => {
-      const ext = path.extname(file.originalname).toLowerCase() || '.png';
-      const cleanName = path
-        .basename(file.originalname, ext)
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, '-')
-        .replace(/-+/g, '-')
-        .substring(0, 30);
-      const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e6)}`;
-      callback(null, `${cleanName}-${uniqueSuffix}${ext}`);
-    },
-  }),
+// Cấu hình Multer Memory Storage để stream trực tiếp lên Cloudinary
+export const multerMemoryStorageOptions = {
+  storage: memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB max
+    fileSize: 15 * 1024 * 1024, // 15MB max
   },
   fileFilter: (req: any, file: any, callback: any) => {
     const allowedMimeTypes = [
@@ -67,45 +39,33 @@ export const multerStorageOptions = {
   },
 };
 
-export interface UploadFile {
-  fieldname?: string;
-  originalname: string;
-  encoding?: string;
-  mimetype: string;
-  size: number;
-  destination?: string;
-  filename: string;
-  path?: string;
-  buffer?: Buffer;
-}
-
 @Controller('upload')
 export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
 
   /**
-   * Upload 1 hình ảnh
+   * Upload 1 hình ảnh lên Cloudinary
    * POST /api/upload/single
    */
   @Post('single')
-  @UseInterceptors(FileInterceptor('file', multerStorageOptions))
-  uploadSingle(@UploadedFile() file: UploadFile, @Req() req: any) {
+  @UseInterceptors(FileInterceptor('file', multerMemoryStorageOptions))
+  async uploadSingle(@UploadedFile() file: UploadFile) {
     if (!file) {
       throw new BadRequestException('Vui lòng chọn một tệp hình ảnh để tải lên');
     }
-    return this.uploadService.formatFileResponse(file, req);
+    return this.uploadService.processSingleFile(file);
   }
 
   /**
-   * Upload nhiều hình ảnh cùng lúc (tối đa 10 ảnh)
+   * Upload nhiều hình ảnh cùng lúc (tối đa 10 ảnh) lên Cloudinary
    * POST /api/upload/multiple
    */
   @Post('multiple')
-  @UseInterceptors(FilesInterceptor('files', 10, multerStorageOptions))
-  uploadMultiple(@UploadedFiles() files: UploadFile[], @Req() req: any) {
+  @UseInterceptors(FilesInterceptor('files', 10, multerMemoryStorageOptions))
+  async uploadMultiple(@UploadedFiles() files: UploadFile[]) {
     if (!files || files.length === 0) {
       throw new BadRequestException('Vui lòng chọn ít nhất một tệp hình ảnh để tải lên');
     }
-    return this.uploadService.formatMultipleFilesResponse(files, req);
+    return this.uploadService.processMultipleFiles(files);
   }
 }

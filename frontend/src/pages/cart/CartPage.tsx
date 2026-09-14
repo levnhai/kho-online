@@ -1,8 +1,9 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, ArrowLeft } from 'lucide-react';
-import { useCart, getCartItemPrice, getCartItemMaxStock } from '@/entities/cart/CartContext';
+import { useCart, getCartItemPrice } from '@/entities/cart/CartContext';
 import { formatCurrency } from '@/shared/lib/formatters';
+import { getImageUrl, handleImageError } from '@/shared/lib/imageHelper';
 import { Button } from '@/shared/ui/Button';
 
 export const CartPage: React.FC = () => {
@@ -62,8 +63,7 @@ export const CartPage: React.FC = () => {
               {items.map((item) => {
                 const price = getCartItemPrice(item);
                 const itemTotal = price * item.quantity;
-                const maxStock = getCartItemMaxStock(item);
-                const itemKey = `${item.product._id}-${item.selectedSize || 'default'}-${item.selectedColor || 'default'}`;
+                const itemKey = `${item.product._id}-${item.selectedOption || 'default'}-${item.selectedSize || 'default'}-${item.selectedColor || 'default'}`;
 
                 return (
                   <div
@@ -71,8 +71,9 @@ export const CartPage: React.FC = () => {
                     className="bg-white dark:bg-slate-800 p-3.5 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-xs flex gap-3 relative"
                   >
                     <img
-                      src={item.product.images?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300&q=80'}
+                      src={getImageUrl(item.product.images?.[0])}
                       alt={item.product.name}
+                      onError={handleImageError}
                       className="w-20 h-20 rounded-xl object-cover border border-gray-100 dark:border-slate-700 flex-shrink-0"
                     />
 
@@ -87,6 +88,11 @@ export const CartPage: React.FC = () => {
                           </Link>
                         </div>
                         <div className="flex flex-wrap items-center gap-1 mt-1">
+                          {item.selectedOption && (
+                            <span className="px-2 py-0.5 rounded-md bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 text-[10px] font-bold border border-teal-200 dark:border-teal-800">
+                              {item.selectedOption}
+                            </span>
+                          )}
                           {item.selectedSize && (
                             <span className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold">
                               Size: {item.selectedSize}
@@ -107,7 +113,7 @@ export const CartPage: React.FC = () => {
                         {/* Quantity controls */}
                         <div className="flex items-center border border-gray-200 dark:border-slate-700 rounded-lg bg-gray-50 dark:bg-slate-900 overflow-hidden">
                           <button
-                            onClick={() => updateQuantity(item.product._id, item.quantity - 1, item.selectedSize, item.selectedColor)}
+                            onClick={() => updateQuantity(item.product._id, item.quantity - 1, item.selectedSize, item.selectedColor, item.selectedOption)}
                             className="p-1.5 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-slate-700"
                           >
                             <Minus size={13} />
@@ -116,9 +122,8 @@ export const CartPage: React.FC = () => {
                             {item.quantity}
                           </span>
                           <button
-                            onClick={() => updateQuantity(item.product._id, item.quantity + 1, item.selectedSize, item.selectedColor)}
-                            disabled={item.quantity >= maxStock}
-                            className="p-1.5 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-slate-700 disabled:opacity-30"
+                            onClick={() => updateQuantity(item.product._id, item.quantity + 1, item.selectedSize, item.selectedColor, item.selectedOption)}
+                            className="p-1.5 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-slate-700 transition-colors"
                           >
                             <Plus size={13} />
                           </button>
@@ -132,7 +137,7 @@ export const CartPage: React.FC = () => {
 
                     {/* Delete button */}
                     <button
-                      onClick={() => removeFromCart(item.product._id, item.selectedSize, item.selectedColor)}
+                      onClick={() => removeFromCart(item.product._id, item.selectedSize, item.selectedColor, item.selectedOption)}
                       className="absolute top-2.5 right-2.5 p-1 text-gray-400 dark:text-slate-400 hover:text-rose-600"
                     >
                       <Trash2 size={15} />
@@ -158,16 +163,16 @@ export const CartPage: React.FC = () => {
                   {items.map((item) => {
                     const price = getCartItemPrice(item);
                     const itemTotal = price * item.quantity;
-                    const maxStock = getCartItemMaxStock(item);
-                    const itemKey = `${item.product._id}-${item.selectedSize || 'default'}-${item.selectedColor || 'default'}`;
+                    const itemKey = `${item.product._id}-${item.selectedOption || 'default'}-${item.selectedSize || 'default'}-${item.selectedColor || 'default'}`;
 
                     return (
                       <tr key={itemKey} className="hover:bg-gray-50/50 dark:hover:bg-slate-700/30 transition-colors">
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-4">
                             <img
-                              src={item.product.images?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80'}
+                              src={getImageUrl(item.product.images?.[0])}
                               alt={item.product.name}
+                              onError={handleImageError}
                               className="w-16 h-16 rounded-xl object-cover border border-gray-100 dark:border-slate-700 flex-shrink-0"
                             />
                             <div>
@@ -181,6 +186,11 @@ export const CartPage: React.FC = () => {
                                 <span className="text-xs text-gray-400 dark:text-gray-400 font-mono">
                                   Mã: {item.product.code}
                                 </span>
+                                {item.selectedOption && (
+                                  <span className="px-2 py-0.5 rounded bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 text-[11px] font-bold border border-teal-200 dark:border-teal-800">
+                                    {item.selectedOption}
+                                  </span>
+                                )}
                                 {item.selectedSize && (
                                   <span className="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[11px] font-bold">
                                     Size: {item.selectedSize}
@@ -204,7 +214,7 @@ export const CartPage: React.FC = () => {
                           <div className="flex items-center justify-center">
                             <div className="flex items-center border border-gray-200 dark:border-slate-600 rounded-lg bg-gray-50/80 dark:bg-slate-700/60 overflow-hidden shadow-2xs">
                               <button
-                                onClick={() => updateQuantity(item.product._id, item.quantity - 1, item.selectedSize, item.selectedColor)}
+                                onClick={() => updateQuantity(item.product._id, item.quantity - 1, item.selectedSize, item.selectedColor, item.selectedOption)}
                                 className="p-1.5 text-gray-500 dark:text-gray-300 hover:bg-white dark:hover:bg-slate-600 transition-colors"
                               >
                                 <Minus size={14} />
@@ -213,9 +223,8 @@ export const CartPage: React.FC = () => {
                                 {item.quantity}
                               </span>
                               <button
-                                onClick={() => updateQuantity(item.product._id, item.quantity + 1, item.selectedSize, item.selectedColor)}
-                                disabled={item.quantity >= maxStock}
-                                className="p-1.5 text-gray-500 dark:text-gray-300 hover:bg-white dark:hover:bg-slate-600 disabled:opacity-30 transition-colors"
+                                onClick={() => updateQuantity(item.product._id, item.quantity + 1, item.selectedSize, item.selectedColor, item.selectedOption)}
+                                className="p-1.5 text-gray-500 dark:text-gray-300 hover:bg-white dark:hover:bg-slate-600 transition-colors"
                               >
                                 <Plus size={14} />
                               </button>
@@ -229,7 +238,7 @@ export const CartPage: React.FC = () => {
 
                         <td className="py-4 px-4 text-center">
                           <button
-                            onClick={() => removeFromCart(item.product._id, item.selectedSize, item.selectedColor)}
+                            onClick={() => removeFromCart(item.product._id, item.selectedSize, item.selectedColor, item.selectedOption)}
                             className="p-2 text-gray-400 hover:text-rose-600 dark:text-gray-400 dark:hover:text-rose-400 rounded-lg transition-colors"
                             title="Xóa sản phẩm"
                           >
@@ -267,18 +276,14 @@ export const CartPage: React.FC = () => {
               </div>
               <div className="flex justify-between text-gray-600 dark:text-slate-300">
                 <span>Phí vận chuyển:</span>
-                <span className="font-semibold text-gray-900 dark:text-white">
-                  {totalAmount >= 5000000 ? (
-                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">Miễn phí</span>
-                  ) : (
-                    formatCurrency(30000)
-                  )}
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-bold">
+                  Miễn phí
                 </span>
               </div>
               <div className="border-t border-gray-100 dark:border-slate-700 pt-3 flex justify-between items-baseline">
                 <span className="font-bold text-gray-900 dark:text-white">Tổng cộng:</span>
                 <span className="text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400">
-                  {formatCurrency(totalAmount + (totalAmount >= 5000000 ? 0 : 30000))}
+                  {formatCurrency(totalAmount)}
                 </span>
               </div>
             </div>
