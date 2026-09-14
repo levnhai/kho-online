@@ -434,14 +434,11 @@ export const AdminProductsPage: React.FC = () => {
 
   const handleAddNewSizeRow = (presetName?: string) => {
     const defaultPrice =
-      typeof price === "number"
-        ? price
-        : sellingOptionsList[0]?.price || 0;
+      typeof price === "number" ? price : sellingOptionsList[0]?.price || 0;
     const chosenNames = sizesList.map((s) => s.name);
     const available = dbSizes.find((s) => !chosenNames.includes(s.name));
     const nextName =
-      presetName ||
-      (available ? available.name : dbSizes[0]?.name || "M");
+      presetName || (available ? available.name : dbSizes[0]?.name || "M");
     setSizesList([
       ...sizesList,
       { name: nextName, price: defaultPrice, salePrice: 0, stock: 0 },
@@ -459,9 +456,7 @@ export const AdminProductsPage: React.FC = () => {
       });
       setDbSizes((prev) => [...prev, created]);
       const defaultPrice =
-        typeof price === "number"
-          ? price
-          : sellingOptionsList[0]?.price || 0;
+        typeof price === "number" ? price : sellingOptionsList[0]?.price || 0;
       setSizesList((prev) => [
         ...prev,
         { name: created.name, price: defaultPrice, salePrice: 0, stock: 0 },
@@ -1322,99 +1317,118 @@ export const AdminProductsPage: React.FC = () => {
                       {sellingOptionsList.map((opt, idx) => (
                         <div
                           key={idx}
-                          className={`p-2.5 sm:p-3 rounded-xl border transition-all duration-200 shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 ${
+                          className={`p-2.5 sm:p-3 rounded-xl border transition-all duration-200 shadow-2xs space-y-2 sm:space-y-0 sm:flex sm:items-center sm:gap-2.5 ${
                             idx === 0
                               ? "bg-amber-50/40 dark:bg-amber-950/20 border-amber-300/80 dark:border-amber-800/60"
                               : "bg-white dark:bg-slate-800/90 border-teal-200/80 dark:border-teal-900/60"
                           }`}
                         >
-                          {/* Badge thứ tự / vai trò */}
-                          <div className="flex items-center gap-2 min-w-[120px]">
-                            <span
-                              className={`w-6 h-6 rounded-full font-bold flex items-center justify-center text-xs flex-shrink-0 ${
-                                idx === 0
-                                  ? "bg-amber-500 text-white shadow-2xs"
-                                  : "bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-300"
-                              }`}
-                            >
-                              {idx + 1}
-                            </span>
-                            {idx === 0 ? (
-                              <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-500 text-white font-bold tracking-tight shadow-2xs whitespace-nowrap">
-                                ★ Giá niêm yết
+                          {/* Header dòng trên mobile / bên trái trên PC */}
+                          <div className="flex items-center justify-between sm:justify-start gap-1.5 min-w-[95px]">
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full font-bold flex items-center justify-center text-[11px] sm:text-xs flex-shrink-0 ${
+                                  idx === 0
+                                    ? "bg-amber-500 text-white shadow-2xs"
+                                    : "bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-300"
+                                }`}
+                              >
+                                {idx + 1}
                               </span>
-                            ) : (
-                              <span className="text-[10px] px-2 py-0.5 rounded-md bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300 font-semibold whitespace-nowrap">
-                                Món lẻ {idx}
-                              </span>
+                              {idx === 0 ? (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-amber-500 text-white font-bold tracking-tight shadow-2xs whitespace-nowrap">
+                                  ★ Giá niêm yết
+                                </span>
+                              ) : (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300 font-semibold whitespace-nowrap">
+                                  Món lẻ {idx}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Nút Xóa món trên mobile (từ món 2 trở đi) */}
+                            {idx > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveSellingOption(idx)}
+                                className="sm:hidden p-1 text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
+                                title="Xóa món này khỏi Set"
+                              >
+                                <Trash2 size={15} />
+                              </button>
                             )}
                           </div>
 
-                          {/* Chọn Tên món từ API */}
-                          <div className="flex-1 min-w-[160px]">
-                            <select
-                              value={opt.name}
-                              onChange={(e) =>
-                                handleUpdateSellingOption(
-                                  idx,
-                                  "name",
-                                  e.target.value,
-                                )
-                              }
-                              className="w-full text-xs font-bold px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer shadow-2xs"
-                            >
-                              {dbSetOptions.map((item) => (
-                                <option key={item._id} value={item.name}>
-                                  {item.name}{" "}
-                                  {item.code ? `(${item.code})` : ""}
-                                </option>
-                              ))}
-                              {opt.name &&
-                                !dbSetOptions.some(
-                                  (item) => item.name === opt.name,
-                                ) && (
-                                  <option value={opt.name}>{opt.name}</option>
-                                )}
-                              <option
-                                value="__NEW__"
-                                className="text-blue-600 font-bold"
+                          {/* 2 thẻ input nằm trên 1 hàng (trên cả mobile lẫn desktop) */}
+                          <div className="flex-1 flex items-center gap-2">
+                            {/* Thẻ 1: Chọn Tên món từ API */}
+                            <div className="flex-1 min-w-0">
+                              <select
+                                value={opt.name}
+                                onChange={(e) =>
+                                  handleUpdateSellingOption(
+                                    idx,
+                                    "name",
+                                    e.target.value,
+                                  )
+                                }
+                                className="w-full text-xs font-bold px-2.5 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer shadow-2xs truncate"
                               >
-                                + Tạo tên món mới vào API...
-                              </option>
-                            </select>
-                          </div>
+                                {dbSetOptions.map((item) => (
+                                  <option key={item._id} value={item.name}>
+                                    {item.name}{" "}
+                                    {item.code ? `(${item.code})` : ""}
+                                  </option>
+                                ))}
+                                {opt.name &&
+                                  !dbSetOptions.some(
+                                    (item) => item.name === opt.name,
+                                  ) && (
+                                    <option value={opt.name}>{opt.name}</option>
+                                  )}
+                                <option
+                                  value="__NEW__"
+                                  className="text-blue-600 font-bold"
+                                >
+                                  + Tạo tên món mới vào API...
+                                </option>
+                              </select>
+                            </div>
 
-                          {/* Nhập giá bán */}
-                          <div className="w-full sm:w-44 relative">
-                            <input
-                              type="number"
-                              value={opt.price === 0 ? "" : opt.price}
-                              onChange={(e) =>
-                                handleUpdateSellingOption(
-                                  idx,
-                                  "price",
-                                  e.target.value === ""
-                                    ? 0
-                                    : Number(e.target.value),
-                                )
-                              }
-                              placeholder="0"
-                              className="w-full text-xs font-bold pr-11 pl-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-2xs"
-                            />
-                            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400 dark:text-slate-500 pointer-events-none">
-                              VNĐ
-                            </span>
-                          </div>
+                            {/* Thẻ 2: Nhập giá bán */}
+                            <div className="w-28 sm:w-40 relative flex-shrink-0">
+                              <input
+                                type="number"
+                                value={opt.price === 0 ? "" : opt.price}
+                                onChange={(e) =>
+                                  handleUpdateSellingOption(
+                                    idx,
+                                    "price",
+                                    e.target.value === ""
+                                      ? 0
+                                      : Number(e.target.value),
+                                  )
+                                }
+                                placeholder="0"
+                                className="w-full text-xs font-bold pr-8 sm:pr-10 pl-2.5 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-2xs"
+                              />
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] sm:text-[10px] font-bold text-gray-400 dark:text-slate-500 pointer-events-none">
+                                VNĐ
+                              </span>
+                            </div>
 
-                          {/* Nút Xóa món */}
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveSellingOption(idx)}
-                            className="p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer self-end sm:self-center"
-                            title="Xóa món này khỏi Set"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                            {/* Nút Xóa món trên desktop */}
+                            {idx > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveSellingOption(idx)}
+                                className="hidden sm:inline-flex p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer flex-shrink-0"
+                                title="Xóa món này khỏi Set"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -1474,8 +1488,13 @@ export const AdminProductsPage: React.FC = () => {
                 <div className="flex items-center justify-between gap-2 pb-2 border-b border-indigo-200/60 dark:border-indigo-900/40">
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-2 text-indigo-950 dark:text-indigo-200 font-bold text-sm">
-                      <Layers size={18} className="text-indigo-600 dark:text-indigo-400" />
-                      <span>Bảng Size / Phiên bản ({sizesList.length} size)</span>
+                      <Layers
+                        size={18}
+                        className="text-indigo-600 dark:text-indigo-400"
+                      />
+                      <span>
+                        Bảng Size / Phiên bản ({sizesList.length} size)
+                      </span>
                     </div>
                     <p className="text-[11px] text-indigo-700/80 dark:text-indigo-400/80">
                       {productType === "set"
@@ -1492,7 +1511,7 @@ export const AdminProductsPage: React.FC = () => {
                     onClick={() => handleAddNewSizeRow()}
                     className="text-xs py-1.5 px-3 bg-white dark:bg-slate-800 border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 font-bold hover:bg-indigo-50 dark:hover:bg-indigo-900/40 shrink-0 shadow-2xs"
                   >
-                    + Thêm size
+                    Thêm size
                   </Button>
                 </div>
 
@@ -1501,7 +1520,10 @@ export const AdminProductsPage: React.FC = () => {
                   <div className="p-3 bg-blue-50/90 dark:bg-blue-950/50 rounded-xl border border-blue-200 dark:border-blue-800 space-y-2 animate-fade-in shadow-xs">
                     <div className="flex items-center justify-between text-xs font-bold text-blue-900 dark:text-blue-200">
                       <span className="flex items-center gap-1.5">
-                        <Plus size={14} className="text-blue-600 dark:text-blue-400" />
+                        <Plus
+                          size={14}
+                          className="text-blue-600 dark:text-blue-400"
+                        />
                         Tạo kích cỡ (Size) mới vào danh mục hệ thống:
                       </span>
                       <button
@@ -1546,85 +1568,109 @@ export const AdminProductsPage: React.FC = () => {
                     {sizesList.map((s, idx) => (
                       <div
                         key={idx}
-                        className="p-2.5 sm:p-3 rounded-xl border bg-white dark:bg-slate-800/90 border-indigo-200/80 dark:border-indigo-900/60 transition-all duration-200 shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5"
+                        className="p-2.5 sm:p-3 rounded-xl border bg-white dark:bg-slate-800/90 border-indigo-200/80 dark:border-indigo-900/60 transition-all duration-200 shadow-2xs space-y-2 sm:space-y-0 sm:flex sm:items-center sm:gap-2.5"
                       >
-                        {/* Badge thứ tự */}
-                        <div className="flex items-center gap-2 min-w-[90px]">
-                          <span className="w-6 h-6 rounded-full font-bold flex items-center justify-center text-xs flex-shrink-0 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300">
-                            {idx + 1}
-                          </span>
-                          <span className="text-[10px] px-2 py-0.5 rounded-md bg-indigo-100/70 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 font-semibold whitespace-nowrap">
-                            Size {idx + 1}
-                          </span>
-                        </div>
-
-                        {/* Thẻ SELECT chọn Size từ API */}
-                        <div className="flex-1 min-w-[140px]">
-                          <select
-                            value={s.name}
-                            onChange={(e) =>
-                              handleUpdateSize(idx, "name", e.target.value)
-                            }
-                            className="w-full text-xs font-bold px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer shadow-2xs"
-                          >
-                            <option value="">-- Chọn kích cỡ (Size) --</option>
-                            {dbSizes.map((item) => (
-                              <option key={item._id} value={item.name}>
-                                {item.name} {item.code && item.code !== item.name ? `(${item.code})` : ""}
-                              </option>
-                            ))}
-                            {s.name &&
-                              !dbSizes.some((item) => item.name === s.name) && (
-                                <option value={s.name}>{s.name}</option>
-                              )}
-                            <option value="__NEW__" className="text-blue-600 font-bold">
-                              + Tạo size mới vào API...
-                            </option>
-                          </select>
-                        </div>
-
-                        {/* Ô nhập Giá cho Size (ẨN KHI BÁN THEO SET) */}
-                        {productType === "single" ? (
-                          <div className="w-full sm:w-44 relative">
-                            <input
-                              type="number"
-                              value={s.price === 0 ? "" : s.price}
-                              onChange={(e) =>
-                                handleUpdateSize(
-                                  idx,
-                                  "price",
-                                  e.target.value === "" ? 0 : Number(e.target.value)
-                                )
-                              }
-                              placeholder="0"
-                              className="w-full text-xs font-bold pr-11 pl-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs"
-                            />
-                            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400 dark:text-slate-500 pointer-events-none">
-                              VNĐ
+                        {/* Header dòng trên mobile / bên trái trên PC */}
+                        <div className="flex items-center justify-between sm:justify-start gap-1.5 min-w-[85px]">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full font-bold flex items-center justify-center text-[11px] sm:text-xs flex-shrink-0 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300">
+                              {idx + 1}
+                            </span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-indigo-100/70 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 font-semibold whitespace-nowrap">
+                              Size {idx + 1}
                             </span>
                           </div>
-                        ) : (
-                          <div className="w-full sm:w-44 px-3 py-2 rounded-lg bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/80 text-teal-700 dark:text-teal-300 text-xs font-bold flex items-center justify-center gap-1 shadow-2xs">
-                            <span>Giá theo món trong Set</span>
-                          </div>
-                        )}
 
-                        {/* Nút Xóa Size */}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveSize(idx)}
-                          className="p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer self-end sm:self-center"
-                          title="Xóa size này"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                          {/* Nút Xóa Size trên mobile */}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSize(idx)}
+                            className="sm:hidden p-1 text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
+                            title="Xóa size này"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+
+                        {/* 2 thẻ input nằm trên 1 hàng (trên cả mobile lẫn desktop) */}
+                        <div className="flex-1 flex items-center gap-2">
+                          {/* Thẻ 1: SELECT chọn Size từ API */}
+                          <div className="flex-1 min-w-0">
+                            <select
+                              value={s.name}
+                              onChange={(e) =>
+                                handleUpdateSize(idx, "name", e.target.value)
+                              }
+                              className="w-full text-xs font-bold px-2.5 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer shadow-2xs truncate"
+                            >
+                              <option value="">-- Chọn kích cỡ --</option>
+                              {dbSizes.map((item) => (
+                                <option key={item._id} value={item.name}>
+                                  {item.name}{" "}
+                                  {item.code && item.code !== item.name
+                                    ? `(${item.code})`
+                                    : ""}
+                                </option>
+                              ))}
+                              {s.name &&
+                                !dbSizes.some((item) => item.name === s.name) && (
+                                  <option value={s.name}>{s.name}</option>
+                                )}
+                              <option
+                                value="__NEW__"
+                                className="text-blue-600 font-bold"
+                              >
+                                + Tạo size mới vào API...
+                              </option>
+                            </select>
+                          </div>
+
+                          {/* Thẻ 2: Ô nhập Giá cho Size (ẨN KHI BÁN THEO SET) */}
+                          {productType === "single" ? (
+                            <div className="w-28 sm:w-40 relative flex-shrink-0">
+                              <input
+                                type="number"
+                                value={s.price === 0 ? "" : s.price}
+                                onChange={(e) =>
+                                  handleUpdateSize(
+                                    idx,
+                                    "price",
+                                    e.target.value === ""
+                                      ? 0
+                                      : Number(e.target.value),
+                                  )
+                                }
+                                placeholder="0"
+                                className="w-full text-xs font-bold pr-8 sm:pr-10 pl-2.5 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs"
+                              />
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] sm:text-[10px] font-bold text-gray-400 dark:text-slate-500 pointer-events-none">
+                                VNĐ
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="w-28 sm:w-40 px-2 py-2 rounded-lg bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/80 text-teal-700 dark:text-teal-300 text-[10px] sm:text-xs font-bold flex items-center justify-center shadow-2xs flex-shrink-0">
+                              <span>Giá theo món</span>
+                            </div>
+                          )}
+
+                          {/* Nút Xóa Size trên desktop */}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSize(idx)}
+                            className="hidden sm:inline-flex p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer flex-shrink-0"
+                            title="Xóa size này"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div className="p-5 bg-white/70 dark:bg-slate-900/60 rounded-xl text-center space-y-2 border border-dashed border-indigo-300 dark:border-indigo-800">
                     <p className="text-xs text-gray-500 dark:text-slate-400 font-medium">
-                      Sản phẩm này chưa được tạo size riêng (sẽ áp dụng giá niêm yết chuẩn).
+                      Sản phẩm này chưa được tạo size riêng (sẽ áp dụng giá niêm
+                      yết chuẩn).
                     </p>
                     <Button
                       type="button"
@@ -1633,8 +1679,8 @@ export const AdminProductsPage: React.FC = () => {
                       icon={<Plus size={14} />}
                       onClick={() => handleAddNewSizeRow()}
                       className="text-xs font-bold text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-700"
-                    >
-                      + Thêm size đầu tiên
+                    >d
+                      + Thêm size
                     </Button>
                   </div>
                 )}
@@ -1646,11 +1692,17 @@ export const AdminProductsPage: React.FC = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-purple-200/60 dark:border-purple-900/40">
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-2 text-purple-950 dark:text-purple-200 font-bold text-sm">
-                      <Palette size={18} className="text-purple-600 dark:text-purple-400" />
-                      <span>Màu sắc sản phẩm ({colorsList.length} màu đã chọn)</span>
+                      <Palette
+                        size={18}
+                        className="text-purple-600 dark:text-purple-400"
+                      />
+                      <span>
+                        Màu sắc sản phẩm ({colorsList.length} màu đã chọn)
+                      </span>
                     </div>
                     <p className="text-[11px] text-purple-700/80 dark:text-purple-400/80">
-                      * Chọn màu từ thẻ select bên dưới để gán màu sắc cho sản phẩm.
+                      * Chọn màu từ thẻ select bên dưới để gán màu sắc cho sản
+                      phẩm.
                     </p>
                   </div>
 
@@ -1682,7 +1734,10 @@ export const AdminProductsPage: React.FC = () => {
                   <div className="p-3 bg-blue-50/90 dark:bg-blue-950/50 rounded-xl border border-blue-200 dark:border-blue-800 space-y-2 animate-fade-in shadow-xs">
                     <div className="flex items-center justify-between text-xs font-bold text-blue-900 dark:text-blue-200">
                       <span className="flex items-center gap-1.5">
-                        <Plus size={14} className="text-blue-600 dark:text-blue-400" />
+                        <Plus
+                          size={14}
+                          className="text-blue-600 dark:text-blue-400"
+                        />
                         Tạo Màu sắc mới vào danh mục hệ thống:
                       </span>
                       <button
@@ -1738,10 +1793,14 @@ export const AdminProductsPage: React.FC = () => {
                   <div className="flex-1 relative">
                     <select
                       value={selectedColorSelect}
-                      onChange={(e) => handleSelectColorDropdown(e.target.value)}
+                      onChange={(e) =>
+                        handleSelectColorDropdown(e.target.value)
+                      }
                       className="w-full text-xs font-bold px-3 py-2.5 rounded-lg border border-purple-300 dark:border-purple-800 bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer shadow-2xs"
                     >
-                      <option value="">-- Chọn màu sắc để thêm vào sản phẩm --</option>
+                      <option value="">
+                        -- Chọn màu sắc để thêm vào sản phẩm --
+                      </option>
                       {dbColors.map((item) => {
                         const isChosen = colorsList.includes(item.name);
                         return (
@@ -1750,11 +1809,15 @@ export const AdminProductsPage: React.FC = () => {
                             value={item.name}
                             disabled={isChosen}
                           >
-                            {item.name} {item.code ? `(${item.code})` : ""} {isChosen ? "✓ [Đã chọn]" : ""}
+                            {item.name} {item.code ? `(${item.code})` : ""}{" "}
+                            {isChosen ? "✓ [Đã chọn]" : ""}
                           </option>
                         );
                       })}
-                      <option value="__NEW__" className="text-blue-600 font-bold">
+                      <option
+                        value="__NEW__"
+                        className="text-blue-600 font-bold"
+                      >
                         + Tạo màu mới vào hệ thống...
                       </option>
                     </select>
@@ -1783,7 +1846,7 @@ export const AdminProductsPage: React.FC = () => {
                         const matchedDb = dbColors.find(
                           (c) =>
                             c.name.toLowerCase() === color.toLowerCase() ||
-                            c.code.toLowerCase() === color.toLowerCase()
+                            c.code.toLowerCase() === color.toLowerCase(),
                         );
                         return (
                           <span
@@ -1820,7 +1883,8 @@ export const AdminProductsPage: React.FC = () => {
                   </div>
                 ) : (
                   <div className="p-4 bg-white/60 dark:bg-slate-800/60 rounded-xl text-center text-xs text-gray-400 border border-dashed border-purple-200 dark:border-purple-900">
-                    Chưa có màu nào được gắn cho sản phẩm. Vui lòng chọn màu trong thẻ select ở trên.
+                    Chưa có màu nào được gắn cho sản phẩm. Vui lòng chọn màu
+                    trong thẻ select ở trên.
                   </div>
                 )}
               </div>

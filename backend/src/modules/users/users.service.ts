@@ -18,7 +18,13 @@ export class UsersService {
   }
 
   async findByEmail(email: string): Promise<UserDocument | null> {
+    if (!email) return null;
     return this.userModel.findOne({ email: email.trim().toLowerCase() }).exec();
+  }
+
+  async findByPhone(phone: string): Promise<UserDocument | null> {
+    if (!phone) return null;
+    return this.userModel.findOne({ phone: phone.trim() }).exec();
   }
 
   async findByEmailOrPhone(identifier: string): Promise<UserDocument | null> {

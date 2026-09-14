@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { User, Mail, Phone, Lock, UserPlus, AlertCircle, ShoppingBag, ArrowLeft } from 'lucide-react';
+import { User, Phone, Lock, Eye, EyeOff, UserPlus, AlertCircle, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/app/providers/AuthContext';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
@@ -16,17 +16,24 @@ export const RegisterPage: React.FC = () => {
   const from = (location.state as any)?.from?.pathname || '/';
 
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !phone || !password || !confirmPassword) {
+    if (!name.trim() || !phone.trim() || !password || !confirmPassword) {
       setError('Vui lòng điền đầy đủ các trường thông tin');
+      return;
+    }
+    const cleanPhone = phone.trim().replace(/\s+/g, '');
+    const phoneRegex = /(84|0[3|5|7|8|9])+([0-9]{8})\b/;
+    if (!phoneRegex.test(cleanPhone)) {
+      setError('Số điện thoại không hợp lệ (gồm 10 số, ví dụ: 0912345678)');
       return;
     }
     if (password !== confirmPassword) {
@@ -41,7 +48,7 @@ export const RegisterPage: React.FC = () => {
     setLoading(true);
     setError('');
     try {
-      await register({ name, email, phone, password });
+      await register({ name: name.trim(), phone: cleanPhone, password });
       navigate(from, { replace: true });
     } catch (err: any) {
       setError(err.message || 'Đăng ký tài khoản không thành công');
@@ -86,7 +93,7 @@ export const RegisterPage: React.FC = () => {
           </Link>
           <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white mt-2">Đăng ký tài khoản</h2>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Tạo tài khoản để mua sắm nhanh chóng và theo dõi đơn hàng
+            Tạo tài khoản bằng số điện thoại để mua sắm và theo dõi đơn hàng
           </p>
         </div>
 
@@ -111,19 +118,9 @@ export const RegisterPage: React.FC = () => {
           />
 
           <Input
-            label="Email"
-            type="email"
-            placeholder="example@gmail.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            icon={<Mail size={16} />}
-            required
-          />
-
-          <Input
             label="Số điện thoại"
             type="tel"
-            placeholder="09xxxxxxxx"
+            placeholder="09xxxxxxxx hoặc 03xxxxxxxx"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             icon={<Phone size={16} />}
@@ -132,21 +129,43 @@ export const RegisterPage: React.FC = () => {
 
           <Input
             label="Mật khẩu"
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             placeholder="Tối thiểu 6 ký tự"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             icon={<Lock size={16} />}
+            rightElement={
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 focus:outline-none cursor-pointer transition-colors p-1"
+                tabIndex={-1}
+                title={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            }
             required
           />
 
           <Input
             label="Xác nhận mật khẩu"
-            type="password"
+            type={showConfirmPassword ? 'text' : 'password'}
             placeholder="Nhập lại mật khẩu"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             icon={<Lock size={16} />}
+            rightElement={
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 focus:outline-none cursor-pointer transition-colors p-1"
+                tabIndex={-1}
+                title={showConfirmPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+              >
+                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            }
             required
           />
 

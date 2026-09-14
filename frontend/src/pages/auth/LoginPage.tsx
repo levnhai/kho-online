@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Mail, Lock, LogIn, AlertCircle, ShoppingBag, ArrowLeft } from 'lucide-react';
+import { Phone, Mail, Lock, Eye, EyeOff, LogIn, AlertCircle, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/app/providers/AuthContext';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
@@ -20,6 +20,7 @@ export const LoginPage: React.FC = () => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -27,7 +28,7 @@ export const LoginPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      setError('Vui lòng nhập đầy đủ email và mật khẩu');
+      setError('Vui lòng nhập đầy đủ thông tin tài khoản và mật khẩu');
       return;
     }
     setLoading(true);
@@ -97,22 +98,33 @@ export const LoginPage: React.FC = () => {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
-            label="Email / Số điện thoại"
-            type="email"
-            placeholder="example@kho.vn"
+            label="Số điện thoại / Email"
+            type="text"
+            placeholder="09xxxxxxxx hoặc email..."
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            icon={<Mail size={16} />}
+            icon={<Phone size={16} />}
             required
           />
 
           <Input
             label="Mật khẩu"
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             icon={<Lock size={16} />}
+            rightElement={
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 focus:outline-none cursor-pointer transition-colors p-1"
+                tabIndex={-1}
+                title={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            }
             required
           />
 
