@@ -50,6 +50,13 @@ export class ProductsController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
+  @Post(':id/toggle-pin')
+  async togglePin(@Param('id') id: string) {
+    return this.productsService.togglePin(id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Delete(':id')
   async delete(@Param('id') id: string) {
     return this.productsService.delete(id);

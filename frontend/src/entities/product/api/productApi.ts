@@ -31,6 +31,9 @@ export const productApi = {
   update: (id: string, data: any): Promise<Product> => {
     return api.put(`/products/${id}`, data);
   },
+  togglePin: (id: string): Promise<Product> => {
+    return api.post(`/products/${id}/toggle-pin`);
+  },
   delete: (id: string): Promise<{ success: boolean; message: string }> => {
     return api.delete(`/products/${id}`);
   },

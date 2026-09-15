@@ -89,6 +89,9 @@ export class Product {
   @Prop({ default: false })
   isFeatured: boolean;
 
+  @Prop({ default: false })
+  isPinned: boolean;
+
   @Prop({ default: 'active', enum: ['active', 'inactive'] })
   status: string;
 }

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   CheckCircle2,
   Lock,
@@ -13,17 +13,17 @@ import {
   Clock,
   X,
   Sparkles,
-} from 'lucide-react';
-import { useAuth } from '@/app/providers/AuthContext';
-import { useCart, getCartItemPrice } from '@/entities/cart/CartContext';
-import { orderApi } from '@/entities/order/api/orderApi';
-import { userApi } from '@/entities/user/api/userApi';
-import { formatCurrency } from '@/shared/lib/formatters';
-import { getImageUrl, handleImageError } from '@/shared/lib/imageHelper';
-import { Button } from '@/shared/ui/Button';
-import { Input } from '@/shared/ui/Input';
-import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
-import { PaymentMethod } from '@/shared/types';
+} from "lucide-react";
+import { useAuth } from "@/app/providers/AuthContext";
+import { useCart, getCartItemPrice } from "@/entities/cart/CartContext";
+import { orderApi } from "@/entities/order/api/orderApi";
+import { userApi } from "@/entities/user/api/userApi";
+import { formatCurrency } from "@/shared/lib/formatters";
+import { getImageUrl, handleImageError } from "@/shared/lib/imageHelper";
+import { Button } from "@/shared/ui/Button";
+import { Input } from "@/shared/ui/Input";
+import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
+import { PaymentMethod } from "@/shared/types";
 
 interface SavedAddressItem {
   address: string;
@@ -32,24 +32,27 @@ interface SavedAddressItem {
   updatedAt?: string;
 }
 
-const STORAGE_LAST_SHIPPING = 'kho_online_last_shipping';
-const STORAGE_SAVED_ADDRESSES = 'kho_online_address_history';
+const STORAGE_LAST_SHIPPING = "kho_online_last_shipping";
+const STORAGE_SAVED_ADDRESSES = "kho_online_address_history";
 
 export const CheckoutPage: React.FC = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const { items, totalAmount, clearCart } = useCart();
   const navigate = useNavigate();
 
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [note, setNote] = useState('');
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [note, setNote] = useState("");
   const [saveInfo, setSaveInfo] = useState(true);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddressItem[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('COD');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("COD");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [orderSuccess, setOrderSuccess] = useState<{ orderCode: string; orderCodes?: string[] } | null>(null);
+  const [error, setError] = useState("");
+  const [orderSuccess, setOrderSuccess] = useState<{
+    orderCode: string;
+    orderCodes?: string[];
+  } | null>(null);
 
   // Load thông tin và lịch sử địa chỉ
   useEffect(() => {
@@ -74,20 +77,27 @@ export const CheckoutPage: React.FC = () => {
     }
 
     // Ưu tiên nạp từ thông tin user -> sau đó nạp từ last shipping
-    const initialName = user?.name || lastShipping?.name || '';
-    const initialPhone = user?.phone || lastShipping?.phone || '';
-    const initialAddress = user?.address || lastShipping?.address || '';
+    const initialName = user?.name || lastShipping?.name || "";
+    const initialPhone = user?.phone || lastShipping?.phone || "";
+    const initialAddress = user?.address || lastShipping?.address || "";
 
     if (initialName) setName(initialName);
     if (initialPhone) setPhone(initialPhone);
     if (initialAddress) setAddress(initialAddress);
 
     // Nếu user đã có địa chỉ trong profile mà chưa có trong history, thêm vào đầu
-    if (user?.address && !localHistory.some((item) => item.address.trim().toLowerCase() === user.address?.trim().toLowerCase())) {
+    if (
+      user?.address &&
+      !localHistory.some(
+        (item) =>
+          item.address.trim().toLowerCase() ===
+          user.address?.trim().toLowerCase(),
+      )
+    ) {
       localHistory.unshift({
         address: user.address,
-        name: user.name || '',
-        phone: user.phone || '',
+        name: user.name || "",
+        phone: user.phone || "",
         updatedAt: new Date().toISOString(),
       });
     }
@@ -96,9 +106,14 @@ export const CheckoutPage: React.FC = () => {
   }, [user]);
 
   // Xóa 1 địa chỉ khỏi lịch sử
-  const handleRemoveSavedAddress = (addrToRemove: string, e: React.MouseEvent) => {
+  const handleRemoveSavedAddress = (
+    addrToRemove: string,
+    e: React.MouseEvent,
+  ) => {
     e.stopPropagation();
-    const updated = savedAddresses.filter((item) => item.address !== addrToRemove);
+    const updated = savedAddresses.filter(
+      (item) => item.address !== addrToRemove,
+    );
     setSavedAddresses(updated);
     localStorage.setItem(STORAGE_SAVED_ADDRESSES, JSON.stringify(updated));
   };
@@ -131,23 +146,28 @@ export const CheckoutPage: React.FC = () => {
             Bạn cần đăng nhập để tiếp tục đặt hàng.
           </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            Vui lòng đăng nhập vào tài khoản của bạn hoặc đăng ký tài khoản mới để CHANG phục vụ bạn tốt nhất.
+            Vui lòng đăng nhập vào tài khoản của bạn hoặc đăng ký tài khoản mới
+            để C.H.A.N.G phục vụ bạn tốt nhất.
           </p>
 
           <div className="flex flex-col gap-3">
             <Link
               to="/login"
-              state={{ from: { pathname: '/checkout' }, notice: 'Bạn cần đăng nhập để tiếp tục đặt hàng.' }}
+              state={{
+                from: { pathname: "/checkout" },
+                notice: "Bạn cần đăng nhập để tiếp tục đặt hàng.",
+              }}
             >
               <Button variant="primary" size="lg" className="w-full font-bold">
                 Đăng nhập
               </Button>
             </Link>
-            <Link
-              to="/register"
-              state={{ from: { pathname: '/checkout' } }}
-            >
-              <Button variant="outline" size="lg" className="w-full font-semibold">
+            <Link to="/register" state={{ from: { pathname: "/checkout" } }}>
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full font-semibold"
+              >
                 Đăng ký tài khoản
               </Button>
             </Link>
@@ -165,7 +185,9 @@ export const CheckoutPage: React.FC = () => {
           <div className="w-16 h-16 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto">
             <ShoppingBag size={32} />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Giỏ hàng của bạn đang trống</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+            Giỏ hàng của bạn đang trống
+          </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400">
             Vui lòng chọn thêm sản phẩm trước khi chuyển tới bước thanh toán.
           </p>
@@ -193,7 +215,8 @@ export const CheckoutPage: React.FC = () => {
               🎉 Đặt hàng thành công!
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-              Cảm ơn bạn đã mua hàng tại hệ thống CHANG. Đơn hàng của bạn đã được ghi nhận và đang chờ xác nhận.
+              Cảm ơn bạn đã mua hàng tại hệ thống CHANG. Đơn hàng của bạn đã
+              được ghi nhận và đang chờ xác nhận.
             </p>
           </div>
 
@@ -204,7 +227,11 @@ export const CheckoutPage: React.FC = () => {
               </Button>
             </Link>
             <Link to="/products">
-              <Button variant="secondary" size="md" className="w-full font-semibold">
+              <Button
+                variant="secondary"
+                size="md"
+                className="w-full font-semibold"
+              >
                 Tiếp tục mua hàng
               </Button>
             </Link>
@@ -220,12 +247,14 @@ export const CheckoutPage: React.FC = () => {
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !phone.trim() || !address.trim()) {
-      setError('Vui lòng điền đầy đủ họ tên, số điện thoại và địa chỉ giao hàng.');
+      setError(
+        "Vui lòng điền đầy đủ họ tên, số điện thoại và địa chỉ giao hàng.",
+      );
       return;
     }
 
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       const orderData = {
@@ -237,14 +266,14 @@ export const CheckoutPage: React.FC = () => {
         },
         items: items.map((item) => ({
           product: item.product._id,
-          productCode: item.product.code || '',
+          productCode: item.product.code || "",
           name: item.product.name,
-          sellingOption: item.selectedOption || '',
-          size: item.selectedSize || '',
-          color: item.selectedColor || '',
+          sellingOption: item.selectedOption || "",
+          size: item.selectedSize || "",
+          color: item.selectedColor || "",
           quantity: item.quantity,
           price: getCartItemPrice(item),
-          image: item.product.images?.[0] || '',
+          image: item.product.images?.[0] || "",
         })),
         paymentMethod,
       };
@@ -259,14 +288,21 @@ export const CheckoutPage: React.FC = () => {
             phone: phone.trim(),
             address: address.trim(),
           };
-          localStorage.setItem(STORAGE_LAST_SHIPPING, JSON.stringify(currentShipping));
+          localStorage.setItem(
+            STORAGE_LAST_SHIPPING,
+            JSON.stringify(currentShipping),
+          );
 
           const rawHistory = localStorage.getItem(STORAGE_SAVED_ADDRESSES);
-          let prevList: SavedAddressItem[] = rawHistory ? JSON.parse(rawHistory) : [];
-          
+          let prevList: SavedAddressItem[] = rawHistory
+            ? JSON.parse(rawHistory)
+            : [];
+
           // Lọc bỏ địa chỉ trùng lặp và đưa địa chỉ hiện tại lên đầu
           prevList = prevList.filter(
-            (item) => item.address.trim().toLowerCase() !== address.trim().toLowerCase()
+            (item) =>
+              item.address.trim().toLowerCase() !==
+              address.trim().toLowerCase(),
           );
           prevList.unshift({
             address: address.trim(),
@@ -277,19 +313,24 @@ export const CheckoutPage: React.FC = () => {
 
           // Tối đa 5 địa chỉ gần nhất
           const finalHistory = prevList.slice(0, 5);
-          localStorage.setItem(STORAGE_SAVED_ADDRESSES, JSON.stringify(finalHistory));
+          localStorage.setItem(
+            STORAGE_SAVED_ADDRESSES,
+            JSON.stringify(finalHistory),
+          );
           setSavedAddresses(finalHistory);
 
           // Cập nhật thông tin profile của User nếu đang đăng nhập
           if (user) {
-            userApi.updateProfile({
-              name: name.trim(),
-              phone: phone.trim(),
-              address: address.trim(),
-            }).catch(() => {});
+            userApi
+              .updateProfile({
+                name: name.trim(),
+                phone: phone.trim(),
+                address: address.trim(),
+              })
+              .catch(() => {});
           }
         } catch (storageErr) {
-          console.warn('Không thể lưu thông tin vào localStorage:', storageErr);
+          console.warn("Không thể lưu thông tin vào localStorage:", storageErr);
         }
       }
 
@@ -299,7 +340,9 @@ export const CheckoutPage: React.FC = () => {
         orderCodes: res.orderCodes || (res.orderCode ? [res.orderCode] : []),
       });
     } catch (err: any) {
-      setError(err.message || 'Có lỗi xảy ra khi tạo đơn hàng, vui lòng thử lại');
+      setError(
+        err.message || "Có lỗi xảy ra khi tạo đơn hàng, vui lòng thử lại",
+      );
     } finally {
       setLoading(false);
     }
@@ -312,7 +355,10 @@ export const CheckoutPage: React.FC = () => {
           TIẾN HÀNH ĐẶT HÀNG
         </h1>
 
-        <form onSubmit={handleSubmitOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <form
+          onSubmit={handleSubmitOrder}
+          className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
+        >
           {/* Left Column: Customer Information & Payment Method */}
           <div className="lg:col-span-7 space-y-6">
             {/* THÔNG TIN ĐẶT HÀNG */}
@@ -370,7 +416,9 @@ export const CheckoutPage: React.FC = () => {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {savedAddresses.map((item, idx) => {
-                        const isCurrent = address.trim().toLowerCase() === item.address.trim().toLowerCase();
+                        const isCurrent =
+                          address.trim().toLowerCase() ===
+                          item.address.trim().toLowerCase();
                         return (
                           <div
                             key={idx}
@@ -379,15 +427,26 @@ export const CheckoutPage: React.FC = () => {
                             title="Bấm để tự động điền địa chỉ này"
                             className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
                               isCurrent
-                                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-400 dark:border-blue-600 shadow-sm ring-1 ring-blue-400/30'
-                                : 'bg-gray-50 dark:bg-slate-700/60 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-slate-700'
+                                ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-400 dark:border-blue-600 shadow-sm ring-1 ring-blue-400/30"
+                                : "bg-gray-50 dark:bg-slate-700/60 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-slate-700"
                             }`}
                           >
-                            <MapPin size={13} className={isCurrent ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 group-hover:text-blue-500'} />
-                            <span className="max-w-[200px] sm:max-w-[280px] truncate">{item.address}</span>
+                            <MapPin
+                              size={13}
+                              className={
+                                isCurrent
+                                  ? "text-blue-600 dark:text-blue-400"
+                                  : "text-gray-400 group-hover:text-blue-500"
+                              }
+                            />
+                            <span className="max-w-[200px] sm:max-w-[280px] truncate">
+                              {item.address}
+                            </span>
                             <button
                               type="button"
-                              onClick={(e) => handleRemoveSavedAddress(item.address, e)}
+                              onClick={(e) =>
+                                handleRemoveSavedAddress(item.address, e)
+                              }
                               title="Xóa khỏi lịch sử"
                               className="ml-1 p-0.5 text-gray-400 hover:text-rose-500 dark:hover:text-rose-400 rounded-full hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
                             >
@@ -439,26 +498,30 @@ export const CheckoutPage: React.FC = () => {
                 {/* COD */}
                 <label
                   className={`flex items-start gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
-                    paymentMethod === 'COD'
-                      ? 'border-blue-600 bg-blue-50/50 dark:bg-blue-900/20 dark:border-blue-500'
-                      : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600'
+                    paymentMethod === "COD"
+                      ? "border-blue-600 bg-blue-50/50 dark:bg-blue-900/20 dark:border-blue-500"
+                      : "border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600"
                   }`}
                 >
                   <input
                     type="radio"
                     name="payment"
                     value="COD"
-                    checked={paymentMethod === 'COD'}
-                    onChange={() => setPaymentMethod('COD')}
+                    checked={paymentMethod === "COD"}
+                    onChange={() => setPaymentMethod("COD")}
                     className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500"
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-2 font-bold text-gray-900 dark:text-white text-sm">
-                      <Banknote size={18} className="text-emerald-600 dark:text-emerald-400" />
+                      <Banknote
+                        size={18}
+                        className="text-emerald-600 dark:text-emerald-400"
+                      />
                       <span>Thanh toán khi nhận hàng (COD)</span>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                      Khách hàng kiểm tra hàng và thanh toán tiền mặt trực tiếp cho nhân viên giao hàng.
+                      Khách hàng kiểm tra hàng và thanh toán tiền mặt trực tiếp
+                      cho nhân viên giao hàng.
                     </p>
                   </div>
                 </label>
@@ -476,7 +539,7 @@ export const CheckoutPage: React.FC = () => {
             <div className="divide-y divide-gray-100 dark:divide-slate-700 max-h-80 overflow-y-auto pr-2 space-y-2">
               {items.map((item) => {
                 const price = getCartItemPrice(item);
-                const itemKey = `${item.product._id}-${item.selectedSize || 'default'}-${item.selectedColor || 'default'}`;
+                const itemKey = `${item.product._id}-${item.selectedSize || "default"}-${item.selectedColor || "default"}`;
                 return (
                   <div key={itemKey} className="pt-2 flex items-center gap-3">
                     <img
@@ -522,20 +585,26 @@ export const CheckoutPage: React.FC = () => {
             <div className="border-t border-gray-100 dark:border-slate-700 pt-4 space-y-2.5 text-sm">
               <div className="flex justify-between text-gray-600 dark:text-gray-400">
                 <span>Tạm tính:</span>
-                <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(totalAmount)}</span>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {formatCurrency(totalAmount)}
+                </span>
               </div>
               <div className="flex justify-between text-gray-600 dark:text-gray-400">
                 <span>Phí vận chuyển:</span>
                 <span className="font-semibold text-gray-900 dark:text-white">
                   {shippingFee === 0 ? (
-                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">Miễn phí</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                      Miễn phí
+                    </span>
                   ) : (
                     formatCurrency(shippingFee)
                   )}
                 </span>
               </div>
               <div className="border-t border-gray-100 dark:border-slate-700 pt-3 flex justify-between items-baseline">
-                <span className="font-extrabold text-gray-900 dark:text-white text-base">Tổng cộng:</span>
+                <span className="font-extrabold text-gray-900 dark:text-white text-base">
+                  Tổng cộng:
+                </span>
                 <span className="text-2xl font-black text-rose-600 dark:text-rose-400">
                   {formatCurrency(grandTotal)}
                 </span>

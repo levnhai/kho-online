@@ -7,8 +7,9 @@ interface FilterSidebarProps {
   categories: Category[];
   selectedCategory: string;
   onSelectCategory: (categoryId: string) => void;
+  selectedSubcategory?: string;
+  onSelectSubcategory?: (subName: string) => void;
   searchKeyword?: string;
-  onSelectSubcategory?: (keyword: string) => void;
   priceRange: string;
   onSelectPriceRange: (range: string) => void;
   sort: string;
@@ -20,8 +21,9 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
   categories,
   selectedCategory,
   onSelectCategory,
-  searchKeyword = '',
+  selectedSubcategory = '',
   onSelectSubcategory,
+  searchKeyword = '',
   priceRange,
   onSelectPriceRange,
   sort,
@@ -55,7 +57,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
       <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-slate-700">
         <div className="flex items-center gap-2 font-black text-gray-900 dark:text-white text-sm sm:text-base">
           <Filter size={18} className="text-blue-600 dark:text-blue-400" />
-          <span>BỘ LỌC TÌM KIẾM</span>
+          <span>BỘ LỌC</span>
         </div>
         <button
           onClick={onReset}
@@ -140,14 +142,14 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
                   {isSelected && subs.length > 0 && (
                     <div className="ml-3 pl-3 my-1.5 border-l-2 border-blue-500/40 space-y-1 animate-fade-in">
                       {subs.map((sub) => {
-                        const isSubActive = searchKeyword === (sub.keyword || sub.name);
+                        const isSubActive = selectedSubcategory.toLowerCase() === sub.name.toLowerCase();
                         return (
                           <button
                             key={sub.id}
                             type="button"
                             onClick={() => {
                               if (onSelectSubcategory) {
-                                onSelectSubcategory(isSubActive ? '' : (sub.keyword || sub.name));
+                                onSelectSubcategory(isSubActive ? '' : sub.name);
                               }
                             }}
                             className={`w-full text-left py-2 px-3 rounded-lg text-xs sm:text-sm font-medium transition-colors flex items-center justify-between cursor-pointer ${

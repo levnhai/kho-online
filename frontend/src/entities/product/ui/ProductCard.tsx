@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Eye, Star } from 'lucide-react';
+import { ShoppingCart, Eye, Star, Pin } from 'lucide-react';
 import { Product } from '@/shared/types';
 import { formatCurrency } from '@/shared/lib/formatters';
 import { getImageUrl, handleImageError } from '@/shared/lib/imageHelper';
@@ -25,6 +25,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
       {hasDiscount && (
         <span className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 bg-rose-500 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md sm:rounded-lg shadow-sm">
           -{discountPercent}%
+        </span>
+      )}
+
+      {/* Pinned Badge */}
+      {product.isPinned && (
+        <span className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10 bg-amber-500 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-md sm:rounded-lg shadow-sm flex items-center gap-1">
+          <Pin size={10} className="fill-white" />
+          <span>Ghim</span>
         </span>
       )}
 

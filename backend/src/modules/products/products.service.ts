@@ -42,7 +42,9 @@ export class ProductsService {
     }
 
     if (subcategory) {
-      filter.subcategory = subcategory;
+      const cleanSub = String(subcategory).trim();
+      const escaped = cleanSub.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+      filter.subcategory = { $regex: new RegExp(`^${escaped}$`, 'i') };
     }
 
     if (query.type === 'set') {
@@ -80,12 +82,12 @@ export class ProductsService {
       }
     }
 
-    let sortOption: any = { createdAt: -1 };
-    if (sort === 'price-asc') sortOption = { price: 1 };
-    else if (sort === 'price-desc') sortOption = { price: -1 };
-    else if (sort === 'top-sales') sortOption = { soldCount: -1 };
-    else if (sort === 'name-asc') sortOption = { name: 1 };
-    else if (sort === 'newest') sortOption = { createdAt: -1 };
+    let sortOption: any = { isPinned: -1, createdAt: -1 };
+    if (sort === 'price-asc') sortOption = { isPinned: -1, price: 1 };
+    else if (sort === 'price-desc') sortOption = { isPinned: -1, price: -1 };
+    else if (sort === 'top-sales') sortOption = { isPinned: -1, soldCount: -1 };
+    else if (sort === 'name-asc') sortOption = { isPinned: -1, name: 1 };
+    else if (sort === 'newest') sortOption = { isPinned: -1, createdAt: -1 };
 
     const skip = (Number(page) - 1) * Number(limit);
 
@@ -114,7 +116,7 @@ export class ProductsService {
     return this.productModel
       .find({ status: 'active', isFeatured: true })
       .populate('category', 'name slug')
-      .sort({ createdAt: -1 })
+      .sort({ isPinned: -1, createdAt: -1 })
       .limit(limit)
       .lean()
       .exec();
@@ -124,7 +126,7 @@ export class ProductsService {
     return this.productModel
       .find({ status: 'active' })
       .populate('category', 'name slug')
-      .sort({ soldCount: -1 })
+      .sort({ isPinned: -1, soldCount: -1 })
       .limit(limit)
       .lean()
       .exec();
@@ -134,7 +136,7 @@ export class ProductsService {
     return this.productModel
       .find({ status: 'active' })
       .populate('category', 'name slug')
-      .sort({ createdAt: -1 })
+      .sort({ isPinned: -1, createdAt: -1 })
       .limit(limit)
       .lean()
       .exec();
@@ -156,6 +158,12 @@ export class ProductsService {
     if (existing) {
       throw new BadRequestException('Mã sản phẩm đã tồn tại');
     }
+    if (createDto.isPinned) {
+      const pinnedCount = await this.productModel.countDocuments({ isPinned: true });
+      if (pinnedCount >= 5) {
+        throw new BadRequestException('Chỉ được phép ghim tối đa 5 sản phẩm. Vui lòng bỏ ghim sản phẩm khác trước.');
+      }
+    }
     const product = new this.productModel({
       ...createDto,
       code: createDto.code.toUpperCase(),
@@ -174,6 +182,15 @@ export class ProductsService {
         throw new BadRequestException('Mã sản phẩm đã tồn tại ở sản phẩm khác');
       }
     }
+    if (updateDto.isPinned) {
+      const pinnedCount = await this.productModel.countDocuments({
+        isPinned: true,
+        _id: { $ne: id },
+      });
+      if (pinnedCount >= 5) {
+        throw new BadRequestException('Chỉ được phép ghim tối đa 5 sản phẩm. Vui lòng bỏ ghim sản phẩm khác trước.');
+      }
+    }
     const updated = await this.productModel
       .findByIdAndUpdate(id, updateDto, { new: true })
       .populate('category', 'name slug')
@@ -182,6 +199,22 @@ export class ProductsService {
       throw new NotFoundException('Không tìm thấy sản phẩm');
     }
     return updated;
+  }
+
+  async togglePin(id: string): Promise<ProductDocument> {
+    const product = await this.productModel.findById(id);
+    if (!product) {
+      throw new NotFoundException('Không tìm thấy sản phẩm');
+    }
+    if (!product.isPinned) {
+      const pinnedCount = await this.productModel.countDocuments({ isPinned: true });
+      if (pinnedCount >= 5) {
+        throw new BadRequestException('Chỉ được phép ghim tối đa 5 sản phẩm. Vui lòng bỏ ghim sản phẩm khác trước.');
+      }
+    }
+    product.isPinned = !product.isPinned;
+    await product.save();
+    return product.populate('category', 'name slug');
   }
 
   async delete(id: string): Promise<{ success: boolean; message: string }> {

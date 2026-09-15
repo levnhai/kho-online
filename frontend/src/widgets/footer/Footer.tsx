@@ -99,8 +99,9 @@ export const Footer: React.FC = () => {
             </div>
           </div>
           <p className="text-sm text-slate-400 leading-relaxed mb-4">
-            C.H.A.N.G Online – Hệ thống phân phối thiết bị công nghệ, điện thoại, máy
-            tính và đồ gia dụng thông minh chính hãng hàng đầu Việt Nam.
+            C.H.A.N.G Online – Hệ thống phân phối thiết bị công nghệ, điện
+            thoại, máy tính và đồ gia dụng thông minh chính hãng hàng đầu Việt
+            Nam.
           </p>
           <div className="space-y-2 text-xs text-slate-400">
             <p className="flex items-center gap-2">
@@ -112,7 +113,8 @@ export const Footer: React.FC = () => {
               (8:00 - 21:30)
             </p>
             <p className="flex items-center gap-2">
-              <Mail size={14} className="text-blue-400" /> Email: support@chang.vn
+              <Mail size={14} className="text-blue-400" /> Email:
+              support@chang.vn
             </p>
           </div>
         </div>
@@ -210,7 +212,7 @@ export const Footer: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 border-t border-slate-800 text-center text-xs text-slate-500">
-        © 2026 CHANG ONLINE
+        © 2026 C.H.A.N.G ONLINE
       </div>
     </footer>
   );

@@ -29,6 +29,7 @@ import {
   Check,
   Copy,
   RotateCcw,
+  Pin,
 } from "lucide-react";
 import { productApi } from "@/entities/product/api/productApi";
 import { categoryApi } from "@/entities/category/api/categoryApi";
@@ -94,6 +95,17 @@ export const AdminProductsPage: React.FC = () => {
     "general" | "pricing" | "variants" | "images"
   >("general");
 
+  // Detail Modal State
+  const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [activePreviewImage, setActivePreviewImage] = useState<string>("");
+
+  const handleOpenDetailModal = (p: Product) => {
+    setViewingProduct(p);
+    setActivePreviewImage(p.images?.[0] || "");
+    setIsDetailModalOpen(true);
+  };
+
   // Form Fields
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
@@ -104,6 +116,7 @@ export const AdminProductsPage: React.FC = () => {
   const [imagesText, setImagesText] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState("active");
+  const [isPinned, setIsPinned] = useState(false);
 
   // Form Selling Options (Hình thức bán theo Set / Bán lẻ)
   const [sellingOptionsList, setSellingOptionsList] = useState<
@@ -129,6 +142,7 @@ export const AdminProductsPage: React.FC = () => {
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
   const [actionSuccess, setActionSuccess] = useState("");
+  const [actionError, setActionError] = useState("");
 
   const fetchColors = useCallback(async () => {
     try {
@@ -242,6 +256,7 @@ export const AdminProductsPage: React.FC = () => {
     setImagesText("");
     setDescription("");
     setStatus("active");
+    setIsPinned(false);
     setFormError("");
     setUploadError("");
     setIsModalOpen(true);
@@ -296,6 +311,7 @@ export const AdminProductsPage: React.FC = () => {
     setImagesText(initialImgs.join("\n"));
     setDescription(p.description || "");
     setStatus(p.status || "active");
+    setIsPinned(Boolean(p.isPinned));
     setFormError("");
     setUploadError("");
     setIsModalOpen(true);
@@ -818,6 +834,7 @@ export const AdminProductsPage: React.FC = () => {
         colors: colorsList,
         images: finalImages,
         description,
+        isPinned,
         status,
       };
 
@@ -853,6 +870,47 @@ export const AdminProductsPage: React.FC = () => {
     }
   };
 
+  const handleTogglePin = async (p: Product) => {
+    const nextPinned = !p.isPinned;
+
+    if (nextPinned) {
+      const currentPinnedCount = products.filter((item) => item.isPinned).length;
+      if (currentPinnedCount >= 5) {
+        setActionError(
+          "Chỉ được phép ghim tối đa 5 sản phẩm. Vui lòng bỏ ghim sản phẩm khác trước khi ghim thêm!",
+        );
+        setTimeout(() => setActionError(""), 3500);
+        return;
+      }
+    }
+
+    // Cập nhật giao diện tức thì
+    setProducts((prev) => {
+      const updated = prev.map((item) =>
+        item._id === p._id ? { ...item, isPinned: nextPinned } : item,
+      );
+      return updated.sort((a, b) => {
+        if (Boolean(a.isPinned) === Boolean(b.isPinned)) return 0;
+        return a.isPinned ? -1 : 1;
+      });
+    });
+
+    try {
+      await productApi.togglePin(p._id);
+      setActionSuccess(
+        nextPinned
+          ? `Đã ghim "${p.name}" lên đầu tab sản phẩm!`
+          : `Đã bỏ ghim "${p.name}"!`,
+      );
+      setTimeout(() => setActionSuccess(""), 2500);
+    } catch (err: any) {
+      console.error("Toggle pin error:", err);
+      setActionError(err.message || "Thao tác ghim thất bại");
+      setTimeout(() => setActionError(""), 3500);
+      fetchProducts();
+    }
+  };
+
   const selectedCategoryObj = categories.find((c) => c._id === categoryId);
   const modalSubcategories = selectedCategoryObj?.subcategories || [];
 
@@ -869,28 +927,59 @@ export const AdminProductsPage: React.FC = () => {
         </div>
       )}
 
+      {actionError && (
+        <div className="p-3 bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 rounded-xl border border-rose-200 dark:border-rose-800 text-xs font-semibold flex items-center gap-2 animate-shake">
+          <AlertCircle size={15} />
+          <span>{actionError}</span>
+        </div>
+      )}
+
       {/* Action Header & Search Controls */}
-      <div className="bg-white dark:bg-slate-800 p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-gray-100 dark:border-slate-700 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 transition-colors">
-        {/* Search & Category Filter */}
-        <div className="flex flex-col sm:flex-row flex-1 items-stretch sm:items-center gap-2 sm:gap-2.5">
-          <div className="relative flex-1">
+      <div className="bg-white dark:bg-slate-800 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-gray-100 dark:border-slate-700 shadow-xs space-y-2 sm:space-y-0 sm:flex sm:items-center sm:justify-between sm:gap-2.5 transition-colors">
+        {/* Hàng 1: Ô Search + Nút Thêm trên Mobile */}
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="relative flex-1 min-w-0">
             <input
               type="text"
               placeholder="Tìm theo tên hoặc mã SP..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-7 pr-3 py-1.5 text-xs border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white rounded-lg focus:border-blue-500 focus:outline-none placeholder-gray-400 dark:placeholder-slate-400 shadow-2xs"
+              className="w-full pl-7 pr-7 py-1.5 text-xs border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white rounded-lg focus:border-blue-500 focus:outline-none placeholder-gray-400 dark:placeholder-slate-400 shadow-2xs"
             />
             <Search size={13} className="absolute left-2 top-2 text-gray-400" />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute right-2 top-1.5 p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
+                title="Xóa tìm kiếm"
+              >
+                <X size={13} />
+              </button>
+            )}
           </div>
 
+          {/* Nút Thêm SP trên Mobile (nằm cùng hàng với ô tìm kiếm) */}
+          <Button
+            variant="primary"
+            size="sm"
+            icon={<Plus size={13} />}
+            onClick={openTypeSelectModal}
+            className="sm:hidden font-bold shadow-xs whitespace-nowrap text-xs py-1.5 px-2.5 shrink-0"
+          >
+            Thêm
+          </Button>
+        </div>
+
+        {/* Hàng 2 trên Mobile (hoặc cùng hàng trên Desktop): Các dropdown lọc chia lưới gọn gàng */}
+        <div className="grid grid-cols-2 sm:flex sm:items-center gap-1.5 sm:gap-2.5">
           <select
             value={selectedCategory}
             onChange={(e) => {
               setSelectedCategory(e.target.value);
               setSelectedSubcategory("");
             }}
-            className="py-1.5 px-2.5 text-xs border border-gray-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none shadow-2xs"
+            className="w-full sm:w-auto py-1.5 px-2 text-xs border border-gray-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none shadow-2xs font-medium truncate cursor-pointer"
           >
             <option value="">Tất cả thể loại</option>
             {categories.map((cat) => (
@@ -903,18 +992,18 @@ export const AdminProductsPage: React.FC = () => {
           <select
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
-            className="py-1.5 px-2.5 text-xs border border-gray-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none shadow-2xs font-semibold cursor-pointer"
+            className="w-full sm:w-auto py-1.5 px-2 text-xs border border-gray-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none shadow-2xs font-semibold cursor-pointer truncate"
           >
             <option value="">Tất cả loại hình</option>
-            <option value="set">Bán Set</option>
-            <option value="single">Bán lẻ</option>
+            <option value="set">📦 Bán Set</option>
+            <option value="single">👕 Bán lẻ</option>
           </select>
 
           {filterSubcategories.length > 0 && (
             <select
               value={selectedSubcategory}
               onChange={(e) => setSelectedSubcategory(e.target.value)}
-              className="py-1.5 px-2.5 text-xs border border-gray-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none shadow-2xs"
+              className="col-span-2 sm:col-span-1 w-full sm:w-auto py-1.5 px-2 text-xs border border-blue-200 dark:border-blue-900/60 rounded-lg bg-blue-50/50 dark:bg-slate-900 text-blue-800 dark:text-blue-300 font-semibold focus:border-blue-500 focus:outline-none shadow-2xs truncate cursor-pointer"
             >
               <option value="">Tất cả nhóm con</option>
               {filterSubcategories.map((sub, idx) => (
@@ -926,13 +1015,13 @@ export const AdminProductsPage: React.FC = () => {
           )}
         </div>
 
-        {/* Add Product Button */}
+        {/* Nút Thêm SP trên Desktop */}
         <Button
           variant="primary"
           size="sm"
           icon={<Plus size={13} />}
           onClick={openTypeSelectModal}
-          className="font-bold shadow-xs whitespace-nowrap text-xs py-1.5 px-3"
+          className="hidden sm:inline-flex font-bold shadow-xs whitespace-nowrap text-xs py-1.5 px-3 shrink-0"
         >
           THÊM SẢN PHẨM
         </Button>
@@ -952,7 +1041,6 @@ export const AdminProductsPage: React.FC = () => {
               <thead>
                 <tr className="bg-slate-100/70 dark:bg-slate-900/80 text-gray-600 dark:text-slate-300 border-b border-gray-200 dark:border-slate-700 font-bold uppercase tracking-wider text-[10px]">
                   <th className="py-2.5 px-3">Sản phẩm</th>
-                  <th className="py-2.5 px-3">Mã SP</th>
                   <th className="py-2.5 px-3">Thể loại</th>
                   <th className="py-2.5 px-3">Giá bán</th>
                   <th className="py-2.5 px-3 text-center">Đã bán</th>
@@ -966,12 +1054,9 @@ export const AdminProductsPage: React.FC = () => {
                     typeof p.category === "object"
                       ? p.category?.name
                       : "Chưa phân loại";
-                  const hasOptions =
+                  const isSet =
                     Array.isArray(p.sellingOptions) &&
                     p.sellingOptions.length > 0;
-                  const hasSizes = Array.isArray(p.sizes) && p.sizes.length > 0;
-                  const hasColors =
-                    Array.isArray(p.colors) && p.colors.length > 0;
 
                   return (
                     <tr
@@ -979,76 +1064,55 @@ export const AdminProductsPage: React.FC = () => {
                       className="hover:bg-gray-50/50 dark:hover:bg-slate-700/30 transition-colors"
                     >
                       <td className="py-2.5 px-3">
-                        <div className="flex items-center gap-2">
-                          <div className="relative flex-shrink-0">
-                            <img
-                              src={getImageUrl(p.images?.[0])}
-                              alt={p.name}
-                              onError={handleImageError}
-                              className="w-8 h-8 rounded-lg object-cover border border-gray-100 dark:border-slate-700"
-                            />
-                            {hasSizes && (
-                              <span
-                                className="absolute -top-1 -right-1 bg-indigo-600 text-white text-[8px] font-bold px-1 rounded-full shadow-2xs"
-                                title={`${p.sizes?.length} Size`}
-                              >
-                                {p.sizes?.length}S
-                              </span>
-                            )}
-                          </div>
+                        <div className="flex items-center gap-2.5">
+                          <img
+                            src={getImageUrl(p.images?.[0])}
+                            alt={p.name}
+                            onError={handleImageError}
+                            className="w-10 h-10 rounded-lg object-cover border border-gray-100 dark:border-slate-700 shadow-2xs flex-shrink-0"
+                          />
                           <div className="min-w-0">
-                            <span
-                              className="font-bold text-gray-900 dark:text-white max-w-[150px] sm:max-w-xs truncate block text-xs"
-                              title={p.name}
-                            >
-                              {p.name}
-                            </span>
-                            <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                              {hasOptions && (
-                                <span className="text-[10px] text-teal-600 dark:text-teal-400 font-bold bg-teal-50 dark:bg-teal-950/40 px-1 rounded border border-teal-200 dark:border-teal-800">
-                                  📦 {p.sellingOptions?.length} tùy chọn bán
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className="font-bold text-gray-900 dark:text-white max-w-[180px] sm:max-w-xs truncate block text-xs"
+                                title={p.name}
+                              >
+                                {p.name}
+                              </span>
+                              {p.isPinned && (
+                                <span className="inline-flex items-center gap-0.5 text-[9px] font-extrabold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/60 px-1 py-0.2 rounded border border-amber-300 dark:border-amber-700 flex-shrink-0 shadow-2xs">
+                                  <Pin size={8} className="fill-amber-500 text-amber-600" />
+                                  <span>Ghim</span>
                                 </span>
                               )}
-                              {hasOptions && (hasSizes || hasColors) && (
-                                <span className="text-gray-300 dark:text-slate-600 text-[10px]">
-                                  •
-                                </span>
-                              )}
-                              {hasSizes && (
-                                <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold">
-                                  {p.sizes?.map((s) => s.name).join(", ")}
-                                </span>
-                              )}
-                              {hasSizes && hasColors && (
-                                <span className="text-gray-300 dark:text-slate-600 text-[10px]">
-                                  •
-                                </span>
-                              )}
-                              {hasColors && (
-                                <span className="text-[10px] text-violet-600 dark:text-violet-400 font-semibold flex items-center gap-1">
-                                  <span>🎨 {p.colors?.join(", ")}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="font-mono font-bold text-gray-500 dark:text-slate-400 text-[11px]">
+                                {p.code}
+                              </span>
+                              {isSet && (
+                                <span className="inline-block text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.2 rounded border border-amber-200/60 dark:border-amber-900/60">
+                                  Set
                                 </span>
                               )}
                             </div>
                           </div>
                         </div>
                       </td>
-                      <td className="py-2.5 px-3 font-mono font-bold text-gray-700 dark:text-gray-300 text-xs">
-                        {p.code}
-                      </td>
-                      <td className="py-2.5 px-3 text-gray-600 dark:text-slate-300 text-xs">
-                        <div>
-                          <span className="font-semibold text-gray-800 dark:text-slate-200 block">
+                      <td className="py-2.5 px-3 text-xs">
+                        <div className="flex flex-col items-start gap-1">
+                          <span
+                            className="font-semibold text-gray-800 dark:text-slate-200 truncate max-w-[160px] block"
+                            title={catName}
+                          >
                             {catName}
                           </span>
-                          {p.subcategory ? (
-                            <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded text-[10px] font-bold border border-blue-100 dark:border-blue-800/50">
-                              <span>↳</span>
-                              <span>{p.subcategory}</span>
-                            </span>
-                          ) : (
-                            <span className="text-[10px] text-gray-400 dark:text-slate-500 italic block">
-                              Chưa phân nhóm
+                          {p.subcategory && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/60 text-[10px] font-semibold">
+                              <span className="text-[9px] opacity-70">↳</span>
+                              <span className="truncate max-w-[140px]">
+                                {p.subcategory}
+                              </span>
                             </span>
                           )}
                         </div>
@@ -1059,13 +1123,6 @@ export const AdminProductsPage: React.FC = () => {
                             ? p.salePrice
                             : p.price,
                         )}
-                      </td>
-                      <td className="py-2.5 px-3 text-center">
-                        <span
-                          className="font-bold px-1.5 py-0.5 rounded text-[10px] bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300"
-                        >
-                          {p.stock ?? 9999}
-                        </span>
                       </td>
                       <td className="py-2.5 px-3 text-center font-bold text-gray-700 dark:text-gray-300 text-xs">
                         {p.soldCount || 0}
@@ -1083,15 +1140,33 @@ export const AdminProductsPage: React.FC = () => {
                       </td>
                       <td className="py-2.5 px-3 text-right space-x-1 whitespace-nowrap">
                         <button
+                          onClick={() => handleTogglePin(p)}
+                          className={`p-1 rounded transition-colors cursor-pointer ${
+                            p.isPinned
+                              ? "text-amber-500 hover:text-amber-600 bg-amber-50 dark:bg-amber-950/60"
+                              : "text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/40"
+                          }`}
+                          title={p.isPinned ? "Bỏ ghim sản phẩm" : "Ghim sản phẩm lên đầu"}
+                        >
+                          <Pin size={13} className={p.isPinned ? "fill-amber-500" : ""} />
+                        </button>
+                        <button
+                          onClick={() => handleOpenDetailModal(p)}
+                          className="p-1 text-gray-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded transition-colors cursor-pointer"
+                          title="Xem chi tiết"
+                        >
+                          <Eye size={13} />
+                        </button>
+                        <button
                           onClick={() => openEditModal(p)}
-                          className="p-1 text-gray-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 rounded"
+                          className="p-1 text-gray-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded transition-colors cursor-pointer"
                           title="Sửa"
                         >
                           <Edit2 size={13} />
                         </button>
                         <button
                           onClick={() => handleDelete(p)}
-                          className="p-1 text-gray-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 rounded"
+                          className="p-1 text-gray-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition-colors cursor-pointer"
                           title="Xóa"
                         >
                           <Trash2 size={13} />
@@ -1114,10 +1189,6 @@ export const AdminProductsPage: React.FC = () => {
         size="xl"
       >
         <div className="space-y-3 py-1">
-          <p className="text-xs text-gray-500 dark:text-slate-400 text-center">
-            Chọn hình thức bán cho sản phẩm mới:
-          </p>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-0.5">
             {/* 1. BÁN THEO SET / BỘ */}
             <div
@@ -1411,6 +1482,41 @@ export const AdminProductsPage: React.FC = () => {
                   placeholder="Nhập thông tin chi tiết về sản phẩm, chất liệu, hướng dẫn sử dụng..."
                   className="w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white p-2.5 text-xs focus:outline-none focus:border-blue-500 resize-y"
                 />
+              </div>
+
+              {/* Ghim sản phẩm lên đầu */}
+              <div className="pt-1">
+                <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={isPinned}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        const currentPinnedCount = products.filter(
+                          (item) => item.isPinned && item._id !== currentId,
+                        ).length;
+                        if (currentPinnedCount >= 5) {
+                          setFormError(
+                            "Chỉ được phép ghim tối đa 5 sản phẩm. Vui lòng bỏ ghim bớt sản phẩm khác trước!",
+                          );
+                          return;
+                        }
+                      }
+                      setFormError("");
+                      setIsPinned(e.target.checked);
+                    }}
+                    className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 border-gray-300"
+                  />
+                  <div className="flex items-center gap-1.5">
+                    <Pin size={13} className={isPinned ? "text-amber-500 fill-amber-500" : "text-gray-400"} />
+                    <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+                      Ghim sản phẩm này lên đầu danh sách{" "}
+                      <span className="text-[11px] font-normal text-amber-600 dark:text-amber-400">
+                        (Tối đa 5 sản phẩm)
+                      </span>
+                    </span>
+                  </div>
+                </label>
               </div>
 
               <div className="flex justify-end pt-2">
@@ -2764,8 +2870,8 @@ export const AdminProductsPage: React.FC = () => {
             </div>
           )}
 
-          {/* Footer buttons */}
-          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-slate-800">
+          {/* Modal Footer Actions */}
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-slate-800">
             <Button
               type="button"
               variant="secondary"
@@ -2778,23 +2884,326 @@ export const AdminProductsPage: React.FC = () => {
               type="submit"
               variant="primary"
               size="sm"
-              disabled={colorModalLoading}
-              className="font-bold shadow-xs px-4 bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-1.5"
+              disabled={colorModalLoading || !newCustomColorName.trim()}
+              isLoading={colorModalLoading}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
             >
-              {colorModalLoading ? (
-                <>
-                  <Loader2 size={14} className="animate-spin" />
-                  <span>Đang lưu...</span>
-                </>
-              ) : (
-                <>
-                  <Plus size={14} />
-                  <span>Tạo màu mới</span>
-                </>
-              )}
+              Tạo & Lưu Màu
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* ======================================================== */}
+      {/* MODAL XEM CHI TIẾT SẢN PHẨM */}
+      {/* ======================================================== */}
+      <Modal
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        title="Chi Tiết Sản Phẩm"
+        size="3xl"
+      >
+        {viewingProduct && (
+          <div className="space-y-4 text-xs max-h-[80vh] overflow-y-auto pr-1">
+            {/* Header: Tên SP + Mã + Trạng thái + Loại hình */}
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/70 rounded-2xl border border-gray-100 dark:border-slate-700/80 space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`px-2 py-0.5 rounded-md font-extrabold text-[10px] ${
+                      Array.isArray(viewingProduct.sellingOptions) &&
+                      viewingProduct.sellingOptions.length > 0
+                        ? "bg-teal-100 dark:bg-teal-900/60 text-teal-800 dark:text-teal-300 border border-teal-300 dark:border-teal-700"
+                        : "bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700"
+                    }`}
+                  >
+                    {Array.isArray(viewingProduct.sellingOptions) &&
+                    viewingProduct.sellingOptions.length > 0
+                      ? "📦 Bán theo Set / Combo"
+                      : "👕 Bán đơn lẻ"}
+                  </span>
+
+                  <span
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                      viewingProduct.status === "active"
+                        ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800"
+                        : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300 border border-gray-300 dark:border-slate-600"
+                    }`}
+                  >
+                    {viewingProduct.status === "active" ? "● Đang bán" : "○ Tạm ẩn"}
+                  </span>
+
+                  {viewingProduct.isPinned && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 shadow-2xs">
+                      <Pin size={10} className="fill-amber-500 text-amber-600" />
+                      <span>Đang ghim đầu</span>
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1.5 text-gray-500 dark:text-slate-400 text-[11px] font-mono font-bold bg-white dark:bg-slate-900 px-2 py-1 rounded-lg border border-gray-200 dark:border-slate-700">
+                  <span>Mã:</span>
+                  <span className="text-blue-600 dark:text-blue-400">{viewingProduct.code}</span>
+                </div>
+              </div>
+
+              <h3 className="text-base sm:text-lg font-black text-gray-900 dark:text-white leading-snug">
+                {viewingProduct.name}
+              </h3>
+            </div>
+
+            {/* Layout thông tin chính: Hình ảnh & Thuộc tính cơ bản */}
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-start">
+              {/* Cột trái (5 cols): Thư viện hình ảnh */}
+              <div className="sm:col-span-5 space-y-2">
+                <div className="aspect-square w-full rounded-2xl overflow-hidden border border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-900 flex items-center justify-center relative shadow-xs">
+                  {activePreviewImage || viewingProduct.images?.[0] ? (
+                    <img
+                      src={getImageUrl(activePreviewImage || viewingProduct.images?.[0])}
+                      alt={viewingProduct.name}
+                      onError={handleImageError}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="text-gray-400 text-center space-y-1">
+                      <ImageIcon size={32} className="mx-auto text-gray-300" />
+                      <p className="text-[11px]">Chưa có hình ảnh</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Danh sách ảnh thumbnails */}
+                {Array.isArray(viewingProduct.images) && viewingProduct.images.length > 1 && (
+                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+                    {viewingProduct.images.map((imgUrl, imgIdx) => {
+                      const isCurrent = (activePreviewImage || viewingProduct.images[0]) === imgUrl;
+                      return (
+                        <button
+                          key={imgIdx}
+                          type="button"
+                          onClick={() => setActivePreviewImage(imgUrl)}
+                          className={`w-12 h-12 rounded-lg overflow-hidden border-2 flex-shrink-0 transition-all cursor-pointer ${
+                            isCurrent
+                              ? "border-blue-500 ring-2 ring-blue-500/20 shadow-xs"
+                              : "border-gray-200 dark:border-slate-700 opacity-70 hover:opacity-100"
+                          }`}
+                        >
+                          <img
+                            src={getImageUrl(imgUrl)}
+                            alt={`Thumbnail ${imgIdx + 1}`}
+                            onError={handleImageError}
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Cột phải (7 cols): Bảng thông tin giá & phân loại */}
+              <div className="sm:col-span-7 space-y-3">
+                {/* Giá bán & Đã bán */}
+                <div className="p-3 bg-rose-50/50 dark:bg-rose-950/20 rounded-xl border border-rose-100 dark:border-rose-900/40 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] text-gray-500 dark:text-slate-400 block font-semibold">
+                      Giá niêm yết chuẩn
+                    </span>
+                    <span className="text-lg sm:text-xl font-black text-rose-600 dark:text-rose-400">
+                      {formatCurrency(viewingProduct.price || 0)}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-gray-500 dark:text-slate-400 block font-semibold">
+                      Đã bán
+                    </span>
+                    <span className="text-sm font-extrabold text-gray-800 dark:text-slate-200">
+                      {viewingProduct.soldCount || 0} sản phẩm
+                    </span>
+                  </div>
+                </div>
+
+                {/* Phân loại danh mục */}
+                <div className="grid grid-cols-2 gap-2 p-3 bg-gray-50/70 dark:bg-slate-800/50 rounded-xl border border-gray-100 dark:border-slate-700">
+                  <div>
+                    <span className="text-[10px] text-gray-400 dark:text-slate-400 block font-medium">
+                      Thể loại chính
+                    </span>
+                    <span className="font-bold text-gray-900 dark:text-white">
+                      {typeof viewingProduct.category === "object"
+                        ? viewingProduct.category?.name
+                        : "Chưa phân loại"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-gray-400 dark:text-slate-400 block font-medium">
+                      Thể loại con / Nhóm
+                    </span>
+                    <span className="font-bold text-gray-900 dark:text-white">
+                      {viewingProduct.subcategory || "—"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Danh sách Màu sắc */}
+                {Array.isArray(viewingProduct.colors) && viewingProduct.colors.length > 0 && (
+                  <div className="p-3 bg-purple-50/40 dark:bg-purple-950/20 rounded-xl border border-purple-100 dark:border-purple-900/40 space-y-1.5">
+                    <span className="text-[11px] font-bold text-purple-900 dark:text-purple-300 flex items-center gap-1">
+                      <Palette size={13} />
+                      <span>Màu sắc ({viewingProduct.colors.length} màu):</span>
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {viewingProduct.colors.map((c, cIdx) => (
+                        <span
+                          key={cIdx}
+                          className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 font-bold text-[11px] shadow-2xs"
+                        >
+                          {c}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Cấu hình món trong Set (nếu có) */}
+            {Array.isArray(viewingProduct.sellingOptions) && viewingProduct.sellingOptions.length > 0 && (
+              <div className="p-3.5 bg-teal-50/50 dark:bg-teal-950/20 rounded-2xl border border-teal-200/80 dark:border-teal-900/60 space-y-2.5">
+                <div className="flex items-center gap-1.5 text-teal-900 dark:text-teal-300 font-bold text-xs">
+                  <Boxes size={15} />
+                  <span>Các món cấu thành trong Set ({viewingProduct.sellingOptions.length} món):</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {viewingProduct.sellingOptions.map((opt, optIdx) => (
+                    <div
+                      key={optIdx}
+                      className="p-2 bg-white dark:bg-slate-800/90 rounded-xl border border-teal-200 dark:border-teal-800/60 shadow-2xs space-y-0.5"
+                    >
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="font-bold text-gray-900 dark:text-white truncate">
+                          {opt.name}
+                        </span>
+                        {optIdx === 0 && (
+                          <span className="text-[9px] px-1 py-0.2 bg-amber-500 text-white rounded font-extrabold flex-shrink-0">
+                            ★ Set
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-rose-600 dark:text-rose-400 font-black text-xs block">
+                        {formatCurrency(opt.price || 0)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Bảng Kích cỡ & Ma trận giá theo Size */}
+            {Array.isArray(viewingProduct.sizes) && viewingProduct.sizes.length > 0 && (
+              <div className="p-3.5 bg-indigo-50/50 dark:bg-indigo-950/20 rounded-2xl border border-indigo-200/80 dark:border-indigo-900/60 space-y-2">
+                <div className="flex items-center gap-1.5 text-indigo-900 dark:text-indigo-300 font-bold text-xs">
+                  <Layers size={15} />
+                  <span>Bảng Size & Ma trận giá ({viewingProduct.sizes.length} size):</span>
+                </div>
+
+                <div className="overflow-x-auto rounded-xl border border-indigo-200/80 dark:border-indigo-900/60">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead className="bg-indigo-100/70 dark:bg-slate-800 text-gray-700 dark:text-slate-200 text-[11px] font-bold">
+                      <tr>
+                        <th className="p-2 border-b border-indigo-200 dark:border-indigo-900/60">Size</th>
+                        {Array.isArray(viewingProduct.sellingOptions) &&
+                        viewingProduct.sellingOptions.length > 0 ? (
+                          viewingProduct.sellingOptions.map((opt, oIdx) => (
+                            <th
+                              key={oIdx}
+                              className="p-2 border-b border-indigo-200 dark:border-indigo-900/60 text-right"
+                            >
+                              {opt.name}
+                            </th>
+                          ))
+                        ) : (
+                          <th className="p-2 border-b border-indigo-200 dark:border-indigo-900/60 text-right">
+                            Giá bán
+                          </th>
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-slate-800 bg-white dark:bg-slate-900/90">
+                      {viewingProduct.sizes.map((s, sIdx) => (
+                        <tr key={sIdx} className="hover:bg-indigo-50/30 dark:hover:bg-slate-800/50">
+                          <td className="p-2 font-bold text-gray-900 dark:text-white">
+                            {s.name}
+                          </td>
+                          {Array.isArray(viewingProduct.sellingOptions) &&
+                          viewingProduct.sellingOptions.length > 0 ? (
+                            viewingProduct.sellingOptions.map((opt, oIdx) => {
+                              const pVal =
+                                s.optionPrices && s.optionPrices[opt.name] !== undefined
+                                  ? s.optionPrices[opt.name]
+                                  : opt.price || 0;
+                              return (
+                                <td
+                                  key={oIdx}
+                                  className="p-2 font-bold text-teal-600 dark:text-teal-400 text-right"
+                                >
+                                  {formatCurrency(pVal)}
+                                </td>
+                              );
+                            })
+                          ) : (
+                            <td className="p-2 font-bold text-blue-600 dark:text-blue-400 text-right">
+                              {formatCurrency(s.price > 0 ? s.price : viewingProduct.price || 0)}
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Mô tả sản phẩm */}
+            {viewingProduct.description && (
+              <div className="p-3 bg-gray-50/70 dark:bg-slate-800/50 rounded-xl border border-gray-100 dark:border-slate-700 space-y-1">
+                <span className="text-[11px] font-bold text-gray-700 dark:text-slate-300">
+                  Mô tả sản phẩm:
+                </span>
+                <p className="text-gray-600 dark:text-slate-400 leading-relaxed whitespace-pre-line text-[11px]">
+                  {viewingProduct.description}
+                </p>
+              </div>
+            )}
+
+            {/* Footer Modal Actions */}
+            <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-slate-800">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsDetailModalOpen(false)}
+                className="font-semibold text-xs px-4"
+              >
+                Đóng
+              </Button>
+
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                icon={<Edit2 size={13} />}
+                onClick={() => {
+                  setIsDetailModalOpen(false);
+                  openEditModal(viewingProduct);
+                }}
+                className="font-bold shadow-xs px-4 text-xs"
+              >
+                Chỉnh sửa sản phẩm
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

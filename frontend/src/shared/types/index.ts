@@ -94,6 +94,7 @@ export interface Product {
   soldCount: number;
   rating: number;
   isFeatured: boolean;
+  isPinned?: boolean;
   status: 'active' | 'inactive';
   createdAt: string;
   updatedAt: string;

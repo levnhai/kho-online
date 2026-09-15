@@ -21,6 +21,7 @@ export const ProductsPage: React.FC = () => {
 
   // Filter States synced with URL
   const selectedCategory = searchParams.get('category') || '';
+  const selectedSubcategory = searchParams.get('subcategory') || '';
   const searchKeyword = searchParams.get('search') || '';
   const priceRange = searchParams.get('priceRange') || '';
   const sortOption = searchParams.get('sort') || 'newest';
@@ -62,6 +63,7 @@ export const ProductsPage: React.FC = () => {
 
       const res = await productApi.getAll({
         category: selectedCategory || undefined,
+        subcategory: selectedSubcategory || undefined,
         search: searchKeyword || undefined,
         minPrice,
         maxPrice,
@@ -77,7 +79,7 @@ export const ProductsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedCategory, searchKeyword, priceRange, sortOption, currentPage]);
+  }, [selectedCategory, selectedSubcategory, searchKeyword, priceRange, sortOption, currentPage]);
 
   useEffect(() => {
     fetchProducts();
@@ -94,10 +96,24 @@ export const ProductsPage: React.FC = () => {
     setSearchParams(newParams);
   };
 
+  const handleSelectCategory = (catId: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (catId) {
+      newParams.set('category', catId);
+    } else {
+      newParams.delete('category');
+    }
+    newParams.delete('subcategory');
+    newParams.set('page', '1');
+    setSearchParams(newParams);
+  };
+
   const handleResetFilters = () => {
     setSearchParams({});
     setMobileFilterOpen(false);
   };
+
+  const currentCatObj = categories.find((c) => c._id === selectedCategory);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-4 sm:py-8 transition-colors">
@@ -106,23 +122,38 @@ export const ProductsPage: React.FC = () => {
         <div className="mb-4 sm:mb-8 flex items-center justify-between gap-3">
           <div>
             <h1 className="text-xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight uppercase">
-              TẤT CẢ SẢN PHẨM
+              {currentCatObj ? currentCatObj.name : 'TẤT CẢ SẢN PHẨM'}
             </h1>
-            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              {searchKeyword
-                ? `Kết quả cho: "${searchKeyword}" (${total} SP)`
-                : `Tìm thấy ${total} sản phẩm`}
-            </p>
+            <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center flex-wrap gap-2">
+              {selectedSubcategory && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 font-bold text-xs border border-blue-200 dark:border-blue-800 shadow-2xs">
+                  <span>Nhóm: {selectedSubcategory}</span>
+                  <button
+                    type="button"
+                    onClick={() => updateParam('subcategory', '')}
+                    className="hover:text-rose-500 font-black cursor-pointer ml-0.5"
+                    title="Bỏ lọc nhóm con này"
+                  >
+                    ×
+                  </button>
+                </span>
+              )}
+              {searchKeyword ? (
+                <span>Kết quả cho từ khóa: &quot;{searchKeyword}&quot; ({total} SP)</span>
+              ) : (
+                <span>Tìm thấy {total} sản phẩm</span>
+              )}
+            </div>
           </div>
 
           {/* Mobile Filter Button */}
           <button
             onClick={() => setMobileFilterOpen(true)}
-            className="lg:hidden inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200/80 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-bold text-gray-800 dark:text-gray-200 shadow-xs hover:border-blue-500 active:scale-95 transition-all cursor-pointer"
+            className="lg:hidden inline-flex items-center gap-2 px-3.5 py-2 bg-white dark:bg-slate-800 border border-gray-200/80 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-bold text-gray-800 dark:text-gray-200 shadow-xs hover:border-blue-500 active:scale-95 transition-all cursor-pointer whitespace-nowrap"
           >
             <Filter size={16} className="text-blue-600 dark:text-blue-400" />
-            <span>Bộ lọc tìm kiếm</span>
-            {(selectedCategory || priceRange || sortOption !== 'newest' || searchKeyword) && (
+            <span>Bộ lọc</span>
+            {(selectedCategory || selectedSubcategory || priceRange || sortOption !== 'newest' || searchKeyword) && (
               <span className="w-2.5 h-2.5 rounded-full bg-blue-600 dark:bg-blue-400 ring-2 ring-white dark:ring-slate-800 animate-pulse" />
             )}
           </button>
@@ -135,9 +166,10 @@ export const ProductsPage: React.FC = () => {
             <FilterSidebar
               categories={categories}
               selectedCategory={selectedCategory}
-              onSelectCategory={(catId) => updateParam('category', catId)}
+              onSelectCategory={handleSelectCategory}
+              selectedSubcategory={selectedSubcategory}
+              onSelectSubcategory={(subName) => updateParam('subcategory', subName)}
               searchKeyword={searchKeyword}
-              onSelectSubcategory={(kw) => updateParam('search', kw)}
               priceRange={priceRange}
               onSelectPriceRange={(range) => updateParam('priceRange', range)}
               sort={sortOption}
@@ -196,7 +228,7 @@ export const ProductsPage: React.FC = () => {
               <div className="p-4 sm:p-5 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
                 <div className="flex items-center gap-2 font-black text-gray-900 dark:text-white text-base">
                   <Filter size={18} className="text-blue-600 dark:text-blue-400" />
-                  <span>BỘ LỌC TÌM KIẾM</span>
+                  <span>BỘ LỌC</span>
                 </div>
                 <button
                   onClick={() => setMobileFilterOpen(false)}
@@ -210,13 +242,12 @@ export const ProductsPage: React.FC = () => {
                 <FilterSidebar
                   categories={categories}
                   selectedCategory={selectedCategory}
-                  onSelectCategory={(catId) => {
-                    updateParam('category', catId);
+                  onSelectCategory={handleSelectCategory}
+                  selectedSubcategory={selectedSubcategory}
+                  onSelectSubcategory={(subName) => {
+                    updateParam('subcategory', subName);
                   }}
                   searchKeyword={searchKeyword}
-                  onSelectSubcategory={(kw) => {
-                    updateParam('search', kw);
-                  }}
                   priceRange={priceRange}
                   onSelectPriceRange={(range) => {
                     updateParam('priceRange', range);

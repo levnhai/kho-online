@@ -91,12 +91,18 @@ export const Header: React.FC = () => {
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-2 sm:gap-6">
           {/* Logo CHANG */}
-          <Link to="/" className="flex items-center gap-2.5 group flex-shrink-0">
+          <Link
+            to="/"
+            className="flex items-center gap-2.5 group flex-shrink-0"
+          >
             <div className="relative">
               {/* Subtle ambient glow on hover */}
               <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-400 rounded-2xl blur-xs opacity-40 group-hover:opacity-100 group-hover:blur-sm transition-all duration-300" />
               <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center text-white font-extrabold shadow-md shadow-blue-500/30 ring-2 ring-white/20 dark:ring-white/10 group-hover:scale-105 transition-all duration-300">
-                <ShoppingBag size={22} className="drop-shadow-sm group-hover:rotate-6 transition-transform duration-300" />
+                <ShoppingBag
+                  size={22}
+                  className="drop-shadow-sm group-hover:rotate-6 transition-transform duration-300"
+                />
               </div>
             </div>
             <div className="flex flex-col">
@@ -382,7 +388,7 @@ export const Header: React.FC = () => {
                   </div>
                   <div className="flex flex-col">
                     <span className="font-black text-lg bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 dark:from-blue-400 dark:via-indigo-300 dark:to-cyan-300 bg-clip-text text-transparent">
-                      CHANG ONLINE
+                      C.H.A.N.G ONLINE
                     </span>
                   </div>
                 </div>
@@ -561,7 +567,7 @@ export const Header: React.FC = () => {
                                   {subs.map((sub) => (
                                     <Link
                                       key={sub.id}
-                                      to={`/products?category=${cat._id}&search=${encodeURIComponent(sub.keyword || sub.name)}`}
+                                      to={`/products?category=${cat._id}&subcategory=${encodeURIComponent(sub.name)}`}
                                       onClick={() => setMobileMenuOpen(false)}
                                       className="flex items-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-medium text-gray-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white/80 dark:hover:bg-slate-800/80 transition-colors"
                                     >
