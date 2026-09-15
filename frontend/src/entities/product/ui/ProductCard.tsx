@@ -12,10 +12,22 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
+  const hasDiscount = Boolean(product.salePrice && product.salePrice > 0 && product.salePrice < product.price);
+  const discountPercent = hasDiscount
+    ? Math.round(((product.price - product.salePrice!) / product.price) * 100)
+    : 0;
+
   const categoryName = typeof product.category === 'object' ? product.category?.name : 'Sản phẩm';
 
   return (
     <div className="group relative bg-white dark:bg-slate-800 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-slate-700/80 shadow-xs hover:shadow-xl hover:border-blue-100 dark:hover:border-slate-600 transition-all duration-300 flex flex-col overflow-hidden">
+      {/* Discount Badge */}
+      {hasDiscount && (
+        <span className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 bg-rose-500 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md sm:rounded-lg shadow-sm">
+          -{discountPercent}%
+        </span>
+      )}
+
       {/* Image */}
       <Link
         to={`/products/${product._id}`}
@@ -52,14 +64,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
           {product.name}
         </Link>
 
-        {/* Colors badge if available */}
-        {product.colors && product.colors.length > 0 && (
-          <div className="mb-2">
+        {/* Stock & Colors status */}
+        <div className="flex items-center justify-between text-[11px] sm:text-xs text-gray-400 dark:text-slate-400 mb-2">
+          <p>
+            <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Còn hàng</span>
+          </p>
+          {product.colors && product.colors.length > 0 && (
             <span className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-1.5 py-0.5 rounded border border-purple-100 dark:border-purple-900/40">
               {product.colors.length} màu
             </span>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Price Area */}
         <div className="mt-auto mb-3">

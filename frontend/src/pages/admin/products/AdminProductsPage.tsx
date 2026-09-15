@@ -1054,7 +1054,18 @@ export const AdminProductsPage: React.FC = () => {
                         </div>
                       </td>
                       <td className="py-2.5 px-3 font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap text-xs">
-                        {formatCurrency(p.price)}
+                        {formatCurrency(
+                          p.salePrice && p.salePrice > 0
+                            ? p.salePrice
+                            : p.price,
+                        )}
+                      </td>
+                      <td className="py-2.5 px-3 text-center">
+                        <span
+                          className="font-bold px-1.5 py-0.5 rounded text-[10px] bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300"
+                        >
+                          {p.stock ?? 9999}
+                        </span>
                       </td>
                       <td className="py-2.5 px-3 text-center font-bold text-gray-700 dark:text-gray-300 text-xs">
                         {p.soldCount || 0}

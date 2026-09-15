@@ -130,7 +130,7 @@ export const ProductDetailPage: React.FC = () => {
   };
 
   const handleIncrease = () => {
-    if (quantity < currentStock) setQuantity(quantity + 1);
+    if (quantity < 99) setQuantity(quantity + 1);
   };
 
   const handleAddToCart = () => {
@@ -192,6 +192,10 @@ export const ProductDetailPage: React.FC = () => {
               <span className="text-gray-300 dark:text-gray-600">|</span>
               <span>
                 Đã bán: <strong className="text-gray-800 dark:text-gray-200">{product.soldCount || 0}</strong>
+              </span>
+              <span className="text-gray-300 dark:text-gray-600">|</span>
+              <span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold">Còn hàng</span>
               </span>
             </div>
 
@@ -354,7 +358,7 @@ export const ProductDetailPage: React.FC = () => {
                 </span>
                 <button
                   onClick={handleIncrease}
-                  disabled={quantity >= currentStock}
+                  disabled={quantity >= 99}
                   className="p-2 sm:p-2.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-600 disabled:opacity-30 transition-colors"
                 >
                   <Plus size={15} />

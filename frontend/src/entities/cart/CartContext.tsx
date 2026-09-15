@@ -35,7 +35,6 @@ export const getCartItemPrice = (item: CartItem): number => {
 export const getCartItemOriginalPrice = (item: CartItem): number => {
   return getCartItemPrice(item);
 };
-
 export const getCartItemMaxStock = (_item: CartItem): number => {
   return 9999;
 };
