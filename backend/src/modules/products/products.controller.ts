@@ -34,6 +34,11 @@ export class ProductsController {
     return this.productsService.findById(id);
   }
 
+  @Post('batch')
+  async findBatch(@Body() body: { ids: string[] }) {
+    return this.productsService.findBatch(body.ids || []);
+  }
+
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Post()

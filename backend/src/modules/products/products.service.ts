@@ -2,11 +2,13 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Product, ProductDocument } from './schemas/product.schema';
+import { EventsGateway } from '../events/events.gateway';
 
 @Injectable()
 export class ProductsService {
   constructor(
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
+    private readonly eventsGateway: EventsGateway,
   ) {}
 
   async findAll(query: any = {}) {
@@ -153,6 +155,16 @@ export class ProductsService {
     return product;
   }
 
+  async findBatch(ids: string[]): Promise<ProductDocument[]> {
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return [];
+    }
+    return this.productModel
+      .find({ _id: { $in: ids } })
+      .populate('category', 'name slug')
+      .exec();
+  }
+
   async create(createDto: any): Promise<ProductDocument> {
     const existing = await this.productModel.findOne({ code: createDto.code.toUpperCase() });
     if (existing) {
@@ -168,7 +180,10 @@ export class ProductsService {
       ...createDto,
       code: createDto.code.toUpperCase(),
     });
-    return product.save();
+    const saved = await product.save();
+    const populated = await saved.populate('category', 'name slug');
+    this.eventsGateway.notifyProductUpdated(populated);
+    return populated;
   }
 
   async update(id: string, updateDto: any): Promise<ProductDocument> {
@@ -198,6 +213,7 @@ export class ProductsService {
     if (!updated) {
       throw new NotFoundException('Không tìm thấy sản phẩm');
     }
+    this.eventsGateway.notifyProductUpdated(updated);
     return updated;
   }
 
@@ -214,7 +230,9 @@ export class ProductsService {
     }
     product.isPinned = !product.isPinned;
     await product.save();
-    return product.populate('category', 'name slug');
+    const populated = await product.populate('category', 'name slug');
+    this.eventsGateway.notifyProductUpdated(populated);
+    return populated;
   }
 
   async delete(id: string): Promise<{ success: boolean; message: string }> {
@@ -222,6 +240,7 @@ export class ProductsService {
     if (!deleted) {
       throw new NotFoundException('Không tìm thấy sản phẩm');
     }
+    this.eventsGateway.notifyProductDeleted(id);
     return { success: true, message: 'Đã xóa sản phẩm' };
   }
 

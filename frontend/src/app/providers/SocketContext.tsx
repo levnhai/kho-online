@@ -69,6 +69,20 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       apiCache.invalidate('/statistics');
     });
 
+    newSocket.on('PRODUCT_UPDATED', () => {
+      apiCache.invalidate('/products');
+    });
+    newSocket.on('product_updated', () => {
+      apiCache.invalidate('/products');
+    });
+
+    newSocket.on('PRODUCT_DELETED', () => {
+      apiCache.invalidate('/products');
+    });
+    newSocket.on('product_deleted', () => {
+      apiCache.invalidate('/products');
+    });
+
     setSocket(newSocket);
 
     return () => {

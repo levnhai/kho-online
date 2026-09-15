@@ -13,9 +13,11 @@ import {
   Clock,
   X,
   Sparkles,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthContext";
-import { useCart, getCartItemPrice } from "@/entities/cart/CartContext";
+import { useCart, getCartItemPrice, PriceChangeNotice } from "@/entities/cart/CartContext";
 import { orderApi } from "@/entities/order/api/orderApi";
 import { userApi } from "@/entities/user/api/userApi";
 import { formatCurrency } from "@/shared/lib/formatters";
@@ -37,9 +39,10 @@ const STORAGE_SAVED_ADDRESSES = "kho_online_address_history";
 
 export const CheckoutPage: React.FC = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
-  const { items, totalAmount, clearCart } = useCart();
+  const { items, totalAmount, clearCart, syncCartPrices, isSyncing } = useCart();
   const navigate = useNavigate();
 
+  const [priceNotices, setPriceNotices] = useState<PriceChangeNotice[]>([]);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -53,6 +56,18 @@ export const CheckoutPage: React.FC = () => {
     orderCode: string;
     orderCodes?: string[];
   } | null>(null);
+
+  // Tự động kiểm tra và đồng bộ lại giá trước khi thanh toán
+  useEffect(() => {
+    if (items.length > 0) {
+      syncCartPrices().then((notices) => {
+        if (notices && notices.length > 0) {
+          setPriceNotices(notices);
+        }
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Load thông tin và lịch sử địa chỉ
   useEffect(() => {
@@ -351,9 +366,41 @@ export const CheckoutPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-10 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight mb-8">
+        <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight mb-6 flex items-center gap-2">
           TIẾN HÀNH ĐẶT HÀNG
+          {isSyncing && <RefreshCw size={20} className="animate-spin text-blue-500" />}
         </h1>
+
+        {/* Banner thông báo thay đổi giá */}
+        {priceNotices.length > 0 && (
+          <div className="mb-6 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex items-start gap-3 shadow-xs">
+            <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="text-sm font-bold text-amber-900 dark:text-amber-200">
+                Lưu ý: Bảng giá đã được tự động cập nhật
+              </h4>
+              <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                Một số mặt hàng trong giỏ đã được cập nhật giá mới nhất từ hệ thống:
+              </p>
+              <ul className="mt-2 space-y-1 text-xs text-amber-800 dark:text-amber-300">
+                {priceNotices.map((n, idx) => (
+                  <li key={idx} className="flex items-center gap-1.5 font-medium">
+                    <span>• {n.name}:</span>
+                    <span className="line-through text-amber-600/70">{formatCurrency(n.oldPrice)}</span>
+                    <span>➔</span>
+                    <span className="font-bold text-amber-900 dark:text-amber-100">{formatCurrency(n.newPrice)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <button
+              onClick={() => setPriceNotices([])}
+              className="text-amber-500 hover:text-amber-700 text-xs font-semibold px-2 py-1"
+            >
+              Đã hiểu
+            </button>
+          </div>
+        )}
 
         <form
           onSubmit={handleSubmitOrder}

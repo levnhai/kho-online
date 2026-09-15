@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { CartItem, Product } from '@/shared/types';
+import { productApi } from '@/entities/product/api/productApi';
+import { useSocket } from '@/app/providers/SocketContext';
 
 export const getCartItemPrice = (item: CartItem): number => {
   const isSet = Boolean(item.selectedOption && item.product.sellingOptions && item.product.sellingOptions.length > 0);
@@ -39,6 +41,13 @@ export const getCartItemMaxStock = (_item: CartItem): number => {
   return 9999;
 };
 
+export interface PriceChangeNotice {
+  productId: string;
+  name: string;
+  oldPrice: number;
+  newPrice: number;
+}
+
 interface CartContextType {
   items: CartItem[];
   addToCart: (
@@ -62,13 +71,17 @@ interface CartContextType {
     selectedOption?: string,
   ) => void;
   clearCart: () => void;
+  syncCartPrices: () => Promise<PriceChangeNotice[]>;
   totalCount: number;
   totalAmount: number;
+  isSyncing: boolean;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { socket } = useSocket();
+  const [isSyncing, setIsSyncing] = useState(false);
   const [items, setItems] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem('kho_cart');
@@ -81,6 +94,105 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     localStorage.setItem('kho_cart', JSON.stringify(items));
   }, [items]);
+
+  // Hàm đồng bộ thông tin và giá sản phẩm mới nhất từ Server
+  const syncCartPrices = useCallback(async (): Promise<PriceChangeNotice[]> => {
+    if (items.length === 0) return [];
+
+    const productIds = Array.from(new Set(items.map((i) => String(i.product._id)).filter(Boolean)));
+    if (productIds.length === 0) return [];
+
+    setIsSyncing(true);
+    const notices: PriceChangeNotice[] = [];
+
+    try {
+      const latestProducts = await productApi.getBatch(productIds);
+      const productMap = new Map<string, Product>();
+      latestProducts.forEach((p) => productMap.set(String(p._id), p));
+
+      setItems((prevItems) => {
+        return prevItems.map((item) => {
+          const latest = productMap.get(String(item.product._id));
+          if (!latest) return item;
+
+          const oldPrice = getCartItemPrice(item);
+          const updatedItem: CartItem = {
+            ...item,
+            product: latest,
+          };
+          const newPrice = getCartItemPrice(updatedItem);
+
+          if (oldPrice !== newPrice) {
+            notices.push({
+              productId: latest._id,
+              name: latest.name,
+              oldPrice,
+              newPrice,
+            });
+          }
+
+          return updatedItem;
+        });
+      });
+    } catch (err) {
+      console.error('Lỗi khi đồng bộ giá giỏ hàng:', err);
+    } finally {
+      setIsSyncing(false);
+    }
+
+    return notices;
+  }, [items]);
+
+  // Tự động kiểm tra giá khi khởi chạy
+  useEffect(() => {
+    if (items.length > 0) {
+      syncCartPrices();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Lắng nghe sự kiện Realtime Socket khi Admin cập nhật sản phẩm
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleProductUpdated = (updatedProduct: Product) => {
+      if (!updatedProduct || !updatedProduct._id) return;
+      const targetId = String(updatedProduct._id);
+
+      setItems((prevItems) => {
+        const hasItem = prevItems.some((i) => String(i.product._id) === targetId);
+        if (!hasItem) return prevItems;
+
+        return prevItems.map((item) => {
+          if (String(item.product._id) === targetId) {
+            return {
+              ...item,
+              product: updatedProduct,
+            };
+          }
+          return item;
+        });
+      });
+    };
+
+    const handleProductDeleted = (data: { productId: string }) => {
+      if (!data?.productId) return;
+      const targetId = String(data.productId);
+      setItems((prevItems) => prevItems.filter((i) => String(i.product._id) !== targetId));
+    };
+
+    socket.on('PRODUCT_UPDATED', handleProductUpdated);
+    socket.on('product_updated', handleProductUpdated);
+    socket.on('PRODUCT_DELETED', handleProductDeleted);
+    socket.on('product_deleted', handleProductDeleted);
+
+    return () => {
+      socket.off('PRODUCT_UPDATED', handleProductUpdated);
+      socket.off('product_updated', handleProductUpdated);
+      socket.off('PRODUCT_DELETED', handleProductDeleted);
+      socket.off('product_deleted', handleProductDeleted);
+    };
+  }, [socket]);
 
   const addToCart = (
     product: Product,
@@ -189,8 +301,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateQuantity,
         removeFromCart,
         clearCart,
+        syncCartPrices,
         totalCount,
         totalAmount,
+        isSyncing,
       }}
     >
       {children}

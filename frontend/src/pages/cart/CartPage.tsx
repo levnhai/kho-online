@@ -1,14 +1,26 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, ArrowLeft } from 'lucide-react';
-import { useCart, getCartItemPrice } from '@/entities/cart/CartContext';
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, ArrowLeft, RefreshCw, AlertCircle } from 'lucide-react';
+import { useCart, getCartItemPrice, PriceChangeNotice } from '@/entities/cart/CartContext';
 import { formatCurrency } from '@/shared/lib/formatters';
 import { getImageUrl, handleImageError } from '@/shared/lib/imageHelper';
 import { Button } from '@/shared/ui/Button';
 
 export const CartPage: React.FC = () => {
-  const { items, updateQuantity, removeFromCart, totalAmount, clearCart } = useCart();
+  const { items, updateQuantity, removeFromCart, totalAmount, clearCart, syncCartPrices, isSyncing } = useCart();
+  const [priceNotices, setPriceNotices] = useState<PriceChangeNotice[]>([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (items.length > 0) {
+      syncCartPrices().then((notices) => {
+        if (notices && notices.length > 0) {
+          setPriceNotices(notices);
+        }
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (items.length === 0) {
     return (
@@ -36,10 +48,42 @@ export const CartPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-6 sm:py-10 transition-colors">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        {/* Banner thông báo thay đổi giá */}
+        {priceNotices.length > 0 && (
+          <div className="mb-6 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex items-start gap-3 shadow-xs">
+            <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="text-sm font-bold text-amber-900 dark:text-amber-200">
+                Thông báo điều chỉnh bảng giá
+              </h4>
+              <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                Một số sản phẩm trong giỏ hàng vừa được cập nhật bảng giá mới nhất từ hệ thống:
+              </p>
+              <ul className="mt-2 space-y-1 text-xs text-amber-800 dark:text-amber-300">
+                {priceNotices.map((n, idx) => (
+                  <li key={idx} className="flex items-center gap-1.5 font-medium">
+                    <span>• {n.name}:</span>
+                    <span className="line-through text-amber-600/70">{formatCurrency(n.oldPrice)}</span>
+                    <span>➔</span>
+                    <span className="font-bold text-amber-900 dark:text-amber-100">{formatCurrency(n.newPrice)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <button
+              onClick={() => setPriceNotices([])}
+              className="text-amber-500 hover:text-amber-700 text-xs font-semibold px-2 py-1"
+            >
+              Đã hiểu
+            </button>
+          </div>
+        )}
+
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+            <h1 className="text-xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
               GIỎ HÀNG
+              {isSyncing && <RefreshCw size={18} className="animate-spin text-blue-500" />}
             </h1>
             <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 mt-0.5">
               Bạn đang có <strong>{items.length}</strong> mặt hàng trong giỏ

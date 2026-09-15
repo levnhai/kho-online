@@ -74,4 +74,18 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
     this.server.to('admin_orders').emit('order_cancelled', order);
   }
+
+  // Khi sản phẩm được tạo / sửa đổi (giá, phân loại, trạng thái) -> Bắn tới toàn bộ client
+  notifyProductUpdated(product: any) {
+    this.logger.log(`Emitting PRODUCT_UPDATED for product ${product._id || product.id} (${product.name})`);
+    this.server.emit('PRODUCT_UPDATED', product);
+    this.server.emit('product_updated', product);
+  }
+
+  // Khi sản phẩm bị xóa -> Bắn tới toàn bộ client
+  notifyProductDeleted(productId: string) {
+    this.logger.log(`Emitting PRODUCT_DELETED for productId ${productId}`);
+    this.server.emit('PRODUCT_DELETED', { productId });
+    this.server.emit('product_deleted', { productId });
+  }
 }

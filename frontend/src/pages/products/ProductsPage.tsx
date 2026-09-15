@@ -6,12 +6,14 @@ import { ProductCard } from '@/entities/product/ui/ProductCard';
 import { productApi } from '@/entities/product/api/productApi';
 import { categoryApi } from '@/entities/category/api/categoryApi';
 import { useCart } from '@/entities/cart/CartContext';
+import { useSocket } from '@/app/providers/SocketContext';
 import { Product, Category } from '@/shared/types';
 import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
 
 export const ProductsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { addToCart } = useCart();
+  const { socket } = useSocket();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -84,6 +86,39 @@ export const ProductsPage: React.FC = () => {
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
+
+  // Lắng nghe realtime khi Admin sửa giá / cập nhật sản phẩm
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleProductUpdated = (updatedProduct: Product) => {
+      if (!updatedProduct || !updatedProduct._id) return;
+      const targetId = String(updatedProduct._id);
+
+      setProducts((prev) =>
+        prev.map((p) => (String(p._id) === targetId ? updatedProduct : p)),
+      );
+    };
+
+    const handleProductDeleted = (data: { productId: string }) => {
+      if (!data?.productId) return;
+      const targetId = String(data.productId);
+      setProducts((prev) => prev.filter((p) => String(p._id) !== targetId));
+      setTotal((prev) => Math.max(0, prev - 1));
+    };
+
+    socket.on('PRODUCT_UPDATED', handleProductUpdated);
+    socket.on('product_updated', handleProductUpdated);
+    socket.on('PRODUCT_DELETED', handleProductDeleted);
+    socket.on('product_deleted', handleProductDeleted);
+
+    return () => {
+      socket.off('PRODUCT_UPDATED', handleProductUpdated);
+      socket.off('product_updated', handleProductUpdated);
+      socket.off('PRODUCT_DELETED', handleProductDeleted);
+      socket.off('product_deleted', handleProductDeleted);
+    };
+  }, [socket]);
 
   const updateParam = (key: string, value: string) => {
     const newParams = new URLSearchParams(searchParams);

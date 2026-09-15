@@ -25,6 +25,9 @@ export const productApi = {
   getById: (id: string): Promise<Product> => {
     return api.get(`/products/${id}`);
   },
+  getBatch: (ids: string[]): Promise<Product[]> => {
+    return api.post('/products/batch', { ids });
+  },
   create: (data: any): Promise<Product> => {
     return api.post('/products', data);
   },

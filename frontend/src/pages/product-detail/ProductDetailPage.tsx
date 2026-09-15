@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { productApi } from '@/entities/product/api/productApi';
 import { useCart } from '@/entities/cart/CartContext';
+import { useSocket } from '@/app/providers/SocketContext';
 import { Product } from '@/shared/types';
 import { formatCurrency } from '@/shared/lib/formatters';
 import { getImageUrl } from '@/shared/lib/imageHelper';
@@ -40,6 +41,7 @@ export const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const { socket } = useSocket();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [selectedOption, setSelectedOption] = useState<string>('');
@@ -79,6 +81,26 @@ export const ProductDetailPage: React.FC = () => {
         setLoading(false);
       });
   }, [id]);
+
+  // Lắng nghe realtime khi Admin sửa sản phẩm này
+  useEffect(() => {
+    if (!socket || !id) return;
+
+    const handleProductUpdated = (updatedProduct: Product) => {
+      if (!updatedProduct || !updatedProduct._id) return;
+      if (String(updatedProduct._id) === String(id)) {
+        setProduct(updatedProduct);
+      }
+    };
+
+    socket.on('PRODUCT_UPDATED', handleProductUpdated);
+    socket.on('product_updated', handleProductUpdated);
+
+    return () => {
+      socket.off('PRODUCT_UPDATED', handleProductUpdated);
+      socket.off('product_updated', handleProductUpdated);
+    };
+  }, [socket, id]);
 
   if (loading) {
     return (

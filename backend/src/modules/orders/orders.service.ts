@@ -32,9 +32,42 @@ export class OrdersService {
       if (!product) {
         throw new NotFoundException(`Sản phẩm với ID ${item.product} không tồn tại`);
       }
-      // Hàng luôn luôn còn nên không cần kiểm tra tồn kho
+      // Backend tự tính toán giá chuẩn xác nhất theo DB (không phụ thuộc giá client gửi lên)
+      let calculatedPrice = product.salePrice && product.salePrice > 0 ? product.salePrice : product.price;
 
-      const itemPrice = item.price && item.price > 0 ? item.price : (product.salePrice && product.salePrice > 0 ? product.salePrice : product.price);
+      if (item.sellingOption && product.sellingOptions && product.sellingOptions.length > 0) {
+        if (item.size && product.sizes && product.sizes.length > 0) {
+          const sizeObj = product.sizes.find((s: any) => s.name === item.size);
+          if (
+            sizeObj?.optionPrices &&
+            sizeObj.optionPrices[item.sellingOption] !== undefined &&
+            sizeObj.optionPrices[item.sellingOption] > 0
+          ) {
+            calculatedPrice = sizeObj.optionPrices[item.sellingOption];
+          } else {
+            const optObj = product.sellingOptions.find((o: any) => o.name === item.sellingOption);
+            if (optObj && optObj.price > 0) {
+              calculatedPrice = optObj.price;
+            }
+          }
+        } else {
+          const optObj = product.sellingOptions.find((o: any) => o.name === item.sellingOption);
+          if (optObj && optObj.price > 0) {
+            calculatedPrice = optObj.price;
+          }
+        }
+      } else if (item.size && product.sizes && product.sizes.length > 0) {
+        const sizeObj = product.sizes.find((s: any) => s.name === item.size);
+        if (sizeObj) {
+          if (sizeObj.salePrice && sizeObj.salePrice > 0) {
+            calculatedPrice = sizeObj.salePrice;
+          } else if (sizeObj.price && sizeObj.price > 0) {
+            calculatedPrice = sizeObj.price;
+          }
+        }
+      }
+
+      const itemPrice = calculatedPrice;
       const total = itemPrice * item.quantity;
       const subtotal = total;
       const shippingFee = subtotal >= 5000000 ? 0 : 30000;
