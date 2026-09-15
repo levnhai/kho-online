@@ -104,9 +104,23 @@ export const ProductDetailPage: React.FC = () => {
   const isSetProduct = Boolean(product.sellingOptions && product.sellingOptions.length > 0);
   const activeOptionObj = isSetProduct ? product.sellingOptions?.find((o) => o.name === selectedOption) : null;
   const activeSizeObj = product.sizes?.find((s) => s.name === selectedSize);
-  const currentPrice = isSetProduct
-    ? (activeOptionObj?.price ?? product.price)
-    : (activeSizeObj && activeSizeObj.price > 0 ? activeSizeObj.price : product.price);
+
+  let currentPrice = product.price;
+  if (isSetProduct) {
+    if (
+      selectedOption &&
+      activeSizeObj?.optionPrices &&
+      activeSizeObj.optionPrices[selectedOption] !== undefined &&
+      activeSizeObj.optionPrices[selectedOption] > 0
+    ) {
+      currentPrice = activeSizeObj.optionPrices[selectedOption];
+    } else if (activeOptionObj) {
+      currentPrice = activeOptionObj.price;
+    }
+  } else {
+    currentPrice = activeSizeObj && activeSizeObj.price > 0 ? activeSizeObj.price : product.price;
+  }
+
   const currentStock = activeSizeObj?.stock ?? (product.stock !== undefined ? product.stock : 999);
   const categoryName = typeof product.category === 'object' ? product.category?.name : 'Sản phẩm';
   const displayImages = getDisplayImages(product);
@@ -183,13 +197,13 @@ export const ProductDetailPage: React.FC = () => {
 
             {/* Price Box */}
             <div className="p-3 sm:p-4 rounded-2xl bg-gray-50 dark:bg-slate-700/40 border border-gray-100 dark:border-slate-700 mb-4">
-              <div className="flex items-baseline gap-2 sm:gap-3">
+              <div className="flex items-baseline gap-2 sm:gap-3 flex-wrap">
                 <span className="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400">
                   {formatCurrency(currentPrice)}
                 </span>
                 {selectedOption && (
                   <span className="text-xs font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/50 px-2 py-0.5 rounded-md border border-teal-200 dark:border-teal-800">
-                    Áp dụng cho: {selectedOption}
+                    Áp dụng cho: {selectedOption} {selectedSize ? `(Size ${selectedSize})` : ''}
                   </span>
                 )}
               </div>
@@ -204,6 +218,13 @@ export const ProductDetailPage: React.FC = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {product.sellingOptions.map((opt) => {
                     const isSelected = opt.name === selectedOption;
+                    const optPriceForCurrentSize =
+                      activeSizeObj?.optionPrices &&
+                      activeSizeObj.optionPrices[opt.name] !== undefined &&
+                      activeSizeObj.optionPrices[opt.name] > 0
+                        ? activeSizeObj.optionPrices[opt.name]
+                        : opt.price;
+
                     return (
                       <button
                         key={opt.name}
@@ -223,7 +244,7 @@ export const ProductDetailPage: React.FC = () => {
                           {isSelected && <CheckCircle2 size={13} className="text-teal-600 dark:text-teal-400 flex-shrink-0" />}
                         </div>
                         <span className="text-[11px] font-extrabold text-rose-600 dark:text-rose-400">
-                          {formatCurrency(opt.price)}
+                          {formatCurrency(optPriceForCurrentSize)}
                         </span>
                       </button>
                     );
@@ -247,7 +268,12 @@ export const ProductDetailPage: React.FC = () => {
                 <div className="flex flex-wrap gap-2">
                   {product.sizes.map((s) => {
                     const isSelected = s.name === selectedSize;
-                    const showSizePrice = !isSetProduct && s.price > 0;
+                    const sizeSpecificPrice = isSetProduct
+                      ? (selectedOption && s.optionPrices && s.optionPrices[selectedOption] !== undefined && s.optionPrices[selectedOption] > 0
+                          ? s.optionPrices[selectedOption]
+                          : null)
+                      : (s.price > 0 ? s.price : null);
+
                     return (
                       <button
                         key={s.name}
@@ -264,9 +290,9 @@ export const ProductDetailPage: React.FC = () => {
                       >
                         <span>{s.name}</span>
                         {isSelected && <CheckCircle2 size={13} className="text-blue-600 dark:text-blue-400" />}
-                        {showSizePrice && (
+                        {sizeSpecificPrice !== null && (
                           <span className="text-[10px] font-semibold text-rose-600 dark:text-rose-400 ml-0.5">
-                            ({formatCurrency(s.price)})
+                            ({formatCurrency(sizeSpecificPrice)})
                           </span>
                         )}
                       </button>
@@ -275,6 +301,7 @@ export const ProductDetailPage: React.FC = () => {
                 </div>
               </div>
             )}
+
 
             {/* COLOR SELECTOR */}
             {product.colors && product.colors.length > 0 && (

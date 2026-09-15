@@ -2,18 +2,33 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { CartItem, Product } from '@/shared/types';
 
 export const getCartItemPrice = (item: CartItem): number => {
-  if (item.selectedOption && item.product.sellingOptions && item.product.sellingOptions.length > 0) {
-    const optObj = item.product.sellingOptions.find((o) => o.name === item.selectedOption);
+  const isSet = Boolean(item.selectedOption && item.product.sellingOptions && item.product.sellingOptions.length > 0);
+  
+  if (isSet && item.selectedOption) {
+    if (item.selectedSize && item.product.sizes && item.product.sizes.length > 0) {
+      const sizeObj = item.product.sizes.find((s) => s.name === item.selectedSize);
+      if (
+        sizeObj?.optionPrices &&
+        sizeObj.optionPrices[item.selectedOption] !== undefined &&
+        sizeObj.optionPrices[item.selectedOption] > 0
+      ) {
+        return sizeObj.optionPrices[item.selectedOption];
+      }
+    }
+
+    const optObj = item.product.sellingOptions?.find((o) => o.name === item.selectedOption);
     if (optObj) {
       return optObj.price;
     }
   }
+
   if (item.selectedSize && item.product.sizes && item.product.sizes.length > 0) {
     const sizeObj = item.product.sizes.find((s) => s.name === item.selectedSize);
-    if (sizeObj) {
+    if (sizeObj && sizeObj.price > 0) {
       return sizeObj.price;
     }
   }
+
   return item.product.price;
 };
 

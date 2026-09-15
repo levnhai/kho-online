@@ -45,6 +45,31 @@ export class ProductsService {
       filter.subcategory = subcategory;
     }
 
+    if (query.type === 'set') {
+      filter['sellingOptions.0'] = { $exists: true };
+    } else if (query.type === 'single') {
+      if (filter.$or) {
+        const searchOr = filter.$or;
+        delete filter.$or;
+        filter.$and = [
+          { $or: searchOr },
+          {
+            $or: [
+              { sellingOptions: { $exists: false } },
+              { sellingOptions: { $size: 0 } },
+              { sellingOptions: null },
+            ],
+          },
+        ];
+      } else {
+        filter.$or = [
+          { sellingOptions: { $exists: false } },
+          { sellingOptions: { $size: 0 } },
+          { sellingOptions: null },
+        ];
+      }
+    }
+
     if (minPrice !== undefined || maxPrice !== undefined) {
       filter.price = {};
       if (minPrice !== undefined && minPrice !== '') {

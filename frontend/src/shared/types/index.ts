@@ -72,6 +72,7 @@ export interface ProductSize {
   salePrice?: number;
   stock?: number;
   sku?: string;
+  optionPrices?: Record<string, number>;
 }
 
 export interface Product {

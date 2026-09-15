@@ -32,6 +32,9 @@ export class ProductSize {
 
   @Prop({ default: '', trim: true })
   sku: string;
+
+  @Prop({ type: MongooseSchema.Types.Mixed, default: {} })
+  optionPrices?: Record<string, number>;
 }
 
 export const ProductSizeSchema = SchemaFactory.createForClass(ProductSize);

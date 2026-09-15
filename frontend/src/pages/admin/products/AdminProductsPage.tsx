@@ -27,6 +27,8 @@ import {
   ChevronRight,
   ChevronLeft,
   Check,
+  Copy,
+  RotateCcw,
 } from "lucide-react";
 import { productApi } from "@/entities/product/api/productApi";
 import { categoryApi } from "@/entities/category/api/categoryApi";
@@ -80,6 +82,7 @@ export const AdminProductsPage: React.FC = () => {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSubcategory, setSelectedSubcategory] = useState("");
+  const [selectedType, setSelectedType] = useState<string>("");
 
   // Modal State
   const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
@@ -162,6 +165,7 @@ export const AdminProductsPage: React.FC = () => {
         search: search || undefined,
         category: selectedCategory || undefined,
         subcategory: selectedSubcategory || undefined,
+        type: selectedType || undefined,
         limit: 50,
       });
       setProducts(res.items);
@@ -171,7 +175,7 @@ export const AdminProductsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [search, selectedCategory, selectedSubcategory]);
+  }, [search, selectedCategory, selectedSubcategory, selectedType]);
 
   useEffect(() => {
     categoryApi.getAll().then(setCategories).catch(console.error);
@@ -482,6 +486,52 @@ export const AdminProductsPage: React.FC = () => {
     setSelectedModalSizes(available);
   };
 
+  const handleUpdateSizeOptionPrice = (
+    sizeIndex: number,
+    optionName: string,
+    value: string | number,
+  ) => {
+    const updated = [...sizesList];
+    const targetSize = { ...updated[sizeIndex] };
+    const numVal = value === "" ? 0 : Number(value);
+    targetSize.optionPrices = {
+      ...(targetSize.optionPrices || {}),
+      [optionName]: numVal,
+    };
+    updated[sizeIndex] = targetSize;
+    setSizesList(updated);
+  };
+
+  const handleCopySizePricesToAll = (sourceIndex: number) => {
+    const sourceSize = sizesList[sourceIndex];
+    if (!sourceSize) return;
+
+    const sourcePrices = sourceSize.optionPrices || {};
+    const updated = sizesList.map((s, idx) => {
+      if (idx === sourceIndex) return s;
+      return {
+        ...s,
+        optionPrices: { ...sourcePrices },
+      };
+    });
+    setSizesList(updated);
+  };
+
+  const handleSyncBasePricesToSizes = () => {
+    const baseMap: Record<string, number> = {};
+    sellingOptionsList.forEach((opt) => {
+      if (opt.name) {
+        baseMap[opt.name] = Number(opt.price) || 0;
+      }
+    });
+
+    const updated = sizesList.map((s) => ({
+      ...s,
+      optionPrices: { ...baseMap },
+    }));
+    setSizesList(updated);
+  };
+
   const handleConfirmAddSizes = async () => {
     setModalSizeError("");
     const sizesToAdd: string[] = [...selectedModalSizes];
@@ -530,11 +580,23 @@ export const AdminProductsPage: React.FC = () => {
           ? price
           : 0;
 
+    // Chuẩn bị default optionPrices nếu là sản phẩm Set
+    const initialOptionPrices: Record<string, number> = {};
+    if (productType === "set") {
+      sellingOptionsList.forEach((opt) => {
+        if (opt.name) {
+          initialOptionPrices[opt.name] = Number(opt.price) || 0;
+        }
+      });
+    }
+
     const newItems: ProductSize[] = sizesToAdd.map((sz) => ({
       name: sz,
       price: productType === "set" ? 0 : finalPrice,
       salePrice: 0,
       stock: 0,
+      optionPrices:
+        productType === "set" ? { ...initialOptionPrices } : undefined,
     }));
 
     setSizesList((prev) => [...prev, ...newItems]);
@@ -551,9 +613,26 @@ export const AdminProductsPage: React.FC = () => {
     const available = dbSizes.find((s) => !chosenNames.includes(s.name));
     const nextName =
       presetName || (available ? available.name : dbSizes[0]?.name || "M");
+
+    const initialOptionPrices: Record<string, number> = {};
+    if (productType === "set") {
+      sellingOptionsList.forEach((opt) => {
+        if (opt.name) {
+          initialOptionPrices[opt.name] = Number(opt.price) || 0;
+        }
+      });
+    }
+
     setSizesList([
       ...sizesList,
-      { name: nextName, price: defaultPrice, salePrice: 0, stock: 0 },
+      {
+        name: nextName,
+        price: defaultPrice,
+        salePrice: 0,
+        stock: 0,
+        optionPrices:
+          productType === "set" ? { ...initialOptionPrices } : undefined,
+      },
     ]);
   };
 
@@ -625,7 +704,9 @@ export const AdminProductsPage: React.FC = () => {
       const created = await colorApi.create({
         name: trimmedName,
         code: codeToUse,
-        hexCode: newCustomColorHex ? newCustomColorHex.toUpperCase() : "#000000",
+        hexCode: newCustomColorHex
+          ? newCustomColorHex.toUpperCase()
+          : "#000000",
         isActive: true,
       });
 
@@ -817,6 +898,16 @@ export const AdminProductsPage: React.FC = () => {
                 {cat.name}
               </option>
             ))}
+          </select>
+
+          <select
+            value={selectedType}
+            onChange={(e) => setSelectedType(e.target.value)}
+            className="py-1.5 px-2.5 text-xs border border-gray-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none shadow-2xs font-semibold cursor-pointer"
+          >
+            <option value="">Tất cả loại hình</option>
+            <option value="set">Bán Set</option>
+            <option value="single">Bán lẻ</option>
           </select>
 
           {filterSubcategories.length > 0 && (
@@ -1694,8 +1785,204 @@ export const AdminProductsPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Danh sách các dòng Size: DÙNG THẺ SELECT */}
-                {sizesList.length > 0 ? (
+                {/* Danh sách các dòng Size */}
+                {productType === "set" ? (
+                  // =================== GIAO DIỆN MA TRẬN GIÁ CHO SẢN PHẨM SET ===================
+                  sellingOptionsList.length === 0 ? (
+                    <div className="p-5 bg-amber-50 dark:bg-amber-950/30 rounded-xl text-center space-y-2 border border-amber-200 dark:border-amber-900/50">
+                      <p className="text-xs text-amber-800 dark:text-amber-300 font-semibold">
+                        Chưa có món nào trong Set đồ. Vui lòng quay lại{" "}
+                        <b>Tab 2 (Món trong Set)</b> để cấu hình các món trước.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setFormTab("pricing")}
+                        className="text-xs font-bold text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700"
+                      >
+                        Quay lại Tab 2: Cấu hình món
+                      </Button>
+                    </div>
+                  ) : sizesList.length > 0 ? (
+                    <div className="space-y-3">
+                      {/* Tiện ích thao tác nhanh cho Ma trận giá */}
+                      <div className="flex items-center justify-between gap-2 px-1 text-xs">
+                        <span className="text-[11px] text-gray-500 dark:text-slate-400 font-medium">
+                          * Nhập giá bán riêng cho từng món theo từng kích cỡ
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleSyncBasePricesToSizes}
+                          className="flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors cursor-pointer"
+                          title="Điền lại giá niêm yết từ Tab 2 vào tất cả size"
+                        >
+                          <RotateCcw size={12} />
+                          <span>Đồng bộ</span>
+                        </button>
+                      </div>
+
+                      {/* Bảng Ma Trận Giá Món x Size */}
+                      <div className="overflow-x-auto rounded-xl border border-indigo-200/80 dark:border-indigo-900/60 shadow-2xs max-h-80 overflow-y-auto">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead className="bg-indigo-100/70 dark:bg-slate-800 text-gray-700 dark:text-slate-200 text-[11px] font-bold sticky top-0 z-10">
+                            <tr>
+                              <th className="p-2.5 min-w-[130px] border-b border-indigo-200 dark:border-indigo-900/60">
+                                Kích cỡ (Size)
+                              </th>
+                              {sellingOptionsList.map((opt, optIdx) => (
+                                <th
+                                  key={optIdx}
+                                  className="p-2.5 min-w-[145px] border-b border-indigo-200 dark:border-indigo-900/60"
+                                >
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="truncate">
+                                      {opt.name || `Món ${optIdx + 1}`}
+                                    </span>
+                                    {optIdx === 0 && (
+                                      <span className="text-[9px] px-1 py-0.2 bg-amber-500 text-white rounded font-extrabold flex-shrink-0">
+                                        ★ Set
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-[10px] text-gray-500 dark:text-slate-400 font-normal">
+                                    Chuẩn: {formatCurrency(opt.price || 0)}
+                                  </div>
+                                </th>
+                              ))}
+                              <th className="p-2.5 w-20 text-center border-b border-indigo-200 dark:border-indigo-900/60">
+                                Thao tác
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100 dark:divide-slate-800 bg-white dark:bg-slate-900/90">
+                            {sizesList.map((s, sIdx) => (
+                              <tr
+                                key={sIdx}
+                                className="hover:bg-indigo-50/30 dark:hover:bg-slate-800/50 transition-colors"
+                              >
+                                {/* Cột 1: Chọn Size */}
+                                <td className="p-2.5 align-middle">
+                                  <select
+                                    value={s.name}
+                                    onChange={(e) =>
+                                      handleUpdateSize(
+                                        sIdx,
+                                        "name",
+                                        e.target.value,
+                                      )
+                                    }
+                                    className="w-full text-xs font-bold px-2 py-1.5 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                                  >
+                                    <option value="">-- Chọn size --</option>
+                                    {dbSizes.map((item) => (
+                                      <option key={item._id} value={item.name}>
+                                        {item.name}
+                                      </option>
+                                    ))}
+                                    {s.name &&
+                                      !dbSizes.some(
+                                        (item) => item.name === s.name,
+                                      ) && (
+                                        <option value={s.name}>{s.name}</option>
+                                      )}
+                                    <option
+                                      value="__NEW__"
+                                      className="text-blue-600 font-bold"
+                                    >
+                                      + Tạo size mới...
+                                    </option>
+                                  </select>
+                                </td>
+
+                                {/* Các cột giá cho từng món trong Set */}
+                                {sellingOptionsList.map((opt, optIdx) => {
+                                  const currentOptPrice =
+                                    s.optionPrices &&
+                                    s.optionPrices[opt.name] !== undefined
+                                      ? s.optionPrices[opt.name]
+                                      : opt.price || 0;
+
+                                  return (
+                                    <td
+                                      key={optIdx}
+                                      className="p-2.5 align-middle"
+                                    >
+                                      <div className="relative">
+                                        <input
+                                          type="number"
+                                          value={
+                                            currentOptPrice === 0
+                                              ? ""
+                                              : currentOptPrice
+                                          }
+                                          onChange={(e) =>
+                                            handleUpdateSizeOptionPrice(
+                                              sIdx,
+                                              opt.name,
+                                              e.target.value,
+                                            )
+                                          }
+                                          placeholder={String(opt.price || 0)}
+                                          className="w-full text-xs font-bold pr-8 pl-2 py-1.5 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-teal-600 dark:text-teal-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs"
+                                        />
+                                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-gray-400 dark:text-slate-500 pointer-events-none">
+                                          đ
+                                        </span>
+                                      </div>
+                                    </td>
+                                  );
+                                })}
+
+                                {/* Cột thao tác */}
+                                <td className="p-2.5 text-center align-middle">
+                                  <div className="flex items-center justify-center gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleCopySizePricesToAll(sIdx)
+                                      }
+                                      className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded-lg transition-colors cursor-pointer"
+                                      title="Sao chép giá của size này cho tất cả size khác"
+                                    >
+                                      <Copy size={14} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveSize(sIdx)}
+                                      className="p-1.5 text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
+                                      title="Xóa size này"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-5 bg-white/70 dark:bg-slate-900/60 rounded-xl text-center space-y-2 border border-dashed border-indigo-300 dark:border-indigo-800">
+                      <p className="text-xs text-gray-500 dark:text-slate-400 font-medium">
+                        Sản phẩm này chưa được tạo size riêng (sẽ áp dụng giá
+                        niêm yết chuẩn ở Tab 2).
+                      </p>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        icon={<Plus size={14} />}
+                        onClick={() => handleAddNewSizeRow()}
+                        className="text-xs font-bold text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-700"
+                      >
+                        Thêm size đầu tiên
+                      </Button>
+                    </div>
+                  )
+                ) : // =================== GIAO DIỆN SIZE SẢN PHẨM ĐƠN LẺ ===================
+                sizesList.length > 0 ? (
                   <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
                     {sizesList.map((s, idx) => (
                       <div
@@ -1757,33 +2044,27 @@ export const AdminProductsPage: React.FC = () => {
                             </select>
                           </div>
 
-                          {/* Thẻ 2: Ô nhập Giá cho Size (ẨN KHI BÁN THEO SET) */}
-                          {productType === "single" ? (
-                            <div className="w-28 sm:w-40 relative flex-shrink-0">
-                              <input
-                                type="number"
-                                value={s.price === 0 ? "" : s.price}
-                                onChange={(e) =>
-                                  handleUpdateSize(
-                                    idx,
-                                    "price",
-                                    e.target.value === ""
-                                      ? 0
-                                      : Number(e.target.value),
-                                  )
-                                }
-                                placeholder="0"
-                                className="w-full text-xs font-bold pr-8 sm:pr-10 pl-2.5 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs"
-                              />
-                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] sm:text-[10px] font-bold text-gray-400 dark:text-slate-500 pointer-events-none">
-                                VNĐ
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="w-28 sm:w-40 px-2 py-2 rounded-lg bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/80 text-teal-700 dark:text-teal-300 text-[10px] sm:text-xs font-bold flex items-center justify-center shadow-2xs flex-shrink-0">
-                              <span>Giá theo món</span>
-                            </div>
-                          )}
+                          {/* Thẻ 2: Ô nhập Giá cho Size */}
+                          <div className="w-28 sm:w-40 relative flex-shrink-0">
+                            <input
+                              type="number"
+                              value={s.price === 0 ? "" : s.price}
+                              onChange={(e) =>
+                                handleUpdateSize(
+                                  idx,
+                                  "price",
+                                  e.target.value === ""
+                                    ? 0
+                                    : Number(e.target.value),
+                                )
+                              }
+                              placeholder="0"
+                              className="w-full text-xs font-bold pr-8 sm:pr-10 pl-2.5 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs"
+                            />
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] sm:text-[10px] font-bold text-gray-400 dark:text-slate-500 pointer-events-none">
+                              VNĐ
+                            </span>
+                          </div>
 
                           {/* Nút Xóa Size trên desktop */}
                           <button
@@ -1812,7 +2093,7 @@ export const AdminProductsPage: React.FC = () => {
                       onClick={() => handleAddNewSizeRow()}
                       className="text-xs font-bold text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-700"
                     >
-                      d + Thêm size
+                      Thêm size
                     </Button>
                   </div>
                 )}
@@ -2364,7 +2645,9 @@ export const AdminProductsPage: React.FC = () => {
                 type="text"
                 placeholder={`VD: M${dbColors.length + 1}, TITAN, HONG...`}
                 value={newCustomColorCode}
-                onChange={(e) => setNewCustomColorCode(e.target.value.toUpperCase())}
+                onChange={(e) =>
+                  setNewCustomColorCode(e.target.value.toUpperCase())
+                }
                 className="rounded-xl text-xs uppercase font-mono font-bold"
               />
             </div>
