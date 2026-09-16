@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { PackageSearch, Filter, X } from 'lucide-react';
+import { PackageSearch, Filter, X, ChevronDown } from 'lucide-react';
 import { FilterSidebar } from '@/widgets/filter-sidebar/FilterSidebar';
 import { ProductCard } from '@/entities/product/ui/ProductCard';
 import { productApi } from '@/entities/product/api/productApi';
@@ -9,6 +9,7 @@ import { useCart } from '@/entities/cart/CartContext';
 import { useSocket } from '@/app/providers/SocketContext';
 import { Product, Category } from '@/shared/types';
 import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
+import { Pagination } from '@/shared/ui/Pagination';
 
 export const ProductsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -18,7 +19,9 @@ export const ProductsPage: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
   // Filter States synced with URL
@@ -45,23 +48,28 @@ export const ProductsPage: React.FC = () => {
     };
   }, [mobileFilterOpen]);
 
+  const getPriceFilterParams = useCallback(() => {
+    let minPrice: number | undefined;
+    let maxPrice: number | undefined;
+
+    if (priceRange === 'under-500k') {
+      maxPrice = 500000;
+    } else if (priceRange === '500k-1m') {
+      minPrice = 500000;
+      maxPrice = 1000000;
+    } else if (priceRange === '1m-5m') {
+      minPrice = 1000000;
+      maxPrice = 5000000;
+    } else if (priceRange === 'above-5m') {
+      minPrice = 5000000;
+    }
+    return { minPrice, maxPrice };
+  }, [priceRange]);
+
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      let minPrice: number | undefined;
-      let maxPrice: number | undefined;
-
-      if (priceRange === 'under-500k') {
-        maxPrice = 500000;
-      } else if (priceRange === '500k-1m') {
-        minPrice = 500000;
-        maxPrice = 1000000;
-      } else if (priceRange === '1m-5m') {
-        minPrice = 1000000;
-        maxPrice = 5000000;
-      } else if (priceRange === 'above-5m') {
-        minPrice = 5000000;
-      }
+      const { minPrice, maxPrice } = getPriceFilterParams();
 
       const res = await productApi.getAll({
         category: selectedCategory || undefined,
@@ -76,16 +84,51 @@ export const ProductsPage: React.FC = () => {
 
       setProducts(res.items);
       setTotal(res.total);
+      setTotalPages(res.totalPages || Math.ceil(res.total / 12) || 1);
     } catch (err) {
       console.error('Fetch products error:', err);
     } finally {
       setLoading(false);
     }
-  }, [selectedCategory, selectedSubcategory, searchKeyword, priceRange, sortOption, currentPage]);
+  }, [selectedCategory, selectedSubcategory, searchKeyword, sortOption, currentPage, getPriceFilterParams]);
 
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
+
+  // Xử lý xem thêm sản phẩm trên Mobile
+  const handleLoadMore = async () => {
+    if (loadingMore || products.length >= total) return;
+    setLoadingMore(true);
+    try {
+      const nextPage = Math.floor(products.length / 12) + 1;
+      const { minPrice, maxPrice } = getPriceFilterParams();
+
+      const res = await productApi.getAll({
+        category: selectedCategory || undefined,
+        subcategory: selectedSubcategory || undefined,
+        search: searchKeyword || undefined,
+        minPrice,
+        maxPrice,
+        sort: sortOption,
+        page: nextPage,
+        limit: 12,
+      });
+
+      // Tránh trùng lặp ID sản phẩm nếu có
+      setProducts((prev) => {
+        const existingIds = new Set(prev.map((p) => p._id));
+        const uniqueNewItems = res.items.filter((p) => !existingIds.has(p._id));
+        return [...prev, ...uniqueNewItems];
+      });
+      setTotal(res.total);
+      setTotalPages(res.totalPages || Math.ceil(res.total / 12) || 1);
+    } catch (err) {
+      console.error('Load more products error:', err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   // Lắng nghe realtime khi Admin sửa giá / cập nhật sản phẩm
   useEffect(() => {
@@ -129,6 +172,13 @@ export const ProductsPage: React.FC = () => {
     }
     newParams.set('page', '1');
     setSearchParams(newParams);
+  };
+
+  const handlePageChange = (page: number) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('page', String(page));
+    setSearchParams(newParams);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSelectCategory = (catId: string) => {
@@ -236,15 +286,62 @@ export const ProductsPage: React.FC = () => {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 sm:gap-6">
-                {products.map((product) => (
-                  <ProductCard
-                    key={product._id}
-                    product={product}
-                    onAddToCart={addToCart}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 sm:gap-6">
+                  {products.map((product) => (
+                    <ProductCard
+                      key={product._id}
+                      product={product}
+                      onAddToCart={addToCart}
+                    />
+                  ))}
+                </div>
+
+                {/* Mobile: Nút "Xem thêm" */}
+                {products.length < total && (
+                  <div className="mt-6 flex flex-col items-center justify-center gap-2 lg:hidden">
+                    <button
+                      type="button"
+                      onClick={handleLoadMore}
+                      disabled={loadingMore}
+                      className="w-full max-w-sm py-3 px-5 rounded-2xl bg-white dark:bg-slate-800 border-2 border-blue-600 dark:border-blue-500 text-blue-600 dark:text-blue-400 font-bold text-sm shadow-md hover:bg-blue-50 dark:hover:bg-slate-700/60 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      {loadingMore ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-blue-600 dark:border-blue-400 border-t-transparent rounded-full animate-spin" />
+                          <span>Đang tải thêm...</span>
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown size={18} />
+                          <span>Xem thêm ({total - products.length} sản phẩm)</span>
+                        </>
+                      )}
+                    </button>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      Đang hiển thị {products.length} / {total} sản phẩm
+                    </span>
+                  </div>
+                )}
+
+                {/* Mobile: Thông báo khi đã xem hết */}
+                {products.length >= total && total > 12 && (
+                  <div className="mt-6 text-center lg:hidden py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100/70 dark:bg-slate-800/60 rounded-xl">
+                    ✓ Đã hiển thị tất cả {total} sản phẩm
+                  </div>
+                )}
+
+                {/* Desktop: Phân trang Pagination */}
+                {totalPages > 1 && (
+                  <div className="hidden lg:flex justify-center mt-10 pt-4 border-t border-gray-100 dark:border-slate-800">
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={handlePageChange}
+                    />
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
