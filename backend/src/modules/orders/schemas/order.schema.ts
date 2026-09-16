@@ -99,6 +99,9 @@ export class Order {
   @Prop({ default: OrderStatus.PENDING, enum: OrderStatus })
   status: OrderStatus;
 
+  @Prop({ default: '', trim: true })
+  adminNote?: string;
+
   @Prop({ default: Date.now })
   orderDate: Date;
 }

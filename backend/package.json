@@ -6,7 +6,8 @@
     "build": "node node_modules/@nestjs/cli/bin/nest.js build",
     "start": "node node_modules/@nestjs/cli/bin/nest.js start",
     "start:dev": "node node_modules/@nestjs/cli/bin/nest.js start --watch",
-    "start:prod": "node dist/main.js"
+    "start:prod": "node dist/main.js",
+    "db:clone-dev": "ts-node src/database/seeds/clone-dev.ts"
   },
   "dependencies": {
     "@nestjs/cli": "^10.3.0",

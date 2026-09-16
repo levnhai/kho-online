@@ -144,6 +144,7 @@ export interface Order {
   totalAmount: number;
   paymentMethod: PaymentMethod;
   status: OrderStatus;
+  adminNote?: string;
   orderDate: string;
   createdAt: string;
 }

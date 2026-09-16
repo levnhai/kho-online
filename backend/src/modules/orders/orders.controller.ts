@@ -51,8 +51,22 @@ export class OrdersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Patch(':id/status')
-  async updateStatus(@Param('id') id: string, @Body('status') status: OrderStatus) {
-    return this.ordersService.updateStatus(id, status);
+  async updateStatus(
+    @Param('id') id: string,
+    @Body('status') status: OrderStatus,
+    @Body('adminNote') adminNote?: string,
+  ) {
+    return this.ordersService.updateStatus(id, status, adminNote);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Patch(':id/admin-note')
+  async updateAdminNote(
+    @Param('id') id: string,
+    @Body('adminNote') adminNote: string,
+  ) {
+    return this.ordersService.updateAdminNote(id, adminNote);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

@@ -19,6 +19,7 @@ import {
   XCircle,
   Tag,
   Palette,
+  MessageSquare,
 } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthContext";
 import { useSocket } from "@/app/providers/SocketContext";
@@ -720,6 +721,17 @@ export const AccountPage: React.FC = () => {
                             </div>
                           </div>
 
+                          {/* 3.1. Ghi chú từ Shop (Admin Note) nếu có */}
+                          {ord.adminNote && (
+                            <div className="bg-amber-50/80 dark:bg-amber-950/40 px-3 py-2.5 rounded-xl border border-amber-200/80 dark:border-amber-900/60 flex items-start gap-2 text-xs text-amber-900 dark:text-amber-200 shadow-2xs">
+                              <MessageSquare size={14} className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                              <div className="min-w-0 flex-1 leading-relaxed">
+                                <span className="font-bold">Ghi chú từ Shop: </span>
+                                <span>{ord.adminNote}</span>
+                              </div>
+                            </div>
+                          )}
+
                           {/* 4. Footer: Tổng tiền & Các nút hành động */}
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-gray-100 dark:border-slate-700/70">
                             <div className="flex items-baseline gap-2 flex-wrap">
@@ -830,11 +842,24 @@ export const AccountPage: React.FC = () => {
                   </p>
                   {selectedOrder.customerInfo?.note && (
                     <p className="text-gray-500 dark:text-gray-400 italic">
-                      <strong>Ghi chú:</strong> "{selectedOrder.customerInfo.note}"
+                      <strong>Ghi chú người mua:</strong> "{selectedOrder.customerInfo.note}"
                     </p>
                   )}
                 </div>
               </div>
+
+              {/* Lời nhắn / Ghi chú từ Shop (Admin Note) nếu có */}
+              {selectedOrder.adminNote && (
+                <div className="p-3.5 bg-amber-50/80 dark:bg-amber-950/40 rounded-2xl border border-amber-200/80 dark:border-amber-900/60 text-xs space-y-1.5 shadow-2xs">
+                  <h4 className="font-bold text-amber-900 dark:text-amber-300 flex items-center gap-1.5">
+                    <MessageSquare size={14} className="text-amber-600 dark:text-amber-400" />
+                    Ghi chú từ Shop
+                  </h4>
+                  <p className="text-amber-950 dark:text-amber-100 pl-5 leading-relaxed font-medium">
+                    {selectedOrder.adminNote}
+                  </p>
+                </div>
+              )}
 
               {/* Danh sách sản phẩm */}
               <div>

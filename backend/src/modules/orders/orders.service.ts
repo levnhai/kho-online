@@ -230,7 +230,7 @@ export class OrdersService {
     };
   }
 
-  async updateStatus(id: string, status: OrderStatus): Promise<OrderDocument> {
+  async updateStatus(id: string, status: OrderStatus, adminNote?: string): Promise<OrderDocument> {
     const order = await this.orderModel.findById(id);
     if (!order) {
       throw new NotFoundException('Không tìm thấy đơn hàng');
@@ -246,6 +246,20 @@ export class OrdersService {
     }
 
     order.status = status;
+    if (adminNote !== undefined) {
+      order.adminNote = (adminNote || '').trim();
+    }
+    const savedOrder = await order.save();
+    this.eventsGateway.notifyOrderStatusUpdated(savedOrder);
+    return savedOrder;
+  }
+
+  async updateAdminNote(id: string, adminNote: string): Promise<OrderDocument> {
+    const order = await this.orderModel.findById(id);
+    if (!order) {
+      throw new NotFoundException('Không tìm thấy đơn hàng');
+    }
+    order.adminNote = (adminNote || '').trim();
     const savedOrder = await order.save();
     this.eventsGateway.notifyOrderStatusUpdated(savedOrder);
     return savedOrder;

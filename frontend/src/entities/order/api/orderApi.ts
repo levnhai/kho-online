@@ -22,8 +22,11 @@ export const orderApi = {
   getById: (id: string): Promise<Order> => {
     return api.get(`/orders/${id}`);
   },
-  updateStatus: (id: string, status: OrderStatus): Promise<Order> => {
-    return api.patch(`/orders/${id}/status`, { status });
+  updateStatus: (id: string, status: OrderStatus, adminNote?: string): Promise<Order> => {
+    return api.patch(`/orders/${id}/status`, { status, adminNote });
+  },
+  updateAdminNote: (id: string, adminNote: string): Promise<Order> => {
+    return api.patch(`/orders/${id}/admin-note`, { adminNote });
   },
   cancelMyOrder: (id: string): Promise<Order> => {
     return api.patch(`/orders/${id}/cancel`);
