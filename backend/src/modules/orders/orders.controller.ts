@@ -71,6 +71,43 @@ export class OrdersController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
+  @Post(':id/deliveries')
+  async addDeliveryBatch(
+    @Param('id') id: string,
+    @Body() deliveryDto: any,
+  ) {
+    return this.ordersService.addDeliveryBatch(id, deliveryDto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Patch(':id/deliveries/:batchIndex/status')
+  async updateDeliveryBatchStatus(
+    @Param('id') id: string,
+    @Param('batchIndex') batchIndex: number,
+    @Body('status') status: string,
+    @Body('note') note?: string,
+  ) {
+    return this.ordersService.updateDeliveryBatchStatus(
+      id,
+      Number(batchIndex),
+      status,
+      note,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Delete(':id/deliveries/:batchIndex')
+  async deleteDeliveryBatch(
+    @Param('id') id: string,
+    @Param('batchIndex') batchIndex: number,
+  ) {
+    return this.ordersService.deleteDeliveryBatch(id, Number(batchIndex));
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Delete(':id')
   async deleteOrder(@Param('id') id: string) {
     return this.ordersService.delete(id);

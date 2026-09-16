@@ -28,6 +28,19 @@ export const orderApi = {
   updateAdminNote: (id: string, adminNote: string): Promise<Order> => {
     return api.patch(`/orders/${id}/admin-note`, { adminNote });
   },
+  addDeliveryBatch: (id: string, data: any): Promise<Order> => {
+    return api.post(`/orders/${id}/deliveries`, data);
+  },
+  deleteDeliveryBatch: (id: string, batchIndex: number): Promise<Order> => {
+    return api.delete(`/orders/${id}/deliveries/${batchIndex}`);
+  },
+  updateDeliveryBatchStatus: (
+    id: string,
+    batchIndex: number,
+    data: { status: string; note?: string },
+  ): Promise<Order> => {
+    return api.patch(`/orders/${id}/deliveries/${batchIndex}/status`, data);
+  },
   cancelMyOrder: (id: string): Promise<Order> => {
     return api.patch(`/orders/${id}/cancel`);
   },

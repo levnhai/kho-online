@@ -20,6 +20,8 @@ import {
   Tag,
   Palette,
   MessageSquare,
+  Truck,
+  Layers,
 } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthContext";
 import { useSocket } from "@/app/providers/SocketContext";
@@ -33,6 +35,8 @@ import {
   formatDate,
   getOrderStatusText,
   getOrderStatusColor,
+  getDeliveryBatchStatusText,
+  getDeliveryBatchStatusColor,
   getPaymentMethodText,
   cleanProductName,
 } from "@/shared/lib/formatters";
@@ -46,10 +50,11 @@ import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
 const ORDER_STATUS_TABS = [
   { key: "ALL", label: "Tất cả" },
   { key: "PENDING", label: "Xử lý" },
-  { key: "CONFIRMED", label: "xác nhận" },
+  { key: "CONFIRMED", label: "Xác nhận" },
   { key: "SHIPPING_TO_VN", label: "Đang về Việt Nam" },
   { key: "IN_VN_WAREHOUSE", label: "Kho Việt Nam" },
   { key: "SHIPPING", label: "Vận chuyển" },
+  { key: "PARTIAL_DELIVERED", label: "Giao 1 phần" },
   { key: "COMPLETED", label: "Hoàn thành" },
   { key: "CANCELLED", label: "Đã huỷ" },
 ];
@@ -721,7 +726,47 @@ export const AccountPage: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* 3.1. Ghi chú từ Shop (Admin Note) nếu có */}
+                          {/* 3.1. Tiến độ giao hàng từng phần nếu có */}
+                          {ord.deliveries && ord.deliveries.length > 0 && (() => {
+                            const totalDelivered = ord.deliveries.reduce(
+                              (s, b) => s + (b.totalQuantity || b.items?.reduce((is, it) => is + (it.deliveredQuantity || it.quantity || 0), 0) || 0),
+                              0
+                            );
+                            const totalOrdered = ord.items.reduce((s, it) => s + it.quantity, 0);
+                            const percent = Math.min(100, Math.round((totalDelivered / (totalOrdered || 1)) * 100));
+                            const lastBatch = ord.deliveries[ord.deliveries.length - 1];
+
+                            return (
+                              <div className="p-3 bg-sky-50/80 dark:bg-sky-950/40 rounded-2xl border border-sky-200/80 dark:border-sky-900/60 space-y-2 shadow-2xs">
+                                <div className="flex items-center justify-between text-xs font-bold text-sky-900 dark:text-sky-200">
+                                  <span className="flex items-center gap-1.5">
+                                    <Truck size={14} className="text-sky-600 dark:text-sky-400" />
+                                    Tiến độ nhận hàng: {totalDelivered}/{totalOrdered} sản phẩm ({ord.deliveries.length} đợt giao)
+                                  </span>
+                                  <span className="text-[11px] font-mono font-extrabold text-sky-700 dark:text-sky-300">
+                                    {percent}%
+                                  </span>
+                                </div>
+                                <div className="w-full h-2 bg-sky-100 dark:bg-sky-900/60 rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-gradient-to-r from-sky-500 to-blue-600 rounded-full transition-all duration-500"
+                                    style={{ width: `${percent}%` }}
+                                  />
+                                </div>
+                                <div className="text-[11px] text-sky-700 dark:text-sky-300 flex items-center justify-between flex-wrap gap-1">
+                                  <span>Đợt gần nhất: <strong>Đợt {ord.deliveries.length}</strong></span>
+                                  <span>{formatDate(lastBatch?.deliveredAt || (lastBatch as any)?.deliveryDate)}</span>
+                                </div>
+                                {lastBatch?.note && (
+                                  <p className="text-[11px] text-amber-700 dark:text-amber-300 italic pt-0.5">
+                                    Ghi chú đợt {ord.deliveries.length}: "{lastBatch.note}"
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })()}
+
+                          {/* 3.2. Ghi chú từ Shop (Admin Note) nếu có */}
                           {ord.adminNote && (
                             <div className="bg-amber-50/80 dark:bg-amber-950/40 px-3 py-2.5 rounded-xl border border-amber-200/80 dark:border-amber-900/60 flex items-start gap-2 text-xs text-amber-900 dark:text-amber-200 shadow-2xs">
                               <MessageSquare size={14} className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
@@ -861,6 +906,94 @@ export const AccountPage: React.FC = () => {
                 </div>
               )}
 
+              {/* Lịch sử các đợt giao hàng nếu có */}
+              {selectedOrder.deliveries && selectedOrder.deliveries.length > 0 && (
+                <div className="bg-sky-50/70 dark:bg-sky-950/30 rounded-2xl border border-sky-200/80 dark:border-sky-900/60 p-3.5 space-y-3">
+                  <div className="flex items-center justify-between border-b border-sky-200/60 dark:border-sky-900/50 pb-2">
+                    <div className="flex items-center gap-2">
+                      <Truck size={16} className="text-sky-600 dark:text-sky-400" />
+                      <span className="font-bold text-sky-950 dark:text-sky-100 text-xs uppercase tracking-wider">
+                        CÁC ĐỢT GIAO HÀNG ({selectedOrder.deliveries.length} đợt)
+                      </span>
+                    </div>
+                    {(() => {
+                      const totalDelivered = selectedOrder.deliveries.reduce(
+                        (s, b) => s + (b.totalQuantity || b.items?.reduce((is, it) => is + it.deliveredQuantity, 0) || 0),
+                        0
+                      );
+                      const totalOrdered = selectedOrder.items.reduce((s, it) => s + it.quantity, 0);
+                      return (
+                        <span className="text-[11px] font-bold text-sky-700 dark:text-sky-300 bg-sky-100 dark:bg-sky-900/60 px-2.5 py-0.5 rounded-full">
+                          Đã nhận: {totalDelivered}/{totalOrdered} SP
+                        </span>
+                      );
+                    })()}
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {selectedOrder.deliveries.map((batch, bIdx) => {
+                      const bColor = getDeliveryBatchStatusColor(batch.status);
+                      return (
+                        <div
+                          key={batch._id || (batch as any).batchIndex || bIdx}
+                          className="p-3 bg-white dark:bg-slate-800/90 rounded-xl border border-sky-100 dark:border-slate-700 shadow-2xs space-y-2"
+                        >
+                          <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-extrabold text-gray-900 dark:text-white flex items-center gap-1.5">
+                                <span className="w-5 h-5 rounded-full bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300 text-[10px] font-black flex items-center justify-center">
+                                  {bIdx + 1}
+                                </span>
+                                Đợt {bIdx + 1}
+                              </span>
+                              <span
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border shadow-2xs ${bColor.bg} ${bColor.text} ${bColor.border}`}
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                                <span>{getDeliveryBatchStatusText(batch.status)}</span>
+                              </span>
+                            </div>
+                            <span className="text-[11px] text-gray-400 dark:text-gray-400">
+                              {formatDate(batch.deliveredAt || (batch as any).deliveryDate)}
+                            </span>
+                          </div>
+
+                          {batch.items && batch.items.length > 0 && (
+                            <div className="text-[11px] text-gray-600 dark:text-gray-300 pl-2 border-l-2 border-sky-400 dark:border-sky-600 space-y-1">
+                              {batch.items.map((bItem, itIdx) => {
+                                const origItem = selectedOrder.items?.find((it: any) => 
+                                  (it._id && it._id === (bItem as any).orderItemId) ||
+                                  (it.product && ((typeof it.product === 'object' ? it.product._id : it.product) === bItem.product)) ||
+                                  (it.name === bItem.name && it.size === bItem.size && it.color === bItem.color)
+                                );
+                                return (
+                                  <div key={itIdx} className="flex items-center justify-between">
+                                    <span className="truncate pr-2">
+                                      • {origItem ? cleanProductName(origItem.name) : bItem.name || "Sản phẩm"}
+                                      {bItem.size ? ` (Size: ${bItem.size})` : ""}
+                                      {bItem.color ? ` (Màu: ${bItem.color})` : ""}
+                                    </span>
+                                    <span className="font-bold text-sky-600 dark:text-sky-400 flex-shrink-0">
+                                      x{bItem.quantity || (bItem as any).deliveredQuantity}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {batch.note && (
+                            <p className="text-[11px] text-amber-700 dark:text-amber-300 italic">
+                              Ghi chú: {batch.note}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Danh sách sản phẩm */}
               <div>
                 <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">
@@ -869,6 +1002,15 @@ export const AccountPage: React.FC = () => {
                 <div className="space-y-2">
                   {selectedOrder.items?.map((item: any, idx: number) => {
                     const displayName = cleanProductName(item.name);
+                    const deliveredSum = selectedOrder.deliveries?.reduce((s, b) => {
+                      const found = b.items?.find((bi) => 
+                        (item._id && bi.orderItemId === item._id) ||
+                        (bi.productId && (typeof item.product === 'object' ? item.product?._id : item.product) === bi.productId && bi.size === item.size && bi.color === item.color)
+                      );
+                      return s + (found?.deliveredQuantity || 0);
+                    }, 0) || 0;
+                    const remaining = item.quantity - deliveredSum;
+
                     return (
                       <div
                         key={idx}
@@ -908,8 +1050,17 @@ export const AccountPage: React.FC = () => {
                               </span>
                             )}
                             <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 rounded text-[10px] font-bold border border-gray-200 dark:border-slate-600">
-                              x{item.quantity}
+                              Tổng: x{item.quantity}
                             </span>
+                            {selectedOrder.deliveries && selectedOrder.deliveries.length > 0 && (
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                                remaining <= 0
+                                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                                  : 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                              }`}>
+                                Đã giao: {deliveredSum}/{item.quantity} {remaining > 0 ? `(Còn nợ: ${remaining})` : '(Đủ)'}
+                              </span>
+                            )}
                           </div>
                           <p className="text-gray-400 dark:text-gray-400 text-[10px] sm:text-[11px] mt-1 font-medium">
                             Đơn giá: {formatCurrency(item.price)}

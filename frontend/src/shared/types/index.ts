@@ -125,6 +125,7 @@ export type OrderStatus =
   | 'SHIPPING_TO_VN'
   | 'IN_VN_WAREHOUSE'
   | 'SHIPPING'
+  | 'PARTIAL_DELIVERED'
   | 'COMPLETED'
   | 'CANCELLED'
   | 'CONFIRMED'
@@ -132,6 +133,31 @@ export type OrderStatus =
   | 'FAILED'
   | string;
 export type PaymentMethod = 'COD' | 'BANK_TRANSFER' | 'ONLINE';
+
+export interface DeliveryBatchItem {
+  product?: string | Product;
+  productCode: string;
+  name: string;
+  sellingOption?: string;
+  size?: string;
+  color?: string;
+  price: number;
+  quantity: number;
+  image?: string;
+}
+
+export interface DeliveryBatch {
+  _id?: string;
+  batchIndex: number;
+  deliveredAt: string | Date;
+  items: DeliveryBatchItem[];
+  totalQuantity?: number;
+  codAmount?: number;
+  trackingCode?: string;
+  carrier?: string;
+  status?: 'SHIPPING' | 'DELIVERED' | 'FAILED' | string;
+  note?: string;
+}
 
 export interface Order {
   _id: string;
@@ -144,6 +170,9 @@ export interface Order {
   totalAmount: number;
   paymentMethod: PaymentMethod;
   status: OrderStatus;
+  totalDeliveredQuantity?: number;
+  paidAmount?: number;
+  deliveries?: DeliveryBatch[];
   adminNote?: string;
   orderDate: string;
   createdAt: string;

@@ -265,6 +265,148 @@ export class OrdersService {
     return savedOrder;
   }
 
+  async addDeliveryBatch(id: string, deliveryDto: any): Promise<OrderDocument> {
+    const order = await this.orderModel.findById(id);
+    if (!order) {
+      throw new NotFoundException('Không tìm thấy đơn hàng');
+    }
+
+    const items = Array.isArray(deliveryDto.items) ? deliveryDto.items : [];
+    const totalQuantity = items.reduce((sum: number, it: any) => sum + (Number(it.quantity) || 0), 0);
+    if (totalQuantity <= 0) {
+      throw new BadRequestException('Số lượng xuất đợt này phải lớn hơn 0');
+    }
+
+    const currentDeliveries = order.deliveries || [];
+    const batchIndex = currentDeliveries.length + 1;
+
+    const newBatch = {
+      batchIndex,
+      deliveredAt: deliveryDto.deliveredAt ? new Date(deliveryDto.deliveredAt) : new Date(),
+      items: items.map((it: any) => ({
+        product: it.product,
+        productCode: String(it.productCode || '').trim(),
+        name: String(it.name || 'Sản phẩm').trim(),
+        sellingOption: String(it.sellingOption || '').trim(),
+        size: String(it.size || '').trim(),
+        color: String(it.color || '').trim(),
+        price: Number(it.price) || 0,
+        quantity: Number(it.quantity) || 1,
+        image: String(it.image || ''),
+      })),
+      totalQuantity,
+      codAmount: Number(deliveryDto.codAmount) || 0,
+      trackingCode: String(deliveryDto.trackingCode || '').trim(),
+      carrier: String(deliveryDto.carrier || '').trim(),
+      status: deliveryDto.status || 'DELIVERED',
+      note: String(deliveryDto.note || '').trim(),
+    };
+
+    order.deliveries = [...currentDeliveries, newBatch as any];
+
+    // Tính lại tổng số lượng và số tiền đã giao qua các đợt
+    const newTotalDeliveredQuantity = order.deliveries.reduce(
+      (sum, b) => sum + (Number(b.totalQuantity) || 0),
+      0,
+    );
+    const newPaidAmount = order.deliveries.reduce(
+      (sum, b) => sum + (Number(b.codAmount) || 0),
+      0,
+    );
+
+    order.totalDeliveredQuantity = newTotalDeliveredQuantity;
+    order.paidAmount = newPaidAmount;
+
+    // Tính tổng số lượng hàng cần giao của cả đơn
+    const totalOrderQuantity = order.items.reduce((s, it) => s + (it.quantity || 1), 0);
+
+    // Tự động cập nhật trạng thái đơn hàng nếu không bị hủy
+    if (order.status !== OrderStatus.CANCELLED) {
+      if (newTotalDeliveredQuantity >= totalOrderQuantity) {
+        order.status = OrderStatus.COMPLETED;
+      } else if (newTotalDeliveredQuantity > 0) {
+        order.status = OrderStatus.PARTIAL_DELIVERED;
+      }
+    }
+
+    const savedOrder = await order.save();
+    this.eventsGateway.notifyOrderStatusUpdated(savedOrder);
+    return savedOrder;
+  }
+
+  async deleteDeliveryBatch(id: string, batchIndex: number): Promise<OrderDocument> {
+    const order = await this.orderModel.findById(id);
+    if (!order) {
+      throw new NotFoundException('Không tìm thấy đơn hàng');
+    }
+
+    const currentDeliveries = order.deliveries || [];
+    const filtered = currentDeliveries.filter((d) => d.batchIndex !== Number(batchIndex));
+
+    // Đánh số lại batchIndex từ 1..n
+    order.deliveries = filtered.map((d, idx) => ({
+      ...d,
+      batchIndex: idx + 1,
+    })) as any;
+
+    const newTotalDeliveredQuantity = order.deliveries.reduce(
+      (sum, b) => sum + (Number(b.totalQuantity) || 0),
+      0,
+    );
+    const newPaidAmount = order.deliveries.reduce(
+      (sum, b) => sum + (Number(b.codAmount) || 0),
+      0,
+    );
+
+    order.totalDeliveredQuantity = newTotalDeliveredQuantity;
+    order.paidAmount = newPaidAmount;
+
+    const totalOrderQuantity = order.items.reduce((s, it) => s + (it.quantity || 1), 0);
+    if (order.status !== OrderStatus.CANCELLED) {
+      if (newTotalDeliveredQuantity === 0) {
+        order.status = OrderStatus.CONFIRMED;
+      } else if (newTotalDeliveredQuantity >= totalOrderQuantity) {
+        order.status = OrderStatus.COMPLETED;
+      } else {
+        order.status = OrderStatus.PARTIAL_DELIVERED;
+      }
+    }
+
+    const savedOrder = await order.save();
+    this.eventsGateway.notifyOrderStatusUpdated(savedOrder);
+    return savedOrder;
+  }
+
+  async updateDeliveryBatchStatus(
+    id: string,
+    batchIndex: number,
+    status: string,
+    note?: string,
+  ): Promise<OrderDocument> {
+    const order = await this.orderModel.findById(id);
+    if (!order) {
+      throw new NotFoundException('Không tìm thấy đơn hàng');
+    }
+
+    const currentDeliveries = order.deliveries || [];
+    const targetIdx = currentDeliveries.findIndex(
+      (d) => d.batchIndex === Number(batchIndex),
+    );
+    if (targetIdx === -1) {
+      throw new NotFoundException('Không tìm thấy đợt giao hàng');
+    }
+
+    currentDeliveries[targetIdx].status = status;
+    if (note !== undefined) {
+      currentDeliveries[targetIdx].note = note.trim();
+    }
+    order.deliveries = [...currentDeliveries];
+
+    const savedOrder = await order.save();
+    this.eventsGateway.notifyOrderStatusUpdated(savedOrder);
+    return savedOrder;
+  }
+
   async countOrders(): Promise<number> {
     return this.orderModel.countDocuments();
   }
