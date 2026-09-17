@@ -84,7 +84,9 @@ export const AdminOrdersPage: React.FC = () => {
   const [deliveryStatus, setDeliveryStatus] = useState("DELIVERED");
   const [deliveryNote, setDeliveryNote] = useState("");
   const [savingDelivery, setSavingDelivery] = useState(false);
-  const [updatingBatchStatus, setUpdatingBatchStatus] = useState<number | null>(null);
+  const [updatingBatchStatus, setUpdatingBatchStatus] = useState<number | null>(
+    null,
+  );
 
   useEffect(() => {
     if (selectedOrder) {
@@ -795,24 +797,25 @@ export const AdminOrdersPage: React.FC = () => {
                 </div>
 
                 {/* KHỐI QUẢN LÝ TIẾN ĐỘ & CÁC ĐỢT GIAO HÀNG (PARTIAL DELIVERY) */}
-                <div className="bg-gradient-to-b from-slate-50 to-white dark:from-slate-800/90 dark:to-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5 shadow-xs">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                        <Truck size={16} />
+                <div className="bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-3.5 sm:p-4 space-y-3.5 shadow-2xs">
+                  {/* Header Tiến độ */}
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-7 h-7 rounded-xl bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
+                        <Truck size={15} />
                       </div>
-                      <div>
-                        <h4 className="font-extrabold text-gray-900 dark:text-white text-xs sm:text-sm">
-                          TIẾN ĐỘ XUẤT TRẢ HÀNG (GIAO THEO ĐỢT)
+                      <div className="min-w-0">
+                        <h4 className="font-extrabold text-gray-900 dark:text-white text-xs sm:text-sm truncate">
+                          TIẾN ĐỘ XUẤT TRẢ HÀNG
                         </h4>
-                        <p className="text-[11px] text-gray-500 dark:text-slate-400">
-                          Theo dõi và xuất trả hàng từng phần cho khách
+                        <p className="text-[10px] text-gray-500 dark:text-slate-400 truncate">
+                          Quản lý xuất trả hàng từng phần
                         </p>
                       </div>
                     </div>
 
                     <span
-                      className={`px-2.5 py-1 rounded-xl text-xs font-black border shadow-2xs ${
+                      className={`px-2.5 py-0.5 rounded-full text-[11px] font-black border shadow-2xs flex-shrink-0 ${
                         orderDeliveredQty >= orderTotalQty
                           ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
                           : orderDeliveredQty > 0
@@ -820,13 +823,12 @@ export const AdminOrdersPage: React.FC = () => {
                             : "bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-600"
                       }`}
                     >
-                      Đã trả: {orderDeliveredQty} / {orderTotalQty} SP (
-                      {progressPercent}%)
+                      {orderDeliveredQty}/{orderTotalQty} SP ({progressPercent}%)
                     </span>
                   </div>
 
                   {/* Progress bar */}
-                  <div className="w-full bg-gray-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                  <div className="w-full bg-gray-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
                     <div
                       className={`h-full transition-all duration-300 ${
                         progressPercent >= 100
@@ -841,96 +843,99 @@ export const AdminOrdersPage: React.FC = () => {
                   {selectedOrder.deliveries &&
                     selectedOrder.deliveries.length > 0 && (
                       <div className="space-y-2 pt-1">
-                        <p className="font-bold text-gray-700 dark:text-slate-300 text-[11px] uppercase tracking-wider">
-                          LỊCH SỬ CÁC ĐỢT ĐÃ XUẤT (
-                          {selectedOrder.deliveries.length} ĐỢT):
-                        </p>
-                        <div className="space-y-2">
+                        <div className="flex items-center justify-between text-[11px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                          <span>LỊCH SỬ CÁC ĐỢT XUẤT</span>
+                          <span className="text-blue-600 dark:text-blue-400">
+                            {selectedOrder.deliveries.length} đợt
+                          </span>
+                        </div>
+
+                        <div className="space-y-2.5">
                           {selectedOrder.deliveries.map((batch) => {
-                            const bColor = getDeliveryBatchStatusColor(batch.status);
-                            const isUpdating = updatingBatchStatus === batch.batchIndex;
+                            const bColor = getDeliveryBatchStatusColor(
+                              batch.status,
+                            );
+                            const isUpdating =
+                              updatingBatchStatus === batch.batchIndex;
 
                             return (
                               <div
                                 key={batch.batchIndex}
-                                className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-2xs"
+                                className="p-3 bg-white dark:bg-slate-900/90 rounded-xl border border-gray-200/90 dark:border-slate-700/80 shadow-2xs space-y-2"
                               >
-                                <div className="space-y-1 min-w-0 flex-1">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="font-black text-blue-600 dark:text-blue-400 text-xs">
+                                {/* Header đợt: Tên đợt, ngày giờ + Dropdown trạng thái + nút xoá */}
+                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <span className="px-2 py-0.5 rounded-md bg-blue-600 text-white font-black text-[11px] flex-shrink-0 shadow-2xs">
                                       Đợt {batch.batchIndex}
                                     </span>
-                                    <span className="text-[10px] text-gray-400">
-                                      •
-                                    </span>
-                                    <span className="text-gray-500 dark:text-slate-400 text-[11px]">
+                                    <span className="text-[11px] text-gray-500 dark:text-slate-400 font-mono">
                                       {formatDate(batch.deliveredAt)}
                                     </span>
+                                  </div>
 
-                                    {/* Trạng thái đợt */}
-                                    <span
-                                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border shadow-2xs ${bColor.bg} ${bColor.text} ${bColor.border}`}
+                                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                                    {/* Trạng thái đợt có thể đổi nhanh */}
+                                    <select
+                                      value={batch.status || "DELIVERED"}
+                                      disabled={isUpdating}
+                                      onChange={(e) =>
+                                        handleUpdateDeliveryBatchStatus(
+                                          batch.batchIndex,
+                                          e.target.value,
+                                        )
+                                      }
+                                      className={`text-[11px] font-bold py-1 px-2.5 rounded-lg border shadow-2xs cursor-pointer focus:outline-none transition-all ${bColor.bg} ${bColor.text} ${bColor.border}`}
                                     >
-                                      <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
-                                      <span>{getDeliveryBatchStatusText(batch.status)}</span>
+                                      <option value="DELIVERED">✓ Đã nhận</option>
+                                      <option value="SHIPPING">🚚 Đang giao</option>
+                                      <option value="PREPARING">📦 Chuẩn bị</option>
+                                      <option value="FAILED">✕ Thất bại</option>
+                                    </select>
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleDeleteDeliveryBatch(
+                                          batch.batchIndex,
+                                        )
+                                      }
+                                      className="p-1.5 text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer flex-shrink-0"
+                                      title={`Xóa Đợt ${batch.batchIndex}`}
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Danh sách món trong đợt này */}
+                                <div className="text-xs text-gray-700 dark:text-slate-200 pl-1 border-l-2 border-blue-400 dark:border-blue-500 space-y-1">
+                                  {batch.items?.map((bi, bIdx) => (
+                                    <div
+                                      key={bIdx}
+                                      className="flex items-center justify-between gap-2"
+                                    >
+                                      <span className="truncate">
+                                        • {cleanProductName(bi.name)}{" "}
+                                        {bi.size ? `(${bi.size})` : ""}{" "}
+                                        {bi.color ? `[${bi.color}]` : ""}
+                                      </span>
+                                      <strong className="text-blue-600 dark:text-blue-400 flex-shrink-0 font-mono font-bold">
+                                        x{bi.quantity}
+                                      </strong>
+                                    </div>
+                                  ))}
+                                </div>
+
+                                {/* Ghi chú đợt nếu có */}
+                                {batch.note && (
+                                  <div className="bg-amber-50/80 dark:bg-amber-950/40 px-2.5 py-1.5 rounded-lg border border-amber-200/80 dark:border-amber-900/60 text-[11px] text-amber-900 dark:text-amber-200 flex items-start gap-1.5">
+                                    <MessageSquare size={12} className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                                    <span className="font-medium italic leading-tight">
+                                      Ghi chú: "{batch.note}"
                                     </span>
                                   </div>
-
-                                  {/* Danh sách món trong đợt này */}
-                                  <div className="text-[11px] text-gray-700 dark:text-slate-300 flex flex-wrap gap-x-3 gap-y-1 pt-0.5">
-                                    {batch.items?.map((bi, bIdx) => (
-                                      <span
-                                        key={bIdx}
-                                        className="inline-flex items-center gap-1 font-medium"
-                                      >
-                                        <span>
-                                          • {bi.name}{" "}
-                                          {bi.size ? `(${bi.size})` : ""}:
-                                        </span>
-                                        <strong className="text-blue-600 dark:text-blue-400">
-                                          x{bi.quantity}
-                                        </strong>
-                                      </span>
-                                    ))}
-                                  </div>
-
-                                  {batch.note && (
-                                    <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
-                                      Ghi chú: "{batch.note}"
-                                    </p>
-                                  )}
-                                </div>
-
-                                {/* Đổi trạng thái đợt & Nút xoá */}
-                                <div className="flex items-center gap-2 justify-end flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100 dark:border-slate-800">
-                                  <select
-                                    value={batch.status || "DELIVERED"}
-                                    disabled={isUpdating}
-                                    onChange={(e) =>
-                                      handleUpdateDeliveryBatchStatus(
-                                        batch.batchIndex,
-                                        e.target.value,
-                                      )
-                                    }
-                                    className="text-[11px] font-bold py-1 px-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-gray-200 focus:outline-none focus:border-blue-500 cursor-pointer"
-                                  >
-                                    <option value="DELIVERED">✓ Đã nhận hàng</option>
-                                    <option value="SHIPPING">🚚 Đang giao hàng</option>
-                                    <option value="PREPARING">📦 Đang chuẩn bị</option>
-                                    <option value="FAILED">✕ Giao thất bại</option>
-                                  </select>
-
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleDeleteDeliveryBatch(batch.batchIndex)
-                                    }
-                                    className="p-1.5 text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer flex-shrink-0"
-                                    title={`Xóa Đợt ${batch.batchIndex}`}
-                                  >
-                                    <Trash2 size={14} />
-                                  </button>
-                                </div>
+                                )}
                               </div>
                             );
                           })}
@@ -941,15 +946,14 @@ export const AdminOrdersPage: React.FC = () => {
                   {/* Khu vực Hàng còn nợ & Nút mở Form xuất hàng */}
                   {remainingTotalQty > 0 ? (
                     !showDeliveryForm ? (
-                      <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-amber-50/60 dark:bg-amber-950/30 p-3 rounded-xl border border-amber-200/80 dark:border-amber-900/50">
+                      <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-amber-50/70 dark:bg-amber-950/30 p-3 rounded-xl border border-amber-200/80 dark:border-amber-900/50">
                         <div className="text-xs">
-                          <span className="font-bold text-amber-900 dark:text-amber-300">
-                            Còn nợ {remainingTotalQty} sản phẩm chưa xuất trả
+                          <span className="font-bold text-amber-900 dark:text-amber-300 block sm:inline">
+                            Còn nợ {remainingTotalQty} sản phẩm chưa trả
                           </span>
-                          <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80">
-                            Hàng về kho có thể bấm xuất trả tiếp đợt{" "}
-                            {(selectedOrder.deliveries?.length || 0) + 1}
-                          </p>
+                          <span className="text-[11px] text-amber-700/80 dark:text-amber-400/80 block sm:inline sm:ml-1">
+                            (Bấm để xuất đợt {(selectedOrder.deliveries?.length || 0) + 1})
+                          </span>
                         </div>
 
                         <Button
@@ -957,7 +961,7 @@ export const AdminOrdersPage: React.FC = () => {
                           variant="primary"
                           size="sm"
                           onClick={handleOpenDeliveryForm}
-                          className="text-xs py-2 px-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-xs cursor-pointer whitespace-nowrap flex items-center gap-1.5"
+                          className="text-xs py-2 px-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-xs cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5 w-full sm:w-auto"
                         >
                           <PlusCircle size={14} />
                           <span>
@@ -968,7 +972,7 @@ export const AdminOrdersPage: React.FC = () => {
                       </div>
                     ) : (
                       /* FORM XUẤT HÀNG ĐỢT TIẾP THEO */
-                      <div className="bg-white dark:bg-slate-900 p-3.5 sm:p-4 rounded-xl border-2 border-blue-500/80 space-y-3 shadow-md animate-fade-in">
+                      <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border-2 border-blue-500/80 space-y-3 shadow-md animate-fade-in">
                         <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-800 pb-2">
                           <span className="font-black text-blue-600 dark:text-blue-400 text-xs sm:text-sm flex items-center gap-1.5">
                             <PackageCheck size={16} />
@@ -978,7 +982,7 @@ export const AdminOrdersPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setShowDeliveryForm(false)}
-                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
+                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer p-1"
                           >
                             <X size={16} />
                           </button>
@@ -1014,16 +1018,15 @@ export const AdminOrdersPage: React.FC = () => {
                                       {cleanProductName(it.name)}
                                     </p>
                                     <p className="text-[10px] text-gray-500 dark:text-slate-400">
-                                      Đặt: {it.quantity} | Đã trả: {delivered} |
-                                      Còn nợ:{" "}
-                                      <strong className="text-rose-600 dark:text-rose-400">
-                                        {maxAvailable}
-                                      </strong>
+                                      Đặt: {it.quantity} | Đã trả: {delivered} |{" "}
+                                      <span className="text-rose-600 dark:text-rose-400 font-bold">
+                                        Còn nợ: {maxAvailable}
+                                      </span>
                                     </p>
                                   </div>
 
-                                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                                    <span className="text-xs text-gray-500">
+                                  <div className="flex items-center gap-1 flex-shrink-0">
+                                    <span className="text-[11px] text-gray-500">
                                       Xuất:
                                     </span>
                                     <input
@@ -1038,10 +1041,10 @@ export const AdminOrdersPage: React.FC = () => {
                                           maxAvailable,
                                         )
                                       }
-                                      className="w-16 text-center py-1 px-2 border border-blue-400 rounded-lg font-black text-xs bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                      className="w-14 text-center py-1 px-1.5 border border-blue-400 rounded-lg font-black text-xs bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                     />
-                                    <span className="text-[11px] text-gray-400">
-                                      / {maxAvailable}
+                                    <span className="text-[10px] text-gray-400">
+                                      /{maxAvailable}
                                     </span>
                                   </div>
                                 </div>
@@ -1051,20 +1054,22 @@ export const AdminOrdersPage: React.FC = () => {
                         </div>
 
                         {/* Trạng thái đợt giao & Ghi chú đợt giao */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
                           <div className="sm:col-span-1">
                             <label className="text-[11px] font-semibold text-gray-700 dark:text-slate-300 block mb-1">
-                              Trạng thái đợt này
+                              Trạng thái đợt
                             </label>
                             <select
                               value={deliveryStatus}
-                              onChange={(e) => setDeliveryStatus(e.target.value)}
+                              onChange={(e) =>
+                                setDeliveryStatus(e.target.value)
+                              }
                               className="w-full text-xs p-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500 font-bold cursor-pointer"
                             >
-                              <option value="DELIVERED">✓ Đã nhận hàng</option>
-                              <option value="SHIPPING">🚚 Đang giao hàng</option>
-                              <option value="PREPARING">📦 Đang chuẩn bị</option>
-                              <option value="FAILED">✕ Giao thất bại</option>
+                              <option value="DELIVERED">✓ Đã nhận</option>
+                              <option value="SHIPPING">🚚 Đang giao</option>
+                              <option value="PREPARING">📦 Chuẩn bị</option>
+                              <option value="FAILED">✕ Thất bại</option>
                             </select>
                           </div>
 
@@ -1074,7 +1079,7 @@ export const AdminOrdersPage: React.FC = () => {
                             </label>
                             <input
                               type="text"
-                              placeholder="Ví dụ: Giao trước 5 cái hàng có sẵn, 5 cái còn lại đang về..."
+                              placeholder="Ví dụ: Giao trước 5 cái có sẵn..."
                               value={deliveryNote}
                               onChange={(e) => setDeliveryNote(e.target.value)}
                               className="w-full text-xs p-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500 placeholder-gray-400 dark:placeholder-slate-500"
@@ -1099,7 +1104,7 @@ export const AdminOrdersPage: React.FC = () => {
                             onClick={handleAddDeliveryBatch}
                             className="text-xs py-1.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-xs cursor-pointer disabled:opacity-50"
                           >
-                            {savingDelivery ? "Đang xuất hàng..." : "Xác nhận"}
+                            {savingDelivery ? "Đang xuất..." : "Xác nhận xuất"}
                           </Button>
                         </div>
                       </div>
@@ -1108,7 +1113,7 @@ export const AdminOrdersPage: React.FC = () => {
                     <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-800/80 text-emerald-800 dark:text-emerald-300 font-bold text-xs text-center flex items-center justify-center gap-1.5">
                       <CheckCircle2 size={16} />
                       <span>
-                        Đã xuất trả đầy đủ {orderTotalQty} / {orderTotalQty} sản
+                        Đã xuất trả đầy đủ {orderTotalQty}/{orderTotalQty} sản
                         phẩm cho đơn hàng này!
                       </span>
                     </div>

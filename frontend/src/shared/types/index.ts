@@ -3,7 +3,7 @@ export interface User {
   name: string;
   email?: string;
   phone: string;
-  role: 'admin' | 'customer';
+  role: "admin" | "customer";
   address?: string;
   status?: string;
   createdAt?: string;
@@ -95,7 +95,7 @@ export interface Product {
   rating: number;
   isFeatured: boolean;
   isPinned?: boolean;
-  status: 'active' | 'inactive';
+  status: "active" | "inactive";
   createdAt: string;
   updatedAt: string;
 }
@@ -121,18 +121,18 @@ export interface CustomerInfo {
 }
 
 export type OrderStatus =
-  | 'PENDING'
-  | 'SHIPPING_TO_VN'
-  | 'IN_VN_WAREHOUSE'
-  | 'SHIPPING'
-  | 'PARTIAL_DELIVERED'
-  | 'COMPLETED'
-  | 'CANCELLED'
-  | 'CONFIRMED'
-  | 'DELIVERED'
-  | 'FAILED'
+  | "PENDING"
+  | "SHIPPING_TO_VN"
+  | "IN_VN_WAREHOUSE"
+  | "SHIPPING"
+  | "PARTIAL_DELIVERED"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "CONFIRMED"
+  | "DELIVERED"
+  | "FAILED"
   | string;
-export type PaymentMethod = 'COD' | 'BANK_TRANSFER' | 'ONLINE';
+export type PaymentMethod = "COD" | "BANK_TRANSFER" | "ONLINE";
 
 export interface DeliveryBatchItem {
   product?: string | Product;
@@ -155,7 +155,7 @@ export interface DeliveryBatch {
   codAmount?: number;
   trackingCode?: string;
   carrier?: string;
-  status?: 'SHIPPING' | 'DELIVERED' | 'FAILED' | string;
+  status?: "SHIPPING" | "DELIVERED" | "FAILED" | string;
   note?: string;
 }
 
@@ -199,12 +199,12 @@ export interface ImportItem {
 }
 
 export type ImportStatus =
-  | 'ORDERED'
-  | 'KHO_TRUNG'
-  | 'KHO_VIET'
-  | 'SHIPPING'
-  | 'COMPLETED'
-  | 'CANCELLED'
+  | "ORDERED"
+  | "KHO_TRUNG"
+  | "KHO_VIET"
+  | "SHIPPING"
+  | "COMPLETED"
+  | "CANCELLED"
   | string;
 
 export interface ImportReceipt {
@@ -252,4 +252,3 @@ export interface CreateImportDto {
   note?: string;
   status?: ImportStatus;
 }
-

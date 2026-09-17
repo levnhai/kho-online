@@ -70,8 +70,8 @@ export class OrdersService {
       const itemPrice = calculatedPrice;
       const total = itemPrice * item.quantity;
       const subtotal = total;
-      const shippingFee = subtotal >= 5000000 ? 0 : 30000;
-      const totalAmount = subtotal + shippingFee;
+      const shippingFee = 0;
+      const totalAmount = subtotal;
 
       const orderItem = {
         product: product._id,
