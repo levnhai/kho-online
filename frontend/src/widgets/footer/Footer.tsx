@@ -99,22 +99,16 @@ export const Footer: React.FC = () => {
             </div>
           </div>
           <p className="text-sm text-slate-400 leading-relaxed mb-4">
-            C.H.A.N.G Online – Hệ thống phân phối thiết bị công nghệ, điện
-            thoại, máy tính và đồ gia dụng thông minh chính hãng hàng đầu Việt
-            Nam.
+            C.H.A.N.G - Chuyên Order Mom & Baby QCCC, THIẾT KẾ, VNXK
           </p>
           <div className="space-y-2 text-xs text-slate-400">
             <p className="flex items-center gap-2">
-              <MapPin size={14} className="text-blue-400" /> Tòa nhà CHANG, 123
-              Đường Công Nghệ, Hà Nội
+              <MapPin size={14} className="text-blue-400" />
+              87/7 Huỳnh Văn Cù, TP Thủ Dầu Một, Bduong
             </p>
             <p className="flex items-center gap-2">
               <Phone size={14} className="text-blue-400" /> Hotline: 0865854741
               (8:00 - 21:30)
-            </p>
-            <p className="flex items-center gap-2">
-              <Mail size={14} className="text-blue-400" /> Email:
-              support@chang.vn
             </p>
           </div>
         </div>

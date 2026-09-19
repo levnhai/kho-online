@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Sparkles, Flame, Clock } from 'lucide-react';
+import { ArrowRight, Flame, Clock } from 'lucide-react';
 import { HeroBanner } from '@/widgets/hero-banner/HeroBanner';
 import { ProductCard } from '@/entities/product/ui/ProductCard';
 import { productApi } from '@/entities/product/api/productApi';
@@ -10,7 +10,6 @@ import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
 
 export const HomePage: React.FC = () => {
   const { addToCart } = useCart();
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [bestSellers, setBestSellers] = useState<Product[]>([]);
   const [newArrivals, setNewArrivals] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,12 +17,10 @@ export const HomePage: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [featured, sellers, news] = await Promise.all([
-          productApi.getFeatured(4),
+        const [sellers, news] = await Promise.all([
           productApi.getBestSellers(4),
           productApi.getNewArrivals(4),
         ]);
-        setFeaturedProducts(featured);
         setBestSellers(sellers);
         setNewArrivals(news);
       } catch (err) {
@@ -45,40 +42,7 @@ export const HomePage: React.FC = () => {
           <LoadingSpinner text="Đang tải dữ liệu sản phẩm..." />
         ) : (
           <div className="space-y-6 sm:space-y-12 mt-6 sm:mt-8">
-            {/* 1. SẢN PHẨM NỔI BẬT */}
-            <section className="bg-white dark:bg-slate-800 p-4 sm:p-8 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-slate-700 shadow-xs transition-colors">
-              <div className="flex items-center justify-between mb-4 sm:mb-6">
-                <div className="flex items-center gap-2 sm:gap-2.5">
-                  <div className="p-1.5 sm:p-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
-                    <Sparkles size={20} className="sm:w-[22px] sm:h-[22px]" />
-                  </div>
-                  <div>
-                    <h2 className="text-base sm:text-2xl font-black text-gray-900 dark:text-white tracking-tight">
-                      SẢN PHẨM NỔI BẬT
-                    </h2>
-                    <p className="hidden sm:block text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                      Những thiết bị công nghệ đỉnh cao được tuyển chọn đặc biệt
-                    </p>
-                  </div>
-                </div>
-
-                <Link
-                  to="/products"
-                  className="inline-flex items-center gap-1 text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
-                >
-                  <span>Xem tất cả</span>
-                  <ArrowRight size={14} className="sm:w-4 sm:h-4" />
-                </Link>
-              </div>
-
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-                {featuredProducts.map((p) => (
-                  <ProductCard key={p._id} product={p} onAddToCart={addToCart} />
-                ))}
-              </div>
-            </section>
-
-            {/* 2. SẢN PHẨM MỚI */}
+            {/* 1. SẢN PHẨM MỚI */}
             <section className="bg-white dark:bg-slate-800 p-4 sm:p-8 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-slate-700 shadow-xs transition-colors">
               <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <div className="flex items-center gap-2 sm:gap-2.5">
@@ -90,7 +54,7 @@ export const HomePage: React.FC = () => {
                       SẢN PHẨM MỚI VỀ
                     </h2>
                     <p className="hidden sm:block text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                      Cập nhật các sản phẩm và công nghệ đời mới nhất
+                      Cập nhật các mẫu trang phục sơ sinh và thời trang bé mới nhất
                     </p>
                   </div>
                 </div>
@@ -111,7 +75,7 @@ export const HomePage: React.FC = () => {
               </div>
             </section>
 
-            {/* 3. SẢN PHẨM BÁN CHẠY */}
+            {/* 2. SẢN PHẨM BÁN CHẠY */}
             <section className="bg-white dark:bg-slate-800 p-4 sm:p-8 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-slate-700 shadow-xs transition-colors">
               <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <div className="flex items-center gap-2 sm:gap-2.5">
@@ -123,7 +87,7 @@ export const HomePage: React.FC = () => {
                       SẢN PHẨM BÁN CHẠY
                     </h2>
                     <p className="hidden sm:block text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                      Được khách hàng tin dùng và đặt mua nhiều nhất
+                      Những mẫu quần áo Mẹ & Bé được yêu thích và đặt mua nhiều nhất
                     </p>
                   </div>
                 </div>
