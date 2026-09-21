@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   Plus,
   Search,
@@ -26,6 +26,7 @@ import {
   DollarSign,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
   Check,
   Copy,
   RotateCcw,
@@ -76,6 +77,8 @@ export const AdminProductsPage: React.FC = () => {
   const [colorModalLoading, setColorModalLoading] = useState(false);
   const [colorModalError, setColorModalError] = useState("");
   const [selectedColorSelect, setSelectedColorSelect] = useState("");
+  const [isColorDropdownOpen, setIsColorDropdownOpen] = useState(false);
+  const colorDropdownRef = useRef<HTMLDivElement>(null);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -198,6 +201,40 @@ export const AdminProductsPage: React.FC = () => {
     fetchSizes();
     fetchProducts();
   }, [fetchProducts, fetchColors, fetchSetOptions, fetchSizes]);
+
+  // Click outside listener for color dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        colorDropdownRef.current &&
+        !colorDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsColorDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const normalizeVietnamese = (str: string) => {
+    return (str || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d")
+      .replace(/Đ/g, "d")
+      .toLowerCase()
+      .trim();
+  };
+
+  const filteredDbColors = useMemo(() => {
+    if (!colorSearch.trim()) return dbColors;
+    const query = normalizeVietnamese(colorSearch);
+    return dbColors.filter((item) => {
+      const normName = normalizeVietnamese(item.name);
+      const normCode = normalizeVietnamese(item.code || "");
+      return normName.includes(query) || normCode.includes(query);
+    });
+  }, [dbColors, colorSearch]);
 
   const openTypeSelectModal = () => {
     setIsTypeModalOpen(true);
@@ -692,13 +729,22 @@ export const AdminProductsPage: React.FC = () => {
     setSelectedColorSelect("");
   };
 
-  const handleOpenCreateColorModal = () => {
-    setNewCustomColorName("");
+  const handleOpenCreateColorModal = (initialName?: string) => {
+    setNewCustomColorName(typeof initialName === "string" ? initialName.trim() : "");
     setNewCustomColorCode(`M${dbColors.length + 1}`);
     setNewCustomColorHex("#3B82F6");
     setColorModalAutoAssign(true);
     setColorModalError("");
     setIsCreateColorModalOpen(true);
+  };
+
+  const handleAddAllFilteredColors = () => {
+    const unselectedNames = filteredDbColors
+      .map((c) => c.name)
+      .filter((name) => !colorsList.includes(name));
+    if (unselectedNames.length > 0) {
+      setColorsList([...colorsList, ...unselectedNames]);
+    }
   };
 
   const handleCreateNewColor = async (e?: React.FormEvent) => {
@@ -2229,45 +2275,151 @@ export const AdminProductsPage: React.FC = () => {
                       <span>Màu sắc ({colorsList.length})</span>
                     </div>
                     <p className="text-[11px] text-purple-700/80 dark:text-purple-400/80">
-                      * Chọn màu từ thẻ select bên dưới để gán màu sắc cho sản
-                      phẩm.
+                      * Nhập tìm kiếm theo tên hoặc mã màu (VD: M92, đen, nâu...) để gắn màu cho sản phẩm.
                     </p>
                   </div>
+                  {colorsList.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setColorsList([])}
+                      className="text-[11px] text-rose-600 hover:text-rose-700 font-semibold transition-colors self-start sm:self-auto cursor-pointer"
+                    >
+                      Bỏ chọn tất cả ({colorsList.length})
+                    </button>
+                  )}
                 </div>
 
-                {/* Chọn Màu: DÙNG THẺ SELECT */}
+                {/* Ô TÌM KIẾM & CHỌN MÀU SẮC */}
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                  <div className="flex-1 relative">
-                    <select
-                      value={selectedColorSelect}
-                      onChange={(e) =>
-                        handleSelectColorDropdown(e.target.value)
-                      }
-                      className="w-full text-xs font-bold px-3 py-2.5 rounded-lg border border-purple-300 dark:border-purple-800 bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer shadow-2xs"
-                    >
-                      <option value="">
-                        -- Chọn màu sắc để thêm vào sản phẩm --
-                      </option>
-                      {dbColors.map((item) => {
-                        const isChosen = colorsList.includes(item.name);
-                        return (
-                          <option
-                            key={item._id}
-                            value={item.name}
-                            disabled={isChosen}
+                  <div className="flex-1 relative" ref={colorDropdownRef}>
+                    <div className="relative flex items-center">
+                      <Search
+                        size={15}
+                        className="absolute left-3 text-purple-500 pointer-events-none"
+                      />
+                      <input
+                        type="text"
+                        value={colorSearch}
+                        onChange={(e) => {
+                          setColorSearch(e.target.value);
+                          setIsColorDropdownOpen(true);
+                        }}
+                        onFocus={() => setIsColorDropdownOpen(true)}
+                        placeholder="Tìm kiếm theo tên màu hoặc mã (VD: M92, đen, nâu)..."
+                        className="w-full text-xs font-semibold pl-9 pr-16 py-2.5 rounded-xl border border-purple-300 dark:border-purple-800 bg-white dark:bg-slate-900 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-2xs transition-all"
+                      />
+                      <div className="absolute right-2 flex items-center gap-1">
+                        {colorSearch && (
+                          <button
+                            type="button"
+                            onClick={() => setColorSearch("")}
+                            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors rounded-md cursor-pointer"
+                            title="Xóa tìm kiếm"
                           >
-                            {item.name} {item.code ? `(${item.code})` : ""}{" "}
-                            {isChosen ? "✓ [Đã chọn]" : ""}
-                          </option>
-                        );
-                      })}
-                      <option
-                        value="__NEW__"
-                        className="text-blue-600 font-bold"
-                      >
-                        + Tạo màu mới vào hệ thống...
-                      </option>
-                    </select>
+                            <X size={13} />
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setIsColorDropdownOpen((prev) => !prev)}
+                          className="p-1 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/40 rounded-md transition-colors cursor-pointer"
+                          title="Mở danh sách màu"
+                        >
+                          <ChevronDown
+                            size={15}
+                            className={`transition-transform duration-200 ${
+                              isColorDropdownOpen ? "rotate-180" : ""
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* DROPDOWN MENU KẾT QUẢ TÌM KIẾM */}
+                    {isColorDropdownOpen && (
+                      <div className="absolute left-0 right-0 top-full mt-1.5 z-40 bg-white dark:bg-slate-900 rounded-xl border border-purple-200 dark:border-purple-800 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+                        {/* Danh sách các màu */}
+                        <div className="max-h-60 overflow-y-auto divide-y divide-gray-100 dark:divide-slate-800 p-1">
+                          {filteredDbColors.length > 0 ? (
+                            filteredDbColors.map((item) => {
+                              const isChosen = colorsList.includes(item.name);
+                              return (
+                                <div
+                                  key={item._id}
+                                  onClick={() => handleToggleColor(item.name)}
+                                  className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors text-xs font-semibold group ${
+                                    isChosen
+                                      ? "bg-purple-100/70 dark:bg-purple-950/70 text-purple-950 dark:text-purple-200"
+                                      : "hover:bg-purple-50 dark:hover:bg-slate-800 text-gray-800 dark:text-gray-200"
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <span
+                                      className="w-4 h-4 rounded-full border border-black/20 shrink-0 shadow-2xs"
+                                      style={{
+                                        backgroundColor: item.hexCode || "#000000",
+                                      }}
+                                    />
+                                    <span className="truncate">{item.name}</span>
+                                    {item.code && (
+                                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-200/60 dark:bg-purple-900/60 text-purple-800 dark:text-purple-300">
+                                        {item.code}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div className="shrink-0 ml-2">
+                                    {isChosen ? (
+                                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-purple-700 dark:text-purple-300 bg-purple-200/80 dark:bg-purple-900/80 px-2 py-0.5 rounded-full">
+                                        <Check size={12} /> Đã chọn
+                                      </span>
+                                    ) : (
+                                      <span className="text-[11px] text-gray-400 group-hover:text-purple-600 font-medium">
+                                        + Thêm
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div className="p-4 text-center space-y-2">
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                Không tìm thấy màu nào khớp với <span className="font-bold">"{colorSearch}"</span>
+                              </p>
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                icon={<Plus size={13} />}
+                                onClick={() => {
+                                  setIsColorDropdownOpen(false);
+                                  handleOpenCreateColorModal(colorSearch);
+                                }}
+                                className="text-xs py-1.5 px-3 mx-auto text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700"
+                              >
+                                Tạo màu "{colorSearch}" mới
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Footer tạo màu mới */}
+                        <div className="p-2 bg-gray-50 dark:bg-slate-900/90 border-t border-gray-100 dark:border-slate-800 text-center">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsColorDropdownOpen(false);
+                              handleOpenCreateColorModal(colorSearch);
+                            }}
+                            className="text-xs font-bold text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors inline-flex items-center gap-1.5 py-1 px-2 cursor-pointer"
+                          >
+                            <Plus size={14} />
+                            <span>Tạo thêm màu sắc mới vào hệ thống...</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <Button
@@ -2275,8 +2427,8 @@ export const AdminProductsPage: React.FC = () => {
                     variant="secondary"
                     size="sm"
                     icon={<Plus size={14} />}
-                    onClick={handleOpenCreateColorModal}
-                    className="text-xs py-2 px-3 bg-white dark:bg-slate-800 border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 font-bold hover:bg-purple-50 shrink-0"
+                    onClick={() => handleOpenCreateColorModal(colorSearch)}
+                    className="text-xs py-2.5 px-3 bg-white dark:bg-slate-800 border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 font-bold hover:bg-purple-50 shrink-0"
                   >
                     Tạo màu mới
                   </Button>
@@ -2330,8 +2482,7 @@ export const AdminProductsPage: React.FC = () => {
                   </div>
                 ) : (
                   <div className="p-4 bg-white/60 dark:bg-slate-800/60 rounded-xl text-center text-xs text-gray-400 border border-dashed border-purple-200 dark:border-purple-900">
-                    Chưa có màu nào được gắn cho sản phẩm. Vui lòng chọn màu
-                    trong thẻ select ở trên.
+                    Chưa có màu nào
                   </div>
                 )}
               </div>

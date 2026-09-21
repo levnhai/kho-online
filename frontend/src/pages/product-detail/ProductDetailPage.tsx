@@ -227,11 +227,6 @@ export const ProductDetailPage: React.FC = () => {
                 <span className="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400">
                   {formatCurrency(currentPrice)}
                 </span>
-                {selectedOption && (
-                  <span className="text-xs font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/50 px-2 py-0.5 rounded-md border border-teal-200 dark:border-teal-800">
-                    Áp dụng cho: {selectedOption} {selectedSize ? `(Size ${selectedSize})` : ''}
-                  </span>
-                )}
               </div>
               <p className="text-[11px] sm:text-xs text-gray-400 dark:text-gray-500 mt-1">
                 Giá đã bao gồm VAT và chính sách hỗ trợ giao hàng tận nơi.
