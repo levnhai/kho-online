@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Search,
   Eye,
@@ -18,6 +18,7 @@ import {
   PackageCheck,
   RotateCcw,
   X,
+  Loader2,
 } from "lucide-react";
 import { orderApi } from "@/entities/order/api/orderApi";
 import { Order, OrderStatus } from "@/shared/types";
@@ -37,6 +38,7 @@ import { OrderStatusTimeline } from "@/entities/order/ui/OrderStatusTimeline";
 import { Button } from "@/shared/ui/Button";
 import { Modal } from "@/shared/ui/Modal";
 import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
+import { Pagination } from "@/shared/ui/Pagination";
 import { getImageUrl, handleImageError } from "@/shared/lib/imageHelper";
 
 const getOrderItemCode = (item: any): string => {
@@ -61,8 +63,14 @@ export const AdminOrdersPage: React.FC = () => {
   const { socket } = useSocket();
   const [orders, setOrders] = useState<Order[]>([]);
   const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [clearing, setClearing] = useState(false);
+
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   // Filters
   const [search, setSearch] = useState("");
@@ -268,26 +276,87 @@ export const AdminOrdersPage: React.FC = () => {
     }
   };
 
-  const fetchOrders = useCallback(async () => {
-    setLoading(true);
+  const fetchOrders = useCallback(
+    async (targetPage = 1) => {
+      setLoading(true);
+      try {
+        const res = await orderApi.getAll({
+          search: search || undefined,
+          status: statusFilter || undefined,
+          page: targetPage,
+          limit,
+        });
+        setOrders(res.items);
+        setTotal(res.total);
+        setTotalPages(res.totalPages || 1);
+        setPage(targetPage);
+      } catch (err) {
+        console.error("Fetch admin orders error:", err);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [search, statusFilter, limit],
+  );
+
+  const loadMoreMobile = useCallback(async () => {
+    if (loading || loadingMore || orders.length >= total) return;
+    const nextPage = page + 1;
+    if (nextPage > totalPages) return;
+
+    setLoadingMore(true);
     try {
       const res = await orderApi.getAll({
         search: search || undefined,
         status: statusFilter || undefined,
-        limit: 50,
+        page: nextPage,
+        limit,
       });
-      setOrders(res.items);
+
+      setOrders((prev) => {
+        const existingIds = new Set(prev.map((o) => o._id));
+        const uniqueItems = res.items.filter((o) => !existingIds.has(o._id));
+        return [...prev, ...uniqueItems];
+      });
+      setPage(nextPage);
       setTotal(res.total);
+      setTotalPages(res.totalPages || 1);
     } catch (err) {
-      console.error("Fetch admin orders error:", err);
+      console.error("Load more mobile orders error:", err);
     } finally {
-      setLoading(false);
+      setLoadingMore(false);
     }
-  }, [search, statusFilter]);
+  }, [loading, loadingMore, orders.length, total, page, totalPages, search, statusFilter, limit]);
 
   useEffect(() => {
-    fetchOrders();
+    fetchOrders(1);
   }, [fetchOrders]);
+
+  // Mobile Infinite Scroll Observer
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0];
+        if (
+          first.isIntersecting &&
+          !loading &&
+          !loadingMore &&
+          orders.length < total
+        ) {
+          if (window.innerWidth < 1024) {
+            loadMoreMobile();
+          }
+        }
+      },
+      { threshold: 0.1, rootMargin: "250px" },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadMoreMobile, loading, loadingMore, orders.length, total]);
 
   // Realtime socket listener for admin
   useEffect(() => {
@@ -437,15 +506,18 @@ export const AdminOrdersPage: React.FC = () => {
       )}
 
       {/* Filter controls */}
-      <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 transition-colors">
-        <div className="flex flex-col sm:flex-row flex-1 items-stretch sm:items-center gap-2 sm:gap-3">
-          <div className="relative flex-1">
+      <div className="bg-white dark:bg-slate-800 p-3 sm:p-6 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 transition-colors">
+        <div className="flex flex-row flex-1 items-center gap-2 sm:gap-3">
+          <div className="relative flex-1 min-w-0">
             <input
               type="text"
-              placeholder="Tìm theo Mã đơn, Mã SP, tên khách, SĐT..."
+              placeholder="Tìm mã đơn, tên khách, SĐT..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-8 pr-3 py-2 text-xs border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white rounded-xl focus:border-blue-500 focus:outline-none placeholder-gray-400 dark:placeholder-slate-400 shadow-2xs"
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              className="w-full pl-8 pr-2.5 py-2 text-xs border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white rounded-xl focus:border-blue-500 focus:outline-none placeholder-gray-400 dark:placeholder-slate-400 shadow-2xs"
             />
             <Search
               size={14}
@@ -455,14 +527,17 @@ export const AdminOrdersPage: React.FC = () => {
 
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="py-2 px-3 text-xs border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none shadow-2xs cursor-pointer font-medium"
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
+            className="w-auto shrink-0 py-2 px-2 sm:px-3 text-xs border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none shadow-2xs cursor-pointer font-medium max-w-[130px] sm:max-w-none"
           >
             <option value="">Tất cả trạng thái</option>
             <option value="PENDING">Chờ xử lý</option>
             <option value="CONFIRMED">Đã xác nhận</option>
-            <option value="SHIPPING_TO_VN">Hàng đang về Việt Nam</option>
-            <option value="IN_VN_WAREHOUSE">Đã về kho Việt Nam</option>
+            <option value="SHIPPING_TO_VN">Hàng đang về VN</option>
+            <option value="IN_VN_WAREHOUSE">Đã về kho VN</option>
             <option value="SHIPPING">Vận chuyển</option>
             <option value="PARTIAL_DELIVERED">Giao một phần</option>
             <option value="COMPLETED">Hoàn thành</option>
@@ -470,7 +545,23 @@ export const AdminOrdersPage: React.FC = () => {
           </select>
         </div>
 
-        <div className="flex items-center gap-3 justify-between sm:justify-end">
+        <div className="flex items-center gap-3 justify-between sm:justify-end shrink-0">
+          <div className="hidden sm:flex items-center gap-1.5 text-xs text-gray-500 dark:text-slate-400">
+            <span>Hiển thị:</span>
+            <select
+              value={limit}
+              onChange={(e) => {
+                setLimit(Number(e.target.value));
+                setPage(1);
+              }}
+              className="py-1 px-2 text-xs border border-gray-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:outline-none cursor-pointer"
+            >
+              <option value={15}>15</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
           <div className="text-[11px] sm:text-xs font-bold text-gray-500 dark:text-slate-400">
             Tổng số:{" "}
             <strong className="text-blue-600 dark:text-blue-400">
@@ -691,6 +782,38 @@ export const AdminOrdersPage: React.FC = () => {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Sentinel div cho Mobile Infinite Scroll */}
+        <div ref={sentinelRef} className="h-1 w-full" />
+
+        {/* Mobile: Trạng thái đang tải thêm */}
+        {loadingMore && (
+          <div className="lg:hidden p-3.5 text-center flex items-center justify-center gap-2 text-xs font-bold text-blue-600 dark:text-blue-400 bg-slate-50 dark:bg-slate-900/60 border-t border-gray-100 dark:border-slate-700">
+            <Loader2 size={16} className="animate-spin" />
+            <span>Đang tải thêm đơn hàng...</span>
+          </div>
+        )}
+
+        {/* Mobile: Thông báo khi đã cuộn xem hết toàn bộ đơn hàng */}
+        {!loading && !loadingMore && orders.length >= total && total > 15 && (
+          <div className="lg:hidden p-3 text-center text-xs font-semibold text-gray-400 dark:text-slate-500 bg-slate-50/50 dark:bg-slate-900/40 border-t border-gray-100 dark:border-slate-800">
+            ✓ Đã hiển thị tất cả {total} đơn hàng
+          </div>
+        )}
+
+        {/* Desktop: Phân trang Pagination (Chỉ hiển thị trên màn hình lớn) */}
+        {totalPages > 1 && (
+          <div className="hidden lg:flex p-4 border-t border-gray-100 dark:border-slate-700 items-center justify-between flex-wrap gap-3">
+            <div className="text-xs text-gray-500 dark:text-slate-400 font-medium">
+              Trang <strong>{page}</strong> / <strong>{totalPages}</strong> (Hiển thị {orders.length}/{total} đơn)
+            </div>
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={(p) => fetchOrders(p)}
+            />
           </div>
         )}
       </div>
