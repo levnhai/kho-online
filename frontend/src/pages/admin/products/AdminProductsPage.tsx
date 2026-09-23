@@ -53,6 +53,7 @@ import { Button } from "@/shared/ui/Button";
 import { Input } from "@/shared/ui/Input";
 import { Modal } from "@/shared/ui/Modal";
 import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
+import { Pagination } from "@/shared/ui/Pagination";
 
 export const AdminProductsPage: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -81,6 +82,11 @@ export const AdminProductsPage: React.FC = () => {
   const colorDropdownRef = useRef<HTMLDivElement>(null);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+  const [totalPages, setTotalPages] = useState(1);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   // Filter & Search
   const [search, setSearch] = useState("");
@@ -174,8 +180,43 @@ export const AdminProductsPage: React.FC = () => {
     }
   }, []);
 
-  const fetchProducts = useCallback(async () => {
-    setLoading(true);
+  const fetchProducts = useCallback(
+    async (targetPage?: number, targetLimit?: number) => {
+      const p = targetPage !== undefined ? targetPage : page;
+      const l = targetLimit !== undefined ? targetLimit : limit;
+      setLoading(true);
+      try {
+        const res = await productApi.getAll({
+          allStatus: true,
+          search: search || undefined,
+          category: selectedCategory || undefined,
+          subcategory: selectedSubcategory || undefined,
+          type: selectedType || undefined,
+          page: p,
+          limit: l,
+        });
+        setProducts(res.items || []);
+        setTotal(res.total || 0);
+        setTotalPages(
+          res.totalPages || Math.ceil((res.total || 0) / l) || 1,
+        );
+        if (targetPage !== undefined) setPage(targetPage);
+        if (targetLimit !== undefined) setLimit(targetLimit);
+      } catch (err) {
+        console.error("Fetch admin products error:", err);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [search, selectedCategory, selectedSubcategory, selectedType, page, limit],
+  );
+
+  const loadMoreMobile = useCallback(async () => {
+    if (loading || loadingMore || products.length >= total) return;
+    const nextPage = page + 1;
+    if (nextPage > totalPages) return;
+
+    setLoadingMore(true);
     try {
       const res = await productApi.getAll({
         allStatus: true,
@@ -183,24 +224,78 @@ export const AdminProductsPage: React.FC = () => {
         category: selectedCategory || undefined,
         subcategory: selectedSubcategory || undefined,
         type: selectedType || undefined,
-        limit: 50,
+        page: nextPage,
+        limit,
       });
-      setProducts(res.items);
-      setTotal(res.total);
+
+      setProducts((prev) => {
+        const existingIds = new Set(prev.map((p) => p._id));
+        const uniqueItems = (res.items || []).filter(
+          (p) => !existingIds.has(p._id),
+        );
+        return [...prev, ...uniqueItems];
+      });
+      setPage(nextPage);
+      setTotal(res.total || 0);
+      setTotalPages(
+        res.totalPages || Math.ceil((res.total || 0) / limit) || 1,
+      );
     } catch (err) {
-      console.error("Fetch admin products error:", err);
+      console.error("Load more mobile products error:", err);
     } finally {
-      setLoading(false);
+      setLoadingMore(false);
     }
-  }, [search, selectedCategory, selectedSubcategory, selectedType]);
+  }, [
+    loading,
+    loadingMore,
+    products.length,
+    total,
+    page,
+    totalPages,
+    search,
+    selectedCategory,
+    selectedSubcategory,
+    selectedType,
+    limit,
+  ]);
 
   useEffect(() => {
     categoryApi.getAll().then(setCategories).catch(console.error);
     fetchColors();
     fetchSetOptions();
     fetchSizes();
-    fetchProducts();
-  }, [fetchProducts, fetchColors, fetchSetOptions, fetchSizes]);
+  }, [fetchColors, fetchSetOptions, fetchSizes]);
+
+  // Khi thay đổi bộ lọc tìm kiếm / danh mục / nhóm con / loại hình -> quay lại trang 1
+  useEffect(() => {
+    fetchProducts(1, limit);
+  }, [search, selectedCategory, selectedSubcategory, selectedType]);
+
+  // Mobile Infinite Scroll Observer (chỉ kích hoạt trên màn hình di động/tablet nhỏ < 1024px)
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0];
+        if (
+          first.isIntersecting &&
+          !loading &&
+          !loadingMore &&
+          products.length < total
+        ) {
+          if (window.innerWidth < 1024) {
+            loadMoreMobile();
+          }
+        }
+      },
+      { threshold: 0.1, rootMargin: "300px" },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadMoreMobile, loading, loadingMore, products.length, total]);
 
   // Click outside listener for color dropdown
   useEffect(() => {
@@ -887,13 +982,14 @@ export const AdminProductsPage: React.FC = () => {
       if (modalMode === "create") {
         await productApi.create(payload);
         setActionSuccess("Thêm sản phẩm mới thành công!");
+        setIsModalOpen(false);
+        fetchProducts(1, limit);
       } else if (currentId) {
         await productApi.update(currentId, payload);
         setActionSuccess("Cập nhật sản phẩm thành công!");
+        setIsModalOpen(false);
+        fetchProducts(page, limit);
       }
-
-      setIsModalOpen(false);
-      fetchProducts();
       setTimeout(() => setActionSuccess(""), 3000);
     } catch (err: any) {
       setFormError(err.message || "Thao tác thất bại");
@@ -909,7 +1005,7 @@ export const AdminProductsPage: React.FC = () => {
     try {
       await productApi.delete(p._id);
       setActionSuccess("Đã xóa sản phẩm!");
-      fetchProducts();
+      fetchProducts(page, limit);
       setTimeout(() => setActionSuccess(""), 3000);
     } catch (err: any) {
       alert(err.message || "Xóa sản phẩm thất bại");
@@ -1223,6 +1319,73 @@ export const AdminProductsPage: React.FC = () => {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Mobile: Infinite Scroll Sentinel */}
+        <div ref={sentinelRef} className="h-4 w-full" />
+
+        {/* Mobile: Indicator đang tải thêm sản phẩm khi cuộn */}
+        {loadingMore && (
+          <div className="lg:hidden p-3 flex items-center justify-center gap-2 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50/40 dark:bg-blue-950/20 border-t border-gray-100 dark:border-slate-800">
+            <Loader2 size={15} className="animate-spin" />
+            <span>Đang tải thêm sản phẩm...</span>
+          </div>
+        )}
+
+        {/* Mobile: Thông báo khi đã cuộn xem hết toàn bộ sản phẩm */}
+        {!loading && !loadingMore && products.length >= total && total > 0 && (
+          <div className="lg:hidden p-3 text-center text-xs font-semibold text-gray-400 dark:text-slate-500 bg-slate-50/50 dark:bg-slate-900/40 border-t border-gray-100 dark:border-slate-800">
+            ✓ Đã hiển thị tất cả {total} sản phẩm
+          </div>
+        )}
+
+        {/* Desktop: Phân trang Pagination (Chỉ hiển thị trên màn hình lớn lg:) */}
+        {!loading && total > 0 && (
+          <div className="hidden lg:flex p-3 sm:p-4 border-t border-gray-100 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-900/30 items-center justify-between gap-3">
+            <div className="flex items-center gap-3 flex-wrap text-xs text-gray-500 dark:text-slate-400 font-medium">
+              <div>
+                Hiển thị{" "}
+                <strong className="text-gray-900 dark:text-white">
+                  {Math.min((page - 1) * limit + 1, total)}
+                </strong>
+                -
+                <strong className="text-gray-900 dark:text-white">
+                  {Math.min(page * limit, total)}
+                </strong>{" "}
+                trên tổng số{" "}
+                <strong className="text-blue-600 dark:text-blue-400">
+                  {total}
+                </strong>{" "}
+                sản phẩm
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <span>Số dòng:</span>
+                <select
+                  value={limit}
+                  onChange={(e) => {
+                    const newLimit = Number(e.target.value);
+                    setLimit(newLimit);
+                    fetchProducts(1, newLimit);
+                  }}
+                  className="py-1 px-2 text-xs border border-gray-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500 font-semibold cursor-pointer shadow-2xs"
+                >
+                  <option value={20}>20 / trang</option>
+                  <option value={50}>50 / trang</option>
+                  <option value={100}>100 / trang</option>
+                  <option value={200}>200 / trang</option>
+                </select>
+              </div>
+            </div>
+
+            {totalPages > 1 && (
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={(p) => fetchProducts(p, limit)}
+              />
+            )}
           </div>
         )}
       </div>

@@ -289,11 +289,6 @@ export const ProductDetailPage: React.FC = () => {
                 <div className="flex flex-wrap gap-2">
                   {product.sizes.map((s) => {
                     const isSelected = s.name === selectedSize;
-                    const sizeSpecificPrice = isSetProduct
-                      ? (selectedOption && s.optionPrices && s.optionPrices[selectedOption] !== undefined && s.optionPrices[selectedOption] > 0
-                          ? s.optionPrices[selectedOption]
-                          : null)
-                      : (s.price > 0 ? s.price : null);
 
                     return (
                       <button
@@ -303,18 +298,13 @@ export const ProductDetailPage: React.FC = () => {
                           setSelectedSize(s.name);
                           setQuantity(1);
                         }}
-                        className={`py-2 px-3 sm:px-4 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        className={`py-2 px-3 sm:px-4 rounded-xl text-xs font-bold border transition-all flex items-center justify-center cursor-pointer ${
                           isSelected
                             ? 'border-blue-600 bg-blue-50/80 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 ring-2 ring-blue-500/20 shadow-xs'
                             : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600'
                         }`}
                       >
                         <span>{s.name}</span>
-                        {sizeSpecificPrice !== null && (
-                          <span className="text-[10px] font-semibold text-rose-600 dark:text-rose-400 ml-0.5">
-                            ({formatCurrency(sizeSpecificPrice)})
-                          </span>
-                        )}
                       </button>
                     );
                   })}

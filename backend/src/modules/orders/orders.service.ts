@@ -175,11 +175,19 @@ export class OrdersService {
   }
 
   async findAll(query: any = {}) {
-    const { search, status, page = 1, limit = 10 } = query;
+    const { search, status, customerId, page = 1, limit = 10 } = query;
     const filter: any = {};
 
     if (status) {
       filter.status = status;
+    }
+
+    if (customerId) {
+      if (mongoose.isValidObjectId(customerId)) {
+        filter.customer = new mongoose.Types.ObjectId(customerId);
+      } else {
+        filter.customer = customerId;
+      }
     }
 
     if (search) {

@@ -14,4 +14,7 @@ export const userApi = {
   updateStatus: (id: string, status: string): Promise<User> => {
     return api.put(`/users/${id}/status`, { status });
   },
+  updateCustomer: (id: string, data: Partial<User>): Promise<User> => {
+    return api.put(`/users/${id}`, data);
+  },
 };
