@@ -43,10 +43,13 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
 
-  // Không can thiệp vào các request non-GET hoặc socket.io / chrome-extension
+  // Không can thiệp vào các request non-GET hoặc socket.io / chrome-extension / Vite dev server
   if (
     request.method !== 'GET' ||
     url.pathname.includes('/socket.io') ||
+    url.pathname.startsWith('/@') ||
+    url.pathname.startsWith('/src/') ||
+    url.pathname.includes('node_modules') ||
     url.protocol.startsWith('chrome-extension')
   ) {
     return;

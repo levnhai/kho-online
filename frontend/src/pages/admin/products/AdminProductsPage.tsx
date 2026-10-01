@@ -54,12 +54,20 @@ import { Input } from "@/shared/ui/Input";
 import { Modal } from "@/shared/ui/Modal";
 import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
 import { Pagination } from "@/shared/ui/Pagination";
+import { SearchableSelect } from "@/shared/ui/SearchableSelect";
 
 export const AdminProductsPage: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [dbColors, setDbColors] = useState<ColorItem[]>([]);
   const [dbSetOptions, setDbSetOptions] = useState<SetOptionItem[]>([]);
+  const setOptionSelectItems = useMemo(() => {
+    return dbSetOptions.map((item) => ({
+      value: item.name,
+      label: item.name,
+      subLabel: item.code || undefined,
+    }));
+  }, [dbSetOptions]);
   const [dbSizes, setDbSizes] = useState<SizeItem[]>([]);
   const [isCreatingSetOption, setIsCreatingSetOption] = useState(false);
   const [newCustomOptionName, setNewCustomOptionName] = useState("");
@@ -1915,38 +1923,32 @@ export const AdminProductsPage: React.FC = () => {
 
                           {/* 2 thẻ input nằm trên 1 hàng (trên cả mobile lẫn desktop) */}
                           <div className="flex-1 flex items-center gap-2">
-                            {/* Thẻ 1: Chọn Tên món từ API */}
+                            {/* Thẻ 1: Chọn Tên món từ API có tìm kiếm */}
                             <div className="flex-1 min-w-0">
-                              <select
+                              <SearchableSelect
                                 value={opt.name}
-                                onChange={(e) =>
-                                  handleUpdateSellingOption(
-                                    idx,
-                                    "name",
-                                    e.target.value,
-                                  )
+                                onChange={(val) =>
+                                  handleUpdateSellingOption(idx, "name", val)
                                 }
-                                className="w-full text-xs font-bold px-2.5 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer shadow-2xs truncate"
-                              >
-                                {dbSetOptions.map((item) => (
-                                  <option key={item._id} value={item.name}>
-                                    {item.name}{" "}
-                                    {item.code ? `(${item.code})` : ""}
-                                  </option>
-                                ))}
-                                {opt.name &&
-                                  !dbSetOptions.some(
-                                    (item) => item.name === opt.name,
-                                  ) && (
-                                    <option value={opt.name}>{opt.name}</option>
-                                  )}
-                                <option
-                                  value="__NEW__"
-                                  className="text-blue-600 font-bold"
-                                >
-                                  + Tạo tên món mới vào API...
-                                </option>
-                              </select>
+                                options={
+                                  opt.name &&
+                                  !dbSetOptions.some((item) => item.name === opt.name)
+                                    ? [
+                                        { value: opt.name, label: opt.name },
+                                        ...setOptionSelectItems,
+                                      ]
+                                    : setOptionSelectItems
+                                }
+                                placeholder="-- Chọn tên món --"
+                                searchPlaceholder="Tìm kiếm tên món..."
+                                onCreateNew={(customName) => {
+                                  if (customName) {
+                                    setNewCustomOptionName(customName);
+                                  }
+                                  setIsCreatingSetOption(true);
+                                }}
+                                createNewText="Thêm"
+                              />
                             </div>
 
                             {/* Thẻ 2: Nhập giá bán */}
