@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { Download, X, Edit3, Loader2 } from "lucide-react";
+import { Download, X, Edit3, Loader2, ArrowLeft } from "lucide-react";
 import jsPDF from "jspdf";
 import { toJpeg } from "html-to-image";
 import { Order } from "@/shared/types";
@@ -132,84 +132,113 @@ export const OrderInvoiceModal: React.FC<OrderInvoiceModalProps> = ({
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-0 sm:p-4 overflow-y-auto bg-black/75 backdrop-blur-sm animate-fade-in">
       <div className="relative bg-slate-900 border-0 sm:border sm:border-slate-700/80 rounded-none sm:rounded-3xl shadow-2xl w-full max-w-4xl h-full sm:h-auto sm:max-h-[96vh] flex flex-col overflow-hidden text-white my-auto">
-        {/* Top Control Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 px-3 sm:px-6 py-2.5 sm:py-3.5 bg-slate-800/95 border-b border-slate-700/80 flex-shrink-0">
-          <div className="flex items-center justify-between gap-2.5 min-w-0">
-            <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold shrink-0">
-                <Download size={17} />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                  <h3 className="text-sm sm:text-base font-extrabold text-white whitespace-nowrap">
-                    Hóa đơn &amp; Phiếu giao hàng
-                  </h3>
-                  <span className="text-[11px] sm:text-xs px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 font-mono font-bold">
-                    {order.orderCode.startsWith("#")
-                      ? order.orderCode
-                      : `#${order.orderCode}`}
-                  </span>
-                </div>
-                <p className="text-[10px] sm:text-[11px] text-slate-400 truncate">
-                  Tải file PDF chuẩn A4 • Bảng kê đơn hàng
-                </p>
+        {/* Top Control Bar (Có đệm tai thỏ / status bar 44px trên mobile và nút Quay lại to rõ) */}
+        <div className="pt-[max(env(safe-area-inset-top),44px)] sm:pt-3.5 pb-2.5 sm:pb-3.5 px-3 sm:px-6 bg-slate-800/95 border-b border-slate-700/80 flex-shrink-0 flex flex-col gap-2.5 sm:gap-3">
+          {/* Header Mobile: Nút Quay lại bên trái, Tiêu đề ở giữa, Nút X bên phải */}
+          <div className="flex sm:hidden items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-2.5 py-1.5 bg-slate-700/90 hover:bg-slate-700 active:bg-slate-600 active:scale-95 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm shrink-0 border border-slate-600/50"
+              title="Quay lại (Esc)"
+            >
+              <ArrowLeft size={16} />
+              <span>Quay lại</span>
+            </button>
+
+            <div className="min-w-0 text-center flex-1">
+              <div className="flex items-center justify-center gap-1.5">
+                <h3 className="text-xs font-extrabold text-white truncate">
+                  Hóa đơn &amp; Bảng kê
+                </h3>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-blue-500/20 text-blue-300 font-mono font-bold">
+                  {order.orderCode.startsWith("#")
+                    ? order.orderCode
+                    : `#${order.orderCode}`}
+                </span>
               </div>
             </div>
 
             <button
               type="button"
               onClick={onClose}
-              className="sm:hidden p-1.5 text-slate-400 hover:text-white hover:bg-slate-700/60 rounded-xl transition-colors cursor-pointer shrink-0"
+              className="w-8 h-8 flex items-center justify-center bg-slate-700/80 hover:bg-slate-700 active:bg-slate-600 active:scale-95 text-slate-200 hover:text-white rounded-xl transition cursor-pointer shrink-0 border border-slate-600/50"
               title="Đóng (Esc)"
             >
-              <X size={20} />
+              <X size={17} />
             </button>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={() => setIsEditingSettings(!isEditingSettings)}
-              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
-                isEditingSettings
-                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                  : "bg-slate-700 hover:bg-slate-600 text-slate-200"
-              }`}
-              title="Tùy chỉnh thông tin phiếu in"
-            >
-              <Edit3 size={14} />
-              <span className="whitespace-nowrap">
-                {isEditingSettings ? "Đóng cài đặt" : "Tùy chỉnh"}
-              </span>
-            </button>
+          {/* Desktop & Action Bar Row */}
+          <div className="flex items-center justify-between gap-2.5 sm:gap-3">
+            {/* Desktop Brand Info */}
+            <div className="hidden sm:flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold shrink-0">
+                <Download size={17} />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-sm sm:text-base font-extrabold text-white whitespace-nowrap">
+                    Hóa đơn &amp; Phiếu giao hàng
+                  </h3>
+                  <span className="text-xs px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 font-mono font-bold">
+                    {order.orderCode.startsWith("#")
+                      ? order.orderCode
+                      : `#${order.orderCode}`}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 truncate">
+                  Tải file PDF chuẩn A4 • Bảng kê đơn hàng
+                </p>
+              </div>
+            </div>
 
-            <button
-              type="button"
-              disabled={isDownloadingPdf}
-              onClick={handleDownloadPdf}
-              className="flex-1 sm:flex-none justify-center px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-extrabold text-xs flex items-center gap-2 shadow-lg shadow-emerald-900/30 cursor-pointer active:scale-95 transition-transform shrink-0 whitespace-nowrap"
-            >
-              {isDownloadingPdf ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  <span>Đang tạo PDF...</span>
-                </>
-              ) : (
-                <>
-                  <Download size={16} />
-                  <span>Tải file PDF</span>
-                </>
-              )}
-            </button>
+            {/* Action Buttons: Tùy chỉnh & Tải file PDF */}
+            <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsEditingSettings(!isEditingSettings)}
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0 ${
+                  isEditingSettings
+                    ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                    : "bg-slate-700 hover:bg-slate-600 text-slate-200"
+                }`}
+                title="Tùy chỉnh thông tin phiếu in"
+              >
+                <Edit3 size={14} />
+                <span className="whitespace-nowrap">
+                  {isEditingSettings ? "Đóng cài đặt" : "Tùy chỉnh"}
+                </span>
+              </button>
 
-            <button
-              type="button"
-              onClick={onClose}
-              className="hidden sm:flex p-2 text-slate-400 hover:text-white hover:bg-slate-700/60 rounded-xl transition-colors cursor-pointer shrink-0"
-              title="Đóng (Esc)"
-            >
-              <X size={18} />
-            </button>
+              <button
+                type="button"
+                disabled={isDownloadingPdf}
+                onClick={handleDownloadPdf}
+                className="flex-1 sm:flex-none justify-center px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-extrabold text-xs flex items-center gap-2 shadow-lg shadow-emerald-900/30 cursor-pointer active:scale-95 transition-transform shrink-0 whitespace-nowrap"
+              >
+                {isDownloadingPdf ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    <span>Đang tạo PDF...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download size={16} />
+                    <span>Tải file PDF</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="hidden sm:flex p-2 text-slate-400 hover:text-white hover:bg-slate-700/60 rounded-xl transition-colors cursor-pointer shrink-0"
+                title="Đóng (Esc)"
+              >
+                <X size={18} />
+              </button>
+            </div>
           </div>
         </div>
 
