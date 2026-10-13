@@ -97,3 +97,8 @@ export class Product {
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);
+
+// Đánh index tối ưu hiệu năng lọc danh mục, sản phẩm bán chạy và sắp xếp mới nhất
+ProductSchema.index({ status: 1, category: 1, isPinned: -1, createdAt: -1 });
+ProductSchema.index({ status: 1, soldCount: -1 });
+ProductSchema.index({ createdAt: -1 });

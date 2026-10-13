@@ -33,29 +33,31 @@ export class StatisticsService {
         { label: '20:00 - 24:00', startH: 20, endH: 24 },
       ];
 
-      for (const slot of timeSlots) {
-        const slotStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), slot.startH, 0, 0);
-        const slotEnd =
-          slot.endH === 24
-            ? new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
-            : new Date(now.getFullYear(), now.getMonth(), now.getDate(), slot.endH, 0, 0);
+      chartData = await Promise.all(
+        timeSlots.map(async (slot) => {
+          const slotStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), slot.startH, 0, 0);
+          const slotEnd =
+            slot.endH === 24
+              ? new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
+              : new Date(now.getFullYear(), now.getMonth(), now.getDate(), slot.endH, 0, 0);
 
-        const rev = await this.orderModel.aggregate([
-          {
-            $match: {
-              createdAt: { $gte: slotStart, $lte: slotEnd },
-              status: { $ne: OrderStatus.CANCELLED },
+          const rev = await this.orderModel.aggregate([
+            {
+              $match: {
+                createdAt: { $gte: slotStart, $lte: slotEnd },
+                status: { $ne: OrderStatus.CANCELLED },
+              },
             },
-          },
-          { $group: { _id: null, total: { $sum: '$totalAmount' }, count: { $sum: 1 } } },
-        ]);
+            { $group: { _id: null, total: { $sum: '$totalAmount' }, count: { $sum: 1 } } },
+          ]);
 
-        chartData.push({
-          date: slot.label,
-          revenue: rev[0]?.total || 0,
-          orders: rev[0]?.count || 0,
-        });
-      }
+          return {
+            date: slot.label,
+            revenue: rev[0]?.total || 0,
+            orders: rev[0]?.count || 0,
+          };
+        }),
+      );
     } else if (range === 'month') {
       rangeLabel = 'Tháng này';
       startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
@@ -68,53 +70,59 @@ export class StatisticsService {
         { label: 'Tuần 4 (22+)', startDay: 22, endDay: 31 },
       ];
 
-      for (const w of weeks) {
-        const wStart = new Date(now.getFullYear(), now.getMonth(), w.startDay, 0, 0, 0);
-        const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-        const actualEndDay = Math.min(w.endDay, lastDayOfMonth);
-        const wEnd = new Date(now.getFullYear(), now.getMonth(), actualEndDay, 23, 59, 59, 999);
+      chartData = await Promise.all(
+        weeks.map(async (w) => {
+          const wStart = new Date(now.getFullYear(), now.getMonth(), w.startDay, 0, 0, 0);
+          const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+          const actualEndDay = Math.min(w.endDay, lastDayOfMonth);
+          const wEnd = new Date(now.getFullYear(), now.getMonth(), actualEndDay, 23, 59, 59, 999);
 
-        const rev = await this.orderModel.aggregate([
-          {
-            $match: {
-              createdAt: { $gte: wStart, $lte: wEnd },
-              status: { $ne: OrderStatus.CANCELLED },
+          const rev = await this.orderModel.aggregate([
+            {
+              $match: {
+                createdAt: { $gte: wStart, $lte: wEnd },
+                status: { $ne: OrderStatus.CANCELLED },
+              },
             },
-          },
-          { $group: { _id: null, total: { $sum: '$totalAmount' }, count: { $sum: 1 } } },
-        ]);
+            { $group: { _id: null, total: { $sum: '$totalAmount' }, count: { $sum: 1 } } },
+          ]);
 
-        chartData.push({
-          date: w.label,
-          revenue: rev[0]?.total || 0,
-          orders: rev[0]?.count || 0,
-        });
-      }
+          return {
+            date: w.label,
+            revenue: rev[0]?.total || 0,
+            orders: rev[0]?.count || 0,
+          };
+        }),
+      );
     } else if (range === 'year') {
       rangeLabel = 'Năm nay';
       startDate = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
 
       // 12 tháng trong năm
-      for (let m = 0; m < 12; m++) {
-        const mStart = new Date(now.getFullYear(), m, 1, 0, 0, 0);
-        const mEnd = new Date(now.getFullYear(), m + 1, 0, 23, 59, 59, 999);
+      const months = Array.from({ length: 12 }, (_, m) => m);
 
-        const rev = await this.orderModel.aggregate([
-          {
-            $match: {
-              createdAt: { $gte: mStart, $lte: mEnd },
-              status: { $ne: OrderStatus.CANCELLED },
+      chartData = await Promise.all(
+        months.map(async (m) => {
+          const mStart = new Date(now.getFullYear(), m, 1, 0, 0, 0);
+          const mEnd = new Date(now.getFullYear(), m + 1, 0, 23, 59, 59, 999);
+
+          const rev = await this.orderModel.aggregate([
+            {
+              $match: {
+                createdAt: { $gte: mStart, $lte: mEnd },
+                status: { $ne: OrderStatus.CANCELLED },
+              },
             },
-          },
-          { $group: { _id: null, total: { $sum: '$totalAmount' }, count: { $sum: 1 } } },
-        ]);
+            { $group: { _id: null, total: { $sum: '$totalAmount' }, count: { $sum: 1 } } },
+          ]);
 
-        chartData.push({
-          date: `Tháng ${m + 1}`,
-          revenue: rev[0]?.total || 0,
-          orders: rev[0]?.count || 0,
-        });
-      }
+          return {
+            date: `Tháng ${m + 1}`,
+            revenue: rev[0]?.total || 0,
+            orders: rev[0]?.count || 0,
+          };
+        }),
+      );
     } else {
       // Mặc định: 7 ngày gần nhất
       rangeLabel = '7 ngày qua';
@@ -122,29 +130,34 @@ export class StatisticsService {
       d7.setDate(d7.getDate() - 6);
       startDate = new Date(d7.getFullYear(), d7.getMonth(), d7.getDate(), 0, 0, 0, 0);
 
-      for (let i = 6; i >= 0; i--) {
+      const days = [6, 5, 4, 3, 2, 1, 0].map((i) => {
         const d = new Date();
         d.setDate(d.getDate() - i);
         const startOfDay = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0);
         const endOfDay = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
-
-        const dayRevenue = await this.orderModel.aggregate([
-          {
-            $match: {
-              createdAt: { $gte: startOfDay, $lte: endOfDay },
-              status: { $ne: OrderStatus.CANCELLED },
-            },
-          },
-          { $group: { _id: null, total: { $sum: '$totalAmount' }, count: { $sum: 1 } } },
-        ]);
-
         const dayName = `${d.getDate()}/${d.getMonth() + 1}`;
-        chartData.push({
-          date: dayName,
-          revenue: dayRevenue[0]?.total || 0,
-          orders: dayRevenue[0]?.count || 0,
-        });
-      }
+        return { startOfDay, endOfDay, dayName };
+      });
+
+      chartData = await Promise.all(
+        days.map(async ({ startOfDay, endOfDay, dayName }) => {
+          const rev = await this.orderModel.aggregate([
+            {
+              $match: {
+                createdAt: { $gte: startOfDay, $lte: endOfDay },
+                status: { $ne: OrderStatus.CANCELLED },
+              },
+            },
+            { $group: { _id: null, total: { $sum: '$totalAmount' }, count: { $sum: 1 } } },
+          ]);
+
+          return {
+            date: dayName,
+            revenue: rev[0]?.total || 0,
+            orders: rev[0]?.count || 0,
+          };
+        }),
+      );
     }
 
     // Lấy số liệu tổng hợp trong khoảng thời gian đã chọn

@@ -20,6 +20,10 @@ async function bootstrap() {
   // Phục vụ tệp tĩnh tải lên qua /uploads
   app.useStaticAssets(uploadsDir, {
     prefix: '/uploads/',
+    setHeaders: (res) => {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    },
   });
 
   app.setGlobalPrefix('api');

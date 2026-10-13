@@ -53,6 +53,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   notifyOrderCreated(order: any) {
     this.logger.log(`Emitting order_created for order #${order.orderCode}`);
     this.server.to('admin_orders').emit('order_created', order);
+    this.server.to('admin_orders').emit('ORDER_CREATED', order);
   }
 
   // Khi trạng thái đơn hàng thay đổi -> Bắn tới room khách hàng và room admin
@@ -61,8 +62,10 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const customerId = typeof order.customer === 'object' ? order.customer?._id : order.customer;
     if (customerId) {
       this.server.to(`user_${customerId}`).emit('order_status_updated', order);
+      this.server.to(`user_${customerId}`).emit('ORDER_STATUS_UPDATED', order);
     }
     this.server.to('admin_orders').emit('order_status_updated', order);
+    this.server.to('admin_orders').emit('ORDER_STATUS_UPDATED', order);
   }
 
   // Khi đơn hàng bị huỷ -> Bắn tới room khách hàng và room admin
@@ -71,8 +74,10 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const customerId = typeof order.customer === 'object' ? order.customer?._id : order.customer;
     if (customerId) {
       this.server.to(`user_${customerId}`).emit('order_cancelled', order);
+      this.server.to(`user_${customerId}`).emit('ORDER_CANCELLED', order);
     }
     this.server.to('admin_orders').emit('order_cancelled', order);
+    this.server.to('admin_orders').emit('ORDER_CANCELLED', order);
   }
 
   // Khi sản phẩm được tạo / sửa đổi (giá, phân loại, trạng thái) -> Bắn tới toàn bộ client

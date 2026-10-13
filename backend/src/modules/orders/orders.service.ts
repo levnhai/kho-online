@@ -125,7 +125,7 @@ export class OrdersService {
     };
   }
 
-  async findMyOrders(userId: string): Promise<OrderDocument[]> {
+  async findMyOrders(userId: string): Promise<any[]> {
     const userObjectId = mongoose.isValidObjectId(userId) ? new mongoose.Types.ObjectId(userId) : null;
     return this.orderModel
       .find({
@@ -136,6 +136,7 @@ export class OrdersService {
       })
       .populate('items.product', 'name code images')
       .sort({ createdAt: -1 })
+      .lean()
       .exec();
   }
 
@@ -225,6 +226,7 @@ export class OrdersService {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(Number(limit))
+        .lean()
         .exec(),
       this.orderModel.countDocuments(filter),
     ]);
