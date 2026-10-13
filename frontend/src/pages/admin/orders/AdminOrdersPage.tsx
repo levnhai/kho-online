@@ -19,8 +19,11 @@ import {
   RotateCcw,
   X,
   Loader2,
+  Printer,
+  Download,
 } from "lucide-react";
 import { orderApi } from "@/entities/order/api/orderApi";
+import { OrderInvoiceModal } from "@/features/order-invoice";
 import { Order, OrderStatus } from "@/shared/types";
 import {
   formatCurrency,
@@ -78,6 +81,7 @@ export const AdminOrdersPage: React.FC = () => {
 
   // Selected order for detail & status update
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [invoiceOrder, setInvoiceOrder] = useState<Order | null>(null);
   const [adminNoteText, setAdminNoteText] = useState("");
   const [savingNote, setSavingNote] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
@@ -401,13 +405,19 @@ export const AdminOrdersPage: React.FC = () => {
     };
 
     socket.on("order_created", handleOrderCreated);
+    socket.on("ORDER_CREATED", handleOrderCreated);
     socket.on("order_status_updated", handleStatusUpdated);
+    socket.on("ORDER_STATUS_UPDATED", handleStatusUpdated);
     socket.on("order_cancelled", handleOrderCancelled);
+    socket.on("ORDER_CANCELLED", handleOrderCancelled);
 
     return () => {
       socket.off("order_created", handleOrderCreated);
+      socket.off("ORDER_CREATED", handleOrderCreated);
       socket.off("order_status_updated", handleStatusUpdated);
+      socket.off("ORDER_STATUS_UPDATED", handleStatusUpdated);
       socket.off("order_cancelled", handleOrderCancelled);
+      socket.off("ORDER_CANCELLED", handleOrderCancelled);
     };
   }, [socket]);
 
@@ -754,26 +764,34 @@ export const AdminOrdersPage: React.FC = () => {
                         </select>
                       </td>
                       <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <Button
+                        <div className="flex items-center justify-end gap-1.5 shrink-0">
+                          <button
                             type="button"
-                            variant="primary"
-                            size="sm"
-                            className="text-xs py-1 px-2 font-bold cursor-pointer"
                             onClick={() => setSelectedOrder(ord)}
+                            className="p-1.5 sm:px-2.5 sm:py-1 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-lg transition-all flex items-center justify-center gap-1 font-bold text-xs cursor-pointer shadow-xs shrink-0 whitespace-nowrap"
+                            title="Xem chi tiết đơn hàng"
                           >
-                            <Eye size={12} />
-                            <span>Chi tiết</span>
-                          </Button>
+                            <Eye size={13} className="shrink-0" />
+                            <span className="hidden sm:inline">Chi tiết</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setInvoiceOrder(ord)}
+                            className="p-1.5 sm:px-2.5 sm:py-1 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/60 active:scale-95 transition-all flex items-center justify-center gap-1 font-bold text-xs cursor-pointer shadow-xs shrink-0 whitespace-nowrap"
+                            title="Xuất hoá đơn / Tải file PDF"
+                          >
+                            <Download size={13} className="shrink-0" />
+                            <span className="hidden sm:inline">Tải PDF</span>
+                          </button>
                           <button
                             type="button"
                             onClick={() =>
                               handleDeleteOrder(ord._id, ord.orderCode)
                             }
-                            className="p-1.5 text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
+                            className="p-1.5 text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 active:scale-95 rounded-lg transition-all flex items-center justify-center cursor-pointer shrink-0"
                             title="Xóa đơn hàng này"
                           >
-                            <Trash2 size={13} />
+                            <Trash2 size={13} className="shrink-0" />
                           </button>
                         </div>
                       </td>
@@ -851,11 +869,22 @@ export const AdminOrdersPage: React.FC = () => {
               <div className="space-y-4 text-xs max-h-[78vh] overflow-y-auto pr-1">
                 <OrderStatusTimeline status={selectedOrder.status} />
 
-                {/* Thanh cập nhật trạng thái đơn hàng */}
+                {/* Thanh cập nhật trạng thái đơn hàng & In phiếu */}
                 <div className="p-3.5 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/60 dark:to-indigo-950/60 border border-blue-200 dark:border-blue-800/80 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-xs">
-                  <span className="font-extrabold text-blue-900 dark:text-blue-200 text-xs sm:text-sm">
-                    Cập nhật trạng thái đơn hàng:
-                  </span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-extrabold text-blue-900 dark:text-blue-200 text-xs sm:text-sm">
+                      Cập nhật trạng thái đơn:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setInvoiceOrder(selectedOrder)}
+                      className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs flex items-center gap-1 shadow-xs cursor-pointer transition-all active:scale-95"
+                      title="In phiếu giao hàng cho đơn này"
+                    >
+                      <Printer size={13} />
+                      <span>In phiếu giao hàng</span>
+                    </button>
+                  </div>
 
                   <select
                     value={selectedOrder.status}
@@ -1455,6 +1484,13 @@ export const AdminOrdersPage: React.FC = () => {
             </Modal>
           );
         })()}
+
+      {/* Modal Xuất hóa đơn / In phiếu giao hàng */}
+      <OrderInvoiceModal
+        order={invoiceOrder}
+        isOpen={!!invoiceOrder}
+        onClose={() => setInvoiceOrder(null)}
+      />
     </div>
   );
 };

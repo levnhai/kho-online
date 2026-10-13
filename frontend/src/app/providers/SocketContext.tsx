@@ -47,7 +47,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       if (isAuthenticated && user) {
         newSocket.emit('join_room', {
-          userId: user.id || user._id,
+          userId: (user as any).id || user._id,
           role: user.role,
         });
       }
@@ -58,34 +58,45 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setIsConnected(false);
     });
 
-    // Tự động dọn dẹp cache khi nhận tín hiệu cập nhật realtime từ Socket
-    newSocket.on('ORDER_CREATED', () => {
+    // Tự động dọn dẹp cache khi nhận tín hiệu cập nhật realtime từ Socket (hỗ trợ cả snake_case và UPPERCASE)
+    const handleOrderCacheInvalidate = () => {
       apiCache.invalidate('/orders');
       apiCache.invalidate('/statistics');
-    });
+    };
 
-    newSocket.on('ORDER_STATUS_UPDATED', () => {
-      apiCache.invalidate('/orders');
+    const handleProductCacheInvalidate = () => {
+      apiCache.invalidate('/products');
       apiCache.invalidate('/statistics');
-    });
+    };
 
-    newSocket.on('PRODUCT_UPDATED', () => {
-      apiCache.invalidate('/products');
-    });
-    newSocket.on('product_updated', () => {
-      apiCache.invalidate('/products');
-    });
+    newSocket.on('order_created', handleOrderCacheInvalidate);
+    newSocket.on('ORDER_CREATED', handleOrderCacheInvalidate);
 
-    newSocket.on('PRODUCT_DELETED', () => {
-      apiCache.invalidate('/products');
-    });
-    newSocket.on('product_deleted', () => {
-      apiCache.invalidate('/products');
-    });
+    newSocket.on('order_status_updated', handleOrderCacheInvalidate);
+    newSocket.on('ORDER_STATUS_UPDATED', handleOrderCacheInvalidate);
+
+    newSocket.on('order_cancelled', handleOrderCacheInvalidate);
+    newSocket.on('ORDER_CANCELLED', handleOrderCacheInvalidate);
+
+    newSocket.on('product_updated', handleProductCacheInvalidate);
+    newSocket.on('PRODUCT_UPDATED', handleProductCacheInvalidate);
+
+    newSocket.on('product_deleted', handleProductCacheInvalidate);
+    newSocket.on('PRODUCT_DELETED', handleProductCacheInvalidate);
 
     setSocket(newSocket);
 
     return () => {
+      newSocket.off('order_created', handleOrderCacheInvalidate);
+      newSocket.off('ORDER_CREATED', handleOrderCacheInvalidate);
+      newSocket.off('order_status_updated', handleOrderCacheInvalidate);
+      newSocket.off('ORDER_STATUS_UPDATED', handleOrderCacheInvalidate);
+      newSocket.off('order_cancelled', handleOrderCacheInvalidate);
+      newSocket.off('ORDER_CANCELLED', handleOrderCacheInvalidate);
+      newSocket.off('product_updated', handleProductCacheInvalidate);
+      newSocket.off('PRODUCT_UPDATED', handleProductCacheInvalidate);
+      newSocket.off('product_deleted', handleProductCacheInvalidate);
+      newSocket.off('PRODUCT_DELETED', handleProductCacheInvalidate);
       newSocket.disconnect();
     };
   }, []);
@@ -93,7 +104,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     if (socket && isConnected && isAuthenticated && user) {
       socket.emit('join_room', {
-        userId: user.id || user._id,
+        userId: (user as any).id || user._id,
         role: user.role,
       });
     }

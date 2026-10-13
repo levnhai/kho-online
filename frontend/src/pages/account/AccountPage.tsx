@@ -150,11 +150,15 @@ export const AccountPage: React.FC = () => {
     };
 
     socket.on("order_status_updated", handleStatusUpdated);
+    socket.on("ORDER_STATUS_UPDATED", handleStatusUpdated);
     socket.on("order_cancelled", handleOrderCancelled);
+    socket.on("ORDER_CANCELLED", handleOrderCancelled);
 
     return () => {
       socket.off("order_status_updated", handleStatusUpdated);
+      socket.off("ORDER_STATUS_UPDATED", handleStatusUpdated);
       socket.off("order_cancelled", handleOrderCancelled);
+      socket.off("ORDER_CANCELLED", handleOrderCancelled);
     };
   }, [socket]);
 
