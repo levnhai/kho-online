@@ -93,6 +93,64 @@ export class AuthService {
     };
   }
 
+  async verifyResetPassword(dto: { phone?: string }) {
+    const phone = (dto.phone || '').trim().replace(/\s+/g, '');
+
+    if (!phone) {
+      throw new BadRequestException('Vui lòng nhập số điện thoại');
+    }
+
+    const user = await this.usersService.findByPhone(phone);
+    if (!user) {
+      throw new BadRequestException('Không tìm thấy tài khoản với số điện thoại này');
+    }
+
+    if (user.status === 'blocked') {
+      throw new BadRequestException('Tài khoản của bạn đang bị khóa, không thể đặt lại mật khẩu');
+    }
+
+    return {
+      success: true,
+      message: 'Xác thực tài khoản thành công',
+      data: {
+        name: user.name,
+        phone: user.phone,
+        email: user.email || '',
+      },
+    };
+  }
+
+  async resetPassword(dto: { phone?: string; newPassword?: string }) {
+    const phone = (dto.phone || '').trim().replace(/\s+/g, '');
+    const newPassword = dto.newPassword || '';
+
+    if (!phone) {
+      throw new BadRequestException('Thiếu số điện thoại tài khoản');
+    }
+
+    if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 6) {
+      throw new BadRequestException('Mật khẩu mới phải có ít nhất 6 ký tự');
+    }
+
+    const user = await this.usersService.findByPhone(phone);
+    if (!user) {
+      throw new BadRequestException('Không tìm thấy tài khoản');
+    }
+
+    if (user.status === 'blocked') {
+      throw new BadRequestException('Tài khoản của bạn đang bị khóa');
+    }
+
+    await this.usersService.update(user._id.toString(), {
+      password: newPassword,
+    });
+
+    return {
+      success: true,
+      message: 'Đặt lại mật khẩu mới thành công! Bạn có thể đăng nhập ngay.',
+    };
+  }
+
   private generateToken(user: any) {
     const payload = {
       sub: user._id,
@@ -103,3 +161,4 @@ export class AuthService {
     return this.jwtService.sign(payload);
   }
 }
+

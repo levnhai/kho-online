@@ -16,9 +16,20 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
+  @Post('verify-reset-password')
+  async verifyResetPassword(@Body() body: any) {
+    return this.authService.verifyResetPassword(body);
+  }
+
+  @Post('reset-password')
+  async resetPassword(@Body() body: any) {
+    return this.authService.resetPassword(body);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get('profile')
   getProfile(@Request() req: any) {
     return req.user;
   }
 }
+

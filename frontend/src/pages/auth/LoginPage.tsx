@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Phone, Mail, Lock, Eye, EyeOff, LogIn, AlertCircle, ShoppingBag, ArrowLeft } from 'lucide-react';
+import { Phone, Mail, Lock, Eye, EyeOff, LogIn, AlertCircle, ShoppingBag, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/app/providers/AuthContext';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { ThemeToggle } from '@/shared/ui/ThemeToggle';
 import { useTheme } from '@/app/providers/ThemeContext';
+import { ForgotPasswordModal } from './ForgotPasswordModal';
 
 export const LoginPage: React.FC = () => {
   const { login } = useAuth();
@@ -24,6 +25,9 @@ export const LoginPage: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+  const [successNotice, setSuccessNotice] = useState('');
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,9 +93,17 @@ export const LoginPage: React.FC = () => {
 
         {/* Error Alert */}
         {error && (
-          <div className="flex items-center gap-2 p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 rounded-xl text-rose-700 dark:text-rose-400 text-xs font-semibold">
+          <div className="flex items-center gap-2 p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 rounded-xl text-rose-700 dark:text-rose-400 text-xs font-semibold animate-fade-in">
             <AlertCircle size={16} className="flex-shrink-0 text-rose-500" />
             <span>{error}</span>
+          </div>
+        )}
+
+        {/* Success Notice */}
+        {successNotice && (
+          <div className="flex items-center gap-2 p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 rounded-xl text-emerald-700 dark:text-emerald-400 text-xs font-semibold animate-fade-in">
+            <CheckCircle2 size={16} className="flex-shrink-0 text-emerald-500" />
+            <span>{successNotice}</span>
           </div>
         )}
 
@@ -138,9 +150,16 @@ export const LoginPage: React.FC = () => {
               />
               <span>Ghi nhớ đăng nhập</span>
             </label>
-            <a href="#" className="font-semibold text-blue-600 dark:text-blue-400 hover:underline">
+            <button
+              type="button"
+              onClick={() => {
+                setError('');
+                setIsForgotPasswordOpen(true);
+              }}
+              className="font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer focus:outline-none"
+            >
               Quên mật khẩu?
-            </a>
+            </button>
           </div>
 
           <Button
@@ -167,6 +186,19 @@ export const LoginPage: React.FC = () => {
           </Link>
         </div>
       </div>
+
+      {/* Modal Quên mật khẩu */}
+      <ForgotPasswordModal
+        isOpen={isForgotPasswordOpen}
+        onClose={() => setIsForgotPasswordOpen(false)}
+        initialIdentifier={email}
+        onSuccess={(savedPhone) => {
+          setEmail(savedPhone);
+          setPassword('');
+          setError('');
+          setSuccessNotice('Mật khẩu đã được cập nhật thành công! Vui lòng nhập mật khẩu mới để đăng nhập.');
+        }}
+      />
     </div>
   );
 };
