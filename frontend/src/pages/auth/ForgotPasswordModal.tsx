@@ -102,7 +102,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
         phone: cleanPhone,
       });
 
-      setVerifiedUser(res.data);
+      setVerifiedUser(res?.data || res);
       setStep(2);
     } catch (err: any) {
       setError(err.message || 'Không tìm thấy tài khoản với số điện thoại này');

@@ -19,13 +19,21 @@ export default defineConfig({
         secure: false,
         configure: (proxy) => {
           proxy.on("error", (err: any, _req: any, res: any) => {
-            if (err.code === "ECONNRESET" || err.code === "EPIPE" || err.code === "ECONNREFUSED") {
-              // Bỏ qua lỗi ngắt kết nối socket bất ngờ khi reload trình duyệt hoặc backend restart
+            if (err.code === "ECONNRESET" || err.code === "EPIPE") {
+              // Bỏ qua lỗi ngắt kết nối socket bất ngờ khi reload trình duyệt
               return;
             }
             if (res && !res.headersSent && typeof res.writeHead === "function") {
               res.writeHead(502, { "Content-Type": "application/json" });
-              res.end(JSON.stringify({ error: "Proxy connection error", code: err.code }));
+              res.end(
+                JSON.stringify({
+                  message:
+                    err.code === "ECONNREFUSED"
+                      ? "Không thể kết nối đến máy chủ Backend (Port 5000 chưa chạy). Vui lòng khởi động backend!"
+                      : "Lỗi kết nối máy chủ",
+                  code: err.code,
+                }),
+              );
             }
           });
         },
@@ -36,12 +44,17 @@ export default defineConfig({
         secure: false,
         configure: (proxy) => {
           proxy.on("error", (err: any, _req: any, res: any) => {
-            if (err.code === "ECONNRESET" || err.code === "EPIPE" || err.code === "ECONNREFUSED") {
+            if (err.code === "ECONNRESET" || err.code === "EPIPE") {
               return;
             }
             if (res && !res.headersSent && typeof res.writeHead === "function") {
               res.writeHead(502, { "Content-Type": "application/json" });
-              res.end(JSON.stringify({ error: "Proxy connection error", code: err.code }));
+              res.end(
+                JSON.stringify({
+                  message: "Không thể kết nối đến máy chủ tải ảnh (Port 5000)",
+                  code: err.code,
+                }),
+              );
             }
           });
         },
