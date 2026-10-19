@@ -39,7 +39,7 @@ export const OrderInvoiceModal: React.FC<OrderInvoiceModalProps> = ({
 
   const [paidAmount, setPaidAmount] = useState<number>(defaultPaid);
   const [creatorName, setCreatorName] = useState<string>("Quản trị viên KHO");
-  const [storeTitle, setStoreTitle] = useState<string>("C.H.A.NG STORE");
+  const [storeTitle, setStoreTitle] = useState<string>("C.H.A.N.G STORE");
   const [customNote, setCustomNote] = useState<string>("");
   const [isEditingSettings, setIsEditingSettings] = useState<boolean>(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState<boolean>(false);

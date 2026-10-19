@@ -23,7 +23,7 @@ import {
   Download,
 } from "lucide-react";
 import { orderApi } from "@/entities/order/api/orderApi";
-import { OrderInvoiceModal } from "@/features/order-invoice";
+import { OrderInvoiceModal, BatchOrderInvoiceModal } from "@/features/order-invoice";
 import { Order, OrderStatus } from "@/shared/types";
 import {
   formatCurrency,
@@ -87,6 +87,56 @@ export const AdminOrdersPage: React.FC = () => {
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [actionSuccess, setActionSuccess] = useState("");
   const [newOrderAlert, setNewOrderAlert] = useState<string>("");
+
+  // Bulk PDF Export States
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [selectedOrdersMap, setSelectedOrdersMap] = useState<Record<string, Order>>({});
+  const [isBatchInvoiceOpen, setIsBatchInvoiceOpen] = useState(false);
+
+  const handleToggleSelectOrder = (order: Order) => {
+    setSelectedOrderIds((prev) => {
+      if (prev.includes(order._id)) {
+        return prev.filter((id) => id !== order._id);
+      } else {
+        return [...prev, order._id];
+      }
+    });
+    setSelectedOrdersMap((prev) => ({
+      ...prev,
+      [order._id]: order,
+    }));
+  };
+
+  const handleToggleSelectAll = () => {
+    const pageOrderIds = orders.map((o) => o._id);
+    const allSelectedOnPage =
+      pageOrderIds.length > 0 && pageOrderIds.every((id) => selectedOrderIds.includes(id));
+
+    if (allSelectedOnPage) {
+      setSelectedOrderIds((prev) => prev.filter((id) => !pageOrderIds.includes(id)));
+    } else {
+      setSelectedOrderIds((prev) => {
+        const set = new Set([...prev, ...pageOrderIds]);
+        return Array.from(set);
+      });
+      setSelectedOrdersMap((prev) => {
+        const nextMap = { ...prev };
+        orders.forEach((o) => {
+          nextMap[o._id] = o;
+        });
+        return nextMap;
+      });
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedOrderIds([]);
+    setSelectedOrdersMap({});
+  };
+
+  const handleRemoveFromBatch = (orderId: string) => {
+    setSelectedOrderIds((prev) => prev.filter((id) => id !== orderId));
+  };
 
   // Partial Delivery States
   const [showDeliveryForm, setShowDeliveryForm] = useState(false);
@@ -582,6 +632,47 @@ export const AdminOrdersPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Bulk Action Bar khi chọn nhiều đơn */}
+      {selectedOrderIds.length > 0 && (
+        <div className="p-3 sm:p-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl border border-indigo-500/40 shadow-xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 animate-fade-in">
+          <div className="flex items-center gap-3">
+            <span className="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold shrink-0">
+              <PackageCheck size={18} />
+            </span>
+            <div>
+              <div className="text-xs sm:text-sm font-extrabold flex items-center gap-2">
+                <span>Đã chọn</span>
+                <span className="px-2 py-0.5 rounded-full bg-indigo-500 text-white font-mono text-xs">
+                  {selectedOrderIds.length}
+                </span>
+                <span>đơn hàng</span>
+              </div>
+              <p className="text-[11px] text-slate-300">
+                Xuất hóa đơn &amp; phiếu giao hàng vào 1 file PDF A4 sắc nét
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2.5">
+            <button
+              type="button"
+              onClick={handleClearSelection}
+              className="px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-white/10 rounded-xl transition cursor-pointer"
+            >
+              Bỏ chọn ({selectedOrderIds.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsBatchInvoiceOpen(true)}
+              className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-95 text-white rounded-xl text-xs sm:text-sm font-extrabold shadow-lg shadow-emerald-950/50 flex items-center justify-center gap-2 transition-all cursor-pointer"
+            >
+              <Download size={15} />
+              <span>Tải đơn hàng ({selectedOrderIds.length} đơn)</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Orders Table */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden transition-colors">
         {loading ? (
@@ -592,9 +683,21 @@ export const AdminOrdersPage: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs min-w-[820px]">
+            <table className="w-full text-left text-xs min-w-[860px]">
               <thead>
                 <tr className="bg-slate-100/80 dark:bg-slate-900/90 text-gray-600 dark:text-slate-300 border-b border-gray-200 dark:border-slate-700/80 font-bold uppercase tracking-wider">
+                  <th className="py-3 px-3 text-center w-10">
+                    <input
+                      type="checkbox"
+                      checked={
+                        orders.length > 0 &&
+                        orders.every((o) => selectedOrderIds.includes(o._id))
+                      }
+                      onChange={handleToggleSelectAll}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer accent-blue-600"
+                      title="Chọn tất cả đơn trên trang này"
+                    />
+                  </th>
                   <th className="py-3 px-4">Mã đơn</th>
                   <th className="py-3 px-3">Mã SP</th>
                   <th className="py-3 px-3">Khách hàng</th>
@@ -620,8 +723,20 @@ export const AdminOrdersPage: React.FC = () => {
                   return (
                     <tr
                       key={ord._id}
-                      className="hover:bg-gray-50/60 dark:hover:bg-slate-700/40 transition-colors"
+                      className={`transition-colors ${
+                        selectedOrderIds.includes(ord._id)
+                          ? "bg-blue-50/80 dark:bg-blue-950/30 hover:bg-blue-100/60 dark:hover:bg-blue-900/40"
+                          : "hover:bg-gray-50/60 dark:hover:bg-slate-700/40"
+                      }`}
                     >
+                      <td className="py-3.5 px-3 text-center w-10">
+                        <input
+                          type="checkbox"
+                          checked={selectedOrderIds.includes(ord._id)}
+                          onChange={() => handleToggleSelectOrder(ord)}
+                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer accent-blue-600"
+                        />
+                      </td>
                       <td className="py-3.5 px-4 font-extrabold text-blue-600 dark:text-blue-400 text-xs sm:text-sm">
                         {ord.orderCode}
                       </td>
@@ -1485,11 +1600,21 @@ export const AdminOrdersPage: React.FC = () => {
           );
         })()}
 
-      {/* Modal Xuất hóa đơn / In phiếu giao hàng */}
+      {/* Modal Xuất hóa đơn / In phiếu giao hàng đơn lẻ */}
       <OrderInvoiceModal
         order={invoiceOrder}
         isOpen={!!invoiceOrder}
         onClose={() => setInvoiceOrder(null)}
+      />
+
+      {/* Modal Xuất hóa đơn / In phiếu giao hàng hàng loạt */}
+      <BatchOrderInvoiceModal
+        orders={selectedOrderIds
+          .map((id) => selectedOrdersMap[id])
+          .filter(Boolean)}
+        isOpen={isBatchInvoiceOpen}
+        onClose={() => setIsBatchInvoiceOpen(false)}
+        onRemoveOrder={handleRemoveFromBatch}
       />
     </div>
   );
