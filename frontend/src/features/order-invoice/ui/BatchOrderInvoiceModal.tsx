@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Download, X, Edit3, Loader2, Printer, CheckCircle2, ArrowLeft } from "lucide-react";
 import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import { toJpeg } from "html-to-image";
 import { Order } from "@/shared/types";
 import { formatCurrency, formatDate, cleanProductName } from "@/shared/lib/formatters";
@@ -261,13 +262,35 @@ export const BatchOrderInvoiceModal: React.FC<BatchOrderInvoiceModalProps> = ({
         })
       );
 
-      // 3. Chụp thành ảnh JPEG với cacheBust: false (vì ảnh đã là Data URL)
-      const imgData = await toJpeg(element, {
-        quality: 0.98,
-        backgroundColor: "#ffffff",
-        pixelRatio: 2,
-        cacheBust: false,
-      });
+      // 3. Chụp thành ảnh JPEG chất lượng cao
+      // Ưu tiên html2canvas vì hỗ trợ vẽ trực tiếp thẻ <img> lên Canvas trên Safari iOS (khắc phục triệt để lỗi mất ảnh trên mobile)
+      let imgData = "";
+      try {
+        const canvas = await html2canvas(element, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: "#ffffff",
+          logging: false,
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: 760,
+          width: 760,
+        });
+        imgData = canvas.toDataURL("image/jpeg", 0.98);
+      } catch (h2cError) {
+        console.warn("Lỗi html2canvas, tự động chuyển sang html-to-image toJpeg:", h2cError);
+      }
+
+      // Fallback sang toJpeg nếu html2canvas không có dữ liệu
+      if (!imgData || imgData.length < 5000) {
+        imgData = await toJpeg(element, {
+          quality: 0.98,
+          backgroundColor: "#ffffff",
+          pixelRatio: 2,
+          cacheBust: false,
+        });
+      }
 
       const img = new Image();
       img.src = imgData;
@@ -724,7 +747,6 @@ export const BatchOrderInvoiceModal: React.FC<BatchOrderInvoiceModalProps> = ({
           top: "0px",
           width: "760px",
           zIndex: -9999,
-          opacity: 0,
           pointerEvents: "none",
         }}
       >
@@ -1005,6 +1027,8 @@ export const BatchOrderInvoiceModal: React.FC<BatchOrderInvoiceModalProps> = ({
                     <img
                       src={imageBase64Map[item.image] || getImageUrl(item.image)}
                       alt={item.name}
+                      width={38}
+                      height={38}
                       style={{
                         width: "38px",
                         height: "38px",

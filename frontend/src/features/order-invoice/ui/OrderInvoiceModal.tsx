@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Download, X, Edit3, Loader2, ArrowLeft } from "lucide-react";
 import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import { toJpeg } from "html-to-image";
 import { Order } from "@/shared/types";
 import { formatCurrency, formatDate, cleanProductName } from "@/shared/lib/formatters";
@@ -147,13 +148,34 @@ export const OrderInvoiceModal: React.FC<OrderInvoiceModalProps> = ({
         })
       );
 
-      // 2. Chụp template chuẩn A4 (width 760px) thành ảnh JPEG sắc nét (cacheBust: false)
-      const imgData = await toJpeg(element, {
-        quality: 0.98,
-        backgroundColor: "#ffffff",
-        pixelRatio: 2,
-        cacheBust: false,
-      });
+      // 2. Chụp template chuẩn A4 (width 760px) thành ảnh JPEG chất lượng cao
+      // Ưu tiên html2canvas vẽ trực tiếp thẻ <img> lên Canvas để tương thích 100% với Safari iOS (iPhone/iPad)
+      let imgData = "";
+      try {
+        const canvas = await html2canvas(element, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: "#ffffff",
+          logging: false,
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: 760,
+          width: 760,
+        });
+        imgData = canvas.toDataURL("image/jpeg", 0.98);
+      } catch (h2cError) {
+        console.warn("Lỗi html2canvas trong OrderInvoiceModal, fallback to toJpeg:", h2cError);
+      }
+
+      if (!imgData || imgData.length < 5000) {
+        imgData = await toJpeg(element, {
+          quality: 0.98,
+          backgroundColor: "#ffffff",
+          pixelRatio: 2,
+          cacheBust: false,
+        });
+      }
 
       // 3. Đo kích thước thực tế của ảnh
       const img = new Image();
@@ -591,7 +613,6 @@ export const OrderInvoiceModal: React.FC<OrderInvoiceModalProps> = ({
           top: "0px",
           width: "760px",
           zIndex: -9999,
-          opacity: 0,
           pointerEvents: "none",
         }}
       >
@@ -687,6 +708,8 @@ export const OrderInvoiceModal: React.FC<OrderInvoiceModalProps> = ({
                       <img
                         src={imageBase64Map[item.image] || getImageUrl(item.image)}
                         alt={item.name}
+                        width={38}
+                        height={38}
                         style={{ width: "38px", height: "38px", borderRadius: "6px", objectFit: "cover", border: "1px solid #cbd5e1", display: "block", margin: "0 auto" }}
                         crossOrigin="anonymous"
                       />
