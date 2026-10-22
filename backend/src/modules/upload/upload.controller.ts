@@ -1,11 +1,15 @@
 import {
   Controller,
   Post,
+  Get,
+  Query,
+  Res,
   UseInterceptors,
   UploadedFile,
   UploadedFiles,
   BadRequestException,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { UploadService, UploadFile } from './upload.service';
@@ -67,5 +71,17 @@ export class UploadController {
       throw new BadRequestException('Vui lòng chọn ít nhất một tệp hình ảnh để tải lên');
     }
     return this.uploadService.processMultipleFiles(files);
+  }
+
+  /**
+   * Proxy tải hình ảnh hỗ trợ CORS cho Canvas/PDF export
+   * GET /api/upload/proxy-image?url=...
+   */
+  @Get('proxy-image')
+  async proxyImage(@Query('url') imageUrl: string, @Res() res: Response) {
+    if (!imageUrl) {
+      throw new BadRequestException('URL hình ảnh không được để trống');
+    }
+    await this.uploadService.proxyImage(imageUrl, res);
   }
 }

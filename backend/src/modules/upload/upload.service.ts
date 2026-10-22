@@ -165,4 +165,50 @@ export class UploadService {
       files: results,
     };
   }
+
+  /**
+   * Proxy tải hình ảnh để giải quyết triệt để lỗi CORS khi xuất PDF/Canvas ở Frontend
+   */
+  async proxyImage(imageUrl: string, res: any): Promise<void> {
+    try {
+      let targetUrl = imageUrl;
+      // Nếu là đường dẫn tĩnh cục bộ /uploads/...
+      if (targetUrl.startsWith('/uploads/')) {
+        const localPath = path.join(process.cwd(), targetUrl);
+        if (fs.existsSync(localPath)) {
+          const mimeType = targetUrl.endsWith('.png')
+            ? 'image/png'
+            : targetUrl.endsWith('.webp')
+            ? 'image/webp'
+            : targetUrl.endsWith('.svg')
+            ? 'image/svg+xml'
+            : 'image/jpeg';
+          res.setHeader('Content-Type', mimeType);
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Cache-Control', 'public, max-age=86400');
+          fs.createReadStream(localPath).pipe(res);
+          return;
+        }
+      }
+
+      const response = await fetch(targetUrl);
+      if (!response.ok) {
+        throw new Error(`Tải ảnh thất bại: ${response.status} ${response.statusText}`);
+      }
+
+      const contentType = response.headers.get('content-type') || 'image/jpeg';
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      res.send(buffer);
+    } catch (error: any) {
+      this.logger.error(`Lỗi proxy hình ảnh [${imageUrl}]:`, error?.message);
+      res.status(404).send('Không thể nạp hình ảnh');
+    }
+  }
 }
+

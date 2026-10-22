@@ -1,10 +1,10 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Download, X, Edit3, Loader2, ArrowLeft } from "lucide-react";
 import jsPDF from "jspdf";
 import { toJpeg } from "html-to-image";
 import { Order } from "@/shared/types";
 import { formatCurrency, formatDate, cleanProductName } from "@/shared/lib/formatters";
-import { getImageUrl } from "@/shared/lib/imageHelper";
+import { getImageUrl, loadImageAsDataUrl } from "@/shared/lib/imageHelper";
 
 interface OrderInvoiceModalProps {
   order: Order | null;
@@ -50,6 +50,35 @@ export const OrderInvoiceModal: React.FC<OrderInvoiceModalProps> = ({
   // Tính số tiền còn nợ / thu khi nhận
   const remainingAmount = Math.max(0, order.totalAmount - (paidAmount || 0));
 
+  // Map lưu ảnh Base64 Data URL để tránh lỗi CORS và mất ảnh trên Safari iOS
+  const [imageBase64Map, setImageBase64Map] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let isMounted = true;
+    const preload = async () => {
+      if (!order.items) return;
+      const rawUrls = Array.from(new Set(order.items.map((it) => it.image).filter(Boolean)));
+      for (const url of rawUrls) {
+        if (!imageBase64Map[url]) {
+          try {
+            const b64 = await loadImageAsDataUrl(url);
+            if (isMounted && b64) {
+              setImageBase64Map((prev) => ({ ...prev, [url]: b64 }));
+            }
+          } catch (e) {
+            // ignore
+          }
+        }
+      }
+    };
+    if (isOpen) {
+      preload();
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, order._id]);
+
   const customerName =
     order.customerInfo?.name ||
     (typeof order.customer === "object" ? (order.customer as any)?.name : "") ||
@@ -73,15 +102,60 @@ export const OrderInvoiceModal: React.FC<OrderInvoiceModalProps> = ({
     setIsDownloadingPdf(true);
 
     try {
-      // 1. Chụp template chuẩn A4 (width 760px) thành ảnh JPEG sắc nét
+      // 1. Chuyển đổi toàn bộ ảnh sản phẩm sang Base64 Data URL trước khi render chụp
+      if (order.items && order.items.length > 0) {
+        const rawUrls = Array.from(new Set(order.items.map((it) => it.image).filter(Boolean)));
+        const pairs = await Promise.all(
+          rawUrls.map(async (u) => {
+            if (imageBase64Map[u]) return [u, imageBase64Map[u]] as const;
+            const b64 = await loadImageAsDataUrl(u);
+            return [u, b64] as const;
+          })
+        );
+        const updated = { ...imageBase64Map };
+        pairs.forEach(([u, b64]) => {
+          if (b64) updated[u] = b64;
+        });
+        setImageBase64Map(updated);
+      }
+
+      // Đợi DOM cập nhật và gán trực tiếp Base64 vào các thẻ ảnh của template
+      await new Promise((r) => setTimeout(r, 150));
+
+      const imgElements = Array.from(element.querySelectorAll("img"));
+      imgElements.forEach((img, idx) => {
+        const itemImage = order.items?.[idx]?.image;
+        if (itemImage && updated[itemImage]) {
+          img.src = updated[itemImage];
+        }
+      });
+
+      await Promise.all(
+        imgElements.map(async (img) => {
+          try {
+            if (img.decode) {
+              await img.decode();
+            } else if (!img.complete) {
+              await new Promise<void>((res) => {
+                img.onload = () => res();
+                img.onerror = () => res();
+              });
+            }
+          } catch (e) {
+            // ignore
+          }
+        })
+      );
+
+      // 2. Chụp template chuẩn A4 (width 760px) thành ảnh JPEG sắc nét (cacheBust: false)
       const imgData = await toJpeg(element, {
         quality: 0.98,
         backgroundColor: "#ffffff",
         pixelRatio: 2,
-        cacheBust: true,
+        cacheBust: false,
       });
 
-      // 2. Đo kích thước thực tế của ảnh
+      // 3. Đo kích thước thực tế của ảnh
       const img = new Image();
       img.src = imgData;
       await new Promise<void>((resolve, reject) => {
@@ -89,7 +163,7 @@ export const OrderInvoiceModal: React.FC<OrderInvoiceModalProps> = ({
         img.onerror = () => reject(new Error("Không thể load dữ liệu ảnh hóa đơn"));
       });
 
-      // 3. Tạo file PDF chuẩn A4 cân đối lề trang (10mm margin)
+      // 4. Tạo file PDF chuẩn A4 cân đối lề trang (10mm margin)
       const PDFClass = (jsPDF as any).default || jsPDF;
       const pdf = new PDFClass("p", "mm", "a4");
       const pageWidth = 210;
@@ -414,7 +488,7 @@ export const OrderInvoiceModal: React.FC<OrderInvoiceModalProps> = ({
                           </td>
                           <td className="py-2.5 px-2 text-center">
                             <img
-                              src={getImageUrl(item.image)}
+                              src={imageBase64Map[item.image] || getImageUrl(item.image)}
                               alt={item.name}
                               className="product-img w-10 h-10 sm:w-11 sm:h-11 rounded-lg object-cover border border-slate-200 mx-auto"
                               crossOrigin="anonymous"
@@ -513,10 +587,11 @@ export const OrderInvoiceModal: React.FC<OrderInvoiceModalProps> = ({
       <div
         style={{
           position: "fixed",
-          left: "-9999px",
+          left: "0px",
           top: "0px",
           width: "760px",
           zIndex: -9999,
+          opacity: 0,
           pointerEvents: "none",
         }}
       >
@@ -610,7 +685,7 @@ export const OrderInvoiceModal: React.FC<OrderInvoiceModalProps> = ({
                     </td>
                     <td style={{ padding: "8px 6px", textAlign: "center" }}>
                       <img
-                        src={getImageUrl(item.image)}
+                        src={imageBase64Map[item.image] || getImageUrl(item.image)}
                         alt={item.name}
                         style={{ width: "38px", height: "38px", borderRadius: "6px", objectFit: "cover", border: "1px solid #cbd5e1", display: "block", margin: "0 auto" }}
                         crossOrigin="anonymous"

@@ -4,7 +4,7 @@ import jsPDF from "jspdf";
 import { toJpeg } from "html-to-image";
 import { Order } from "@/shared/types";
 import { formatCurrency, formatDate, cleanProductName } from "@/shared/lib/formatters";
-import { getImageUrl } from "@/shared/lib/imageHelper";
+import { getImageUrl, loadImageAsDataUrl } from "@/shared/lib/imageHelper";
 
 interface BatchOrderInvoiceModalProps {
   orders: Order[];
@@ -151,6 +151,37 @@ export const BatchOrderInvoiceModal: React.FC<BatchOrderInvoiceModalProps> = ({
   const totalAllItemsCount = flatItems.reduce((sum, it) => sum + it.quantity, 0);
   const remainingAmount = Math.max(0, totalAllOrdersAmount - (paidAmountInput || 0));
 
+  // Map lưu trữ ảnh dạng Base64 Data URL để in ấn chuẩn xác trên Safari/iOS
+  const [imageBase64Map, setImageBase64Map] = useState<Record<string, string>>({});
+
+  // Tự động preload chuyển đổi toàn bộ ảnh sản phẩm sang Base64 ngay khi mở modal
+  useEffect(() => {
+    let isMounted = true;
+    const preloadImages = async () => {
+      const rawUrls = Array.from(new Set(flatItems.map((it) => it.image).filter(Boolean)));
+      for (const url of rawUrls) {
+        if (!imageBase64Map[url]) {
+          try {
+            const b64 = await loadImageAsDataUrl(url);
+            if (isMounted && b64) {
+              setImageBase64Map((prev) => ({ ...prev, [url]: b64 }));
+            }
+          } catch (e) {
+            // ignore
+          }
+        }
+      }
+    };
+
+    if (isOpen && flatItems.length > 0) {
+      preloadImages();
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, flatItems.length]);
+
   // Refs template
   const consolidatedTemplateRef = useRef<HTMLDivElement>(null);
 
@@ -162,6 +193,28 @@ export const BatchOrderInvoiceModal: React.FC<BatchOrderInvoiceModalProps> = ({
     setExportSuccess(false);
 
     try {
+      setExportProgress({
+        text: `Đang chuẩn bị hình ảnh sản phẩm...`,
+      });
+
+      // 1. Đảm bảo toàn bộ ảnh đã được convert thành Base64 Data URL trước khi chụp
+      const rawUrls = Array.from(new Set(flatItems.map((it) => it.image).filter(Boolean)));
+      const convertedPairs = await Promise.all(
+        rawUrls.map(async (url) => {
+          if (imageBase64Map[url]) {
+            return [url, imageBase64Map[url]] as const;
+          }
+          const b64 = await loadImageAsDataUrl(url);
+          return [url, b64] as const;
+        })
+      );
+
+      const updatedMap = { ...imageBase64Map };
+      convertedPairs.forEach(([url, b64]) => {
+        if (b64) updatedMap[url] = b64;
+      });
+      setImageBase64Map(updatedMap);
+
       const PDFClass = (jsPDF as any).default || jsPDF;
       const pdf = new PDFClass("p", "mm", "a4");
       const pageWidth = 210;
@@ -180,13 +233,40 @@ export const BatchOrderInvoiceModal: React.FC<BatchOrderInvoiceModalProps> = ({
         throw new Error("Không tìm thấy mẫu in bảng kê tổng hợp");
       }
 
-      await new Promise((r) => setTimeout(r, 100));
+      // 2. Chờ DOM cập nhật và gán trực tiếp Base64 vào các thẻ ảnh của template
+      await new Promise((r) => setTimeout(r, 150));
 
+      const imgElements = Array.from(element.querySelectorAll("img"));
+      imgElements.forEach((img, idx) => {
+        const item = flatItems[idx];
+        if (item?.image && updatedMap[item.image]) {
+          img.src = updatedMap[item.image];
+        }
+      });
+
+      await Promise.all(
+        imgElements.map(async (img) => {
+          try {
+            if (img.decode) {
+              await img.decode();
+            } else if (!img.complete) {
+              await new Promise<void>((res) => {
+                img.onload = () => res();
+                img.onerror = () => res();
+              });
+            }
+          } catch (e) {
+            // decode fail ignore
+          }
+        })
+      );
+
+      // 3. Chụp thành ảnh JPEG với cacheBust: false (vì ảnh đã là Data URL)
       const imgData = await toJpeg(element, {
         quality: 0.98,
         backgroundColor: "#ffffff",
         pixelRatio: 2,
-        cacheBust: true,
+        cacheBust: false,
       });
 
       const img = new Image();
@@ -545,7 +625,7 @@ export const BatchOrderInvoiceModal: React.FC<BatchOrderInvoiceModalProps> = ({
                       </td>
                       <td className="py-2.5 px-1.5 text-center">
                         <img
-                          src={getImageUrl(item.image)}
+                          src={imageBase64Map[item.image] || getImageUrl(item.image)}
                           alt={item.name}
                           className="w-9 h-9 rounded-md object-cover border border-slate-300 mx-auto"
                           crossOrigin="anonymous"
@@ -640,10 +720,11 @@ export const BatchOrderInvoiceModal: React.FC<BatchOrderInvoiceModalProps> = ({
       <div
         style={{
           position: "fixed",
-          left: "-9999px",
+          left: "0px",
           top: "0px",
           width: "760px",
           zIndex: -9999,
+          opacity: 0,
           pointerEvents: "none",
         }}
       >
@@ -922,7 +1003,7 @@ export const BatchOrderInvoiceModal: React.FC<BatchOrderInvoiceModalProps> = ({
                   </td>
                   <td style={{ padding: "8px 6px", textAlign: "center" }}>
                     <img
-                      src={getImageUrl(item.image)}
+                      src={imageBase64Map[item.image] || getImageUrl(item.image)}
                       alt={item.name}
                       style={{
                         width: "38px",
